@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// generates a dbml file that can visualise the ERD
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User?
+  donator Donator?
+}
+
+model User {
+  id           Int           @unique
+  person       Person        @relation(fields: [id], references: [id])
+  reservations Reservation[]
+  // reviews      Review[]      @relation("UserReviews")
+
+  @@id([id])
+}
+
+model Donator {
+  id        Int        @unique
+  person    Person     @relation(fields: [id], references: [id])
+  donations Donation[]
+  reviews   Review[]   @relation("DonatorReviews")
+
+  @@id([id])
+}
+
+model Donation {
+  id           Int     @id @default(autoincrement())
+  title        String  @default("")
+  foodReserved Boolean @default(false)
+  donatorId    Int
+  donator      Donator @relation(fields: [donatorId], references: [id])
+  foods        Food[]
+}
+
+model Food {
+  id          Int           @id @default(autoincrement())
+  quantity    Int
+  type        String
+  expiryDate  DateTime
+  createdAt   DateTime      @default(now())
+  donationId  Int
+  donation    Donation      @relation(fields: [donationId], references: [id])
+  Reservation Reservation[]
+}
+
+model Reservation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  foodId    Int
+  food      Food     @relation(fields: [foodId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rating    Int
+  comment   String
+  // userId    Int
+  // user      User     @relation("UserReviews", fields: [userId], references: [id])
+  donatorId Int
+  donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
+}

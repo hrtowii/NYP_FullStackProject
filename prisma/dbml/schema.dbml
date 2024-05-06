@@ -1,0 +1,88 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Person {
+  id Int [pk, increment]
+  email String [unique, not null]
+  name String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  user User
+  donator Donator
+}
+
+Table User {
+  id Int [pk]
+  person Person [not null]
+  reservations Reservation [not null]
+
+  indexes {
+    (id) [pk]
+  }
+}
+
+Table Donator {
+  id Int [pk]
+  person Person [not null]
+  donations Donation [not null]
+  reviews Review [not null]
+
+  indexes {
+    (id) [pk]
+  }
+}
+
+Table Donation {
+  id Int [pk, increment]
+  title String [not null, default: '']
+  foodReserved Boolean [not null, default: false]
+  donatorId Int [not null]
+  donator Donator [not null]
+  foods Food [not null]
+}
+
+Table Food {
+  id Int [pk, increment]
+  quantity Int [not null]
+  type String [not null]
+  expiryDate DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  donationId Int [not null]
+  donation Donation [not null]
+  Reservation Reservation [not null]
+}
+
+Table Reservation {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  userId Int [not null]
+  user User [not null]
+  foodId Int [not null]
+  food Food [not null]
+}
+
+Table Review {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  rating Int [not null]
+  comment String [not null]
+  donatorId Int [not null]
+  donator Donator [not null]
+}
+
+Ref: User.id - Person.id
+
+Ref: Donator.id - Person.id
+
+Ref: Donation.donatorId > Donator.id
+
+Ref: Food.donationId > Donation.id
+
+Ref: Reservation.userId > User.id
+
+Ref: Reservation.foodId > Food.id
+
+Ref: Review.donatorId > Donator.id
