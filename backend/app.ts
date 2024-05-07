@@ -10,7 +10,14 @@ dotenv.config()
 
 const app = express();
 app.use(express.json())
-
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    next();
+});
+// const corsOptions =
+// app.use(cors(corsOptions))
 
 const port = process.env.PORT || 3000;
 
@@ -26,8 +33,8 @@ interface User {
 }
 
 app.post('/signup', async (req, res) => {
-    if (req.body.user == null) {return res.sendStatus(401)}
-    const user: User = req.body.user
+    // if (req.body.user == null) {return res.status(400).json({error:})}
+    const user: User = req.body
     // check if user exists
     const exists = await prisma.person.findUnique({
         where: {
