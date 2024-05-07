@@ -2,6 +2,9 @@
 import express from "express"
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
+import { PrismaClient } from "@prisma/client"
+import bcrypt from "bcrypt"
+const prisma = new PrismaClient() // -> database
 dotenv.config()
 
 const app = express();
@@ -15,26 +18,112 @@ app.get('/', (req, res) => {
 // what the user object should look like:
 interface User {
     name: string,
+    email: string,
     password: string,
 }
 
-app.post('/signup', (req, res) => {
-    const user: User = req.body
+app.post('/signup', async (req, res) => {
+    if (req.body.user == null) {return res.sendStatus(401)}
+    const user: User = req.body.user
+    // check if user exists
+    const exists = await prisma.person.findUnique({
+        where: {
+            email: user.email
+        }
+    })
+    if (exists) {
+        return res.status(409).json({error: "User already exists"})
+    }
+    try {
+        const person = await prisma.person.create({
+            data: {
+                name: user.name,
+                hashedPassword: await bcrypt.hash(user.password, 12),
+                email: user.email,
+            }
+        })
+        const token = jwt.sign(
+            { id: person.id },
+            process.env.JWT_SECRET,
+            {
+                algorithm: 'HS256',
+                allowInsecureKeySizes: true,
+                expiresIn: 86400,
+            }
+        );
+        res.status(200)
+            .set('Content-Type', 'application/json')
+            .cookie('token', token, {
+                path: '/',
+                httpOnly: true,
+                sameSite: 'strict',
+                secure: true
+            })
+            .json({ success: true });
+    } catch (e) {
+        res.sendStatus(501)
+    }
 })
 
-app.post('/login', (req, res) => {
-    const user: User = req.body
-    if (user == null) {
-        return res.sendStatus(401)
+// request should look like this
+interface LoginRequest {
+    email: string,
+    password: string
+}
+app.post('/login', async (req, res) => {
+    const request: LoginRequest = req.body
+    const person = await prisma.person.findUnique({
+        where: {
+            email: request.email,
+        }
+    })
+    if (!person) {
+        const responseObj = {
+            success: false,
+            message: "The email provided is not registered. Please sign up for a new account."
+        };
+        return res.status(404)
+            .set('Content-Type', 'application/json')
+            .json(responseObj);
     }
-    const accessToken = jwt.sign(user.name, process.env.JWT_SECRET)
-    return res.status(200).json({token: accessToken})
+    const compare = await bcrypt.compare(
+        request.password,
+        person.hashedPassword
+    )
+    if (!compare) {
+        const responseObj = {
+            success: false,
+            message: "Incorrect email/password"
+        };
+        return res.status(401)
+            .set('Content-Type', 'application/json')
+            .json(responseObj);
+    }
+    const token = jwt.sign(
+        { id: person.id },
+        process.env.JWT_SECRET,
+        {
+            algorithm: 'HS256',
+            allowInsecureKeySizes: true,
+            expiresIn: 86400,
+        }
+    );
+    res.status(200)
+        .set('Content-Type', 'application/json')
+        .cookie('token', token, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: true
+        })
+        .json({ success: true });
 })
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req, res, next) {
     const header = req.headers['authorization']
     const token = header && header.split(' ')[1]
+    // looks like this -> Bearer <token> so split at the first space
     if (token == null) {
         return res.sendStatus(401)
     }
