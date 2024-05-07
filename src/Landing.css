@@ -1,0 +1,70 @@
+.heroText h1 {
+    margin-block: 0px;
+}
+
+.heroGreen {
+    background-image: -webkit-linear-gradient(315deg, hsl(0, 0%, 43%) 0%, hsl(139, 76%, 41%) 74%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.heroContent {
+  margin-inline: 10vw;
+  margin-top: 5vh;
+  display: flex;
+  align-items: center;
+  height: 80vh;
+}
+
+.contentLeft {
+    width: 50vw;
+}
+
+.heroImages {
+    display: flex;
+    width: 50vw;
+    gap: 31px;
+}
+
+.leftSideImages, .rightSideImages {
+    display: flex;
+    align-items: center;
+}
+
+.leftSideImages {
+    flex-direction: column;
+    gap: 32px;
+}
+
+.leftSideImages img, .rightSideImages img {
+    width: 300px;
+    border-radius: 32px;
+    object-fit: fill;
+}
+
+.buttons {
+    display: flex;
+    gap: 16px;
+}
+
+.buttons a:-webkit-any-link {
+    text-decoration: none;
+}
+
+.primaryButton {
+    padding: 16px 32px;
+    border-radius: 100vmax;
+    background-color: #70A0FF;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.secondaryButton {
+    padding: 16px 32px;
+    border-radius: 100vmax;
+    background-color: #D0D5DD;
+    cursor: pointer;
+    font-weight: 700;
+    color: black;
+}

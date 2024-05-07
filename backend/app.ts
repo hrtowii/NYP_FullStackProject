@@ -52,25 +52,7 @@ app.post('/signup', async (req, res) => {
                 email: user.email,
             }
         })
-        console.log(person)
-        // const token = jwt.sign(
-        //     { id: person.id },
-        //     process.env.JWT_SECRET,
-        //     {
-        //         algorithm: 'HS256',
-        //         allowInsecureKeySizes: true,
-        //         expiresIn: 86400,
-        //     }
-        // );
-        res.status(200)
-            // .set('Content-Type', 'application/json')
-            // .cookie('token', token, {
-            //     path: '/',
-            //     httpOnly: true,
-            //     sameSite: 'strict',
-            //     secure: true
-            // })
-            .json({ success: true });
+        res.status(200).json({ success: true });
     } catch (e) {
         console.log(e)
         return res.sendStatus(501)
