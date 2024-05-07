@@ -42,30 +42,30 @@ app.post('/signup', async (req, res) => {
                 email: user.email,
             }
         })
-        const token = jwt.sign(
-            { id: person.id },
-            process.env.JWT_SECRET,
-            {
-                algorithm: 'HS256',
-                allowInsecureKeySizes: true,
-                expiresIn: 86400,
-            }
-        );
+        // const token = jwt.sign(
+        //     { id: person.id },
+        //     process.env.JWT_SECRET,
+        //     {
+        //         algorithm: 'HS256',
+        //         allowInsecureKeySizes: true,
+        //         expiresIn: 86400,
+        //     }
+        // );
         res.status(200)
-            .set('Content-Type', 'application/json')
-            .cookie('token', token, {
-                path: '/',
-                httpOnly: true,
-                sameSite: 'strict',
-                secure: true
-            })
+            // .set('Content-Type', 'application/json')
+            // .cookie('token', token, {
+            //     path: '/',
+            //     httpOnly: true,
+            //     sameSite: 'strict',
+            //     secure: true
+            // })
             .json({ success: true });
     } catch (e) {
-        res.sendStatus(501)
+        console.log(e)
+        return res.sendStatus(501)
     }
 })
 
-// request should look like this
 interface LoginRequest {
     email: string,
     password: string
@@ -117,6 +117,11 @@ app.post('/login', async (req, res) => {
             secure: true
         })
         .json({ success: true });
+})
+
+app.post('/logout', async (req, res) => {
+    return res.status(200).json({ success: true })
+              .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
 })
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
