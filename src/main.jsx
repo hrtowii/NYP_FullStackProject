@@ -1,8 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+// Note: If your pages aren't loading for whatever reason check that you imported the component that you want to route to
 import Landing from './Landing.jsx'
 import Signup from './Signup.jsx'
 import Login from './Login.jsx'
+import About from './About.jsx'
+
 import './index.css'
 import {
   createBrowserRouter,

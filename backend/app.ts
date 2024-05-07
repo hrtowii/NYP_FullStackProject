@@ -4,11 +4,14 @@ import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
+import cors from "cors"
 const prisma = new PrismaClient() // -> database
 dotenv.config()
 
 const app = express();
 app.use(express.json())
+
+
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
@@ -42,6 +45,7 @@ app.post('/signup', async (req, res) => {
                 email: user.email,
             }
         })
+        console.log(person)
         // const token = jwt.sign(
         //     { id: person.id },
         //     process.env.JWT_SECRET,
