@@ -1,3 +1,7 @@
 .smallText {
     font-size: var(--fs-sm);
 }
+form {
+    display: flex;
+    flex-direction: column;
+}

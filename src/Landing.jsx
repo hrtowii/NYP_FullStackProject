@@ -3,7 +3,6 @@ import Navbar from "./components/Navbar";
 import "./index.css"
 import './Landing.css'
 
-
 function MainButtons(props) {
   const color = props.color
   return (
@@ -21,7 +20,6 @@ function MainButtons(props) {
     </Link>
   )
 }
-
 
 export default function Landing() {
   return <>
