@@ -1,46 +1,68 @@
 .gridthings {
-    padding-block: 12px;
-    border: 2px #739bd0 solid;
-    border-radius: 12px;
-    flex-direction: column;
-    display: flex;
-    width: 50%;
-    padding: 16px;
-  }
+  padding-block: 12px;
+  border: 2px #739bd0 solid;
+  border-radius: 16px;
+  flex-direction: column;
+  display: flex;
+  width: 50%;
+  padding: 16px;
+  background-color: rgba(120, 120, 255, 0.3);
+}
 
 .gridthings h3 {
-    margin: 0px;
+  margin: 0px;
 }
-  #gridleft {
-    border-right: 1px #739bd0 solid;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+
+#gridleft {
+  border-right: 1px #739bd0 solid;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#gridright {
+  border-left: 1px #739bd0 solid;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.roundedimg {
+  border-radius: 16px;
+}
+
+.ourBox {
+  display: flex;
+  flex-direction: column;
+  width: 33%;
+  margin-inline: 1%;
+  margin-block: 3%;
+  padding: 20px;
+  border: 2px #739bd0 solid;
+  border-radius: 16px;
+  background-color: rgba(120, 120, 255, 0.3);
+}
+
+.ourBox h4 {
+  margin-block: 0px;
+}
+
+.cssanimation, .cssanimation span {
+  animation-duration: 1s;
+  animation-fill-mode: both;
+}
+
+.cssanimation span { display: inline-block }
+
+.fadeInBottom { animation-name: fadeInBottom }
+@keyframes fadeInBottom {
+  from {
+      opacity: 0;
+      transform: translateY(100%);
   }
-  
-  #gridright {
-    border-left: 1px #739bd0 solid;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-  }
-  
-  .roundedimg {
-    border-radius: 12px;
-    /* margin-block: 30px; */
-  }
-  
-  .horizontalol ol {
-    max-width: 99%;
-    display:flex;
-  }
-  
-  .horizontalol li {
-    display: flex;
-    flex-direction: column;
-    max-width: 33%;
-    margin-inline: 1%;
-    margin-block: 3%;
-    padding: 20px;
-    border: 2px #739bd0 solid;
-    border-radius: 12px;
-    background-color: rgba(120,120,255,0.3);
-  }
+  to { opacity: 1 }
+}
+
+.heroGreen {
+  background-image: -webkit-linear-gradient(315deg, hsl(0, 0%, 43%) 0%, hsl(139, 76%, 41%) 74%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

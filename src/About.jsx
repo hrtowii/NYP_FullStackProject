@@ -1,13 +1,38 @@
-import React from 'react'
+import React, {useState, useEffect} from 'react'
 import Navbar from "./components/Navbar";
 import "./index.css"
 import './About.css'
+import './assets/odometer.css'
+import ReactOdometer from 'react-odometerjs';
+
+function Box(props) {
+  return (<div className="ourBox">
+    <h4>{props.title}</h4>
+    {props.text}
+  </div>)
+}
+
 export default function About() {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+      const timeoutId = setTimeout(() => setValue(31238), 100);
+      return () => {
+          clearTimeout(timeoutId);
+      };
+  }, []);
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const incrementValue = Math.floor(Math.random() * 7) + 4; // Random value between 4 and 10
+      setValue(prevValue => prevValue + incrementValue);
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, []);
   return (
     <>
     <Navbar/>
     <div class="content">
-            <h2>Connecting Your Kindness, Empowering Communities</h2>
+            <h2 className="heroGreen">Connecting Your Kindness, Empowering Communities</h2>
             <div style={{display: 'flex', gap: '10%', alignItems: 'center'}}>
                 <div style={{width: '50%'}}>
                     <p>We believe in a Singapore where everyone has access to the food they need to thrive. That's why we created <b>CommuniFridge</b>, a community-driven app connecting individuals with <b>excess food</b> to those facing <b>food insecurity</b>.</p>
@@ -42,18 +67,17 @@ export default function About() {
             </ul>
         </div>
     </div>
-    <div class="horizontalol">
-        <h2>Why CommmuniFridge?</h2>
-        <ol>
-          <li><b>Transparency and Trust</b> We ensure clear communication and food safety guidelines for all donations and reservations.</li>
-          <li><b>Accessibility and Convenience</b> Our app is user-friendly and accessible for everyone, regardless of technical skills.</li>
-          <li><b>Community-Driven Impact</b> Every donation and reservation makes a difference, directly impacting lives and the environment.</li>
-        </ol>
+    <h2>Why CommmuniFridge?</h2>
+    <div style={{display: "flex"}}>
+        <Box title="Transparency and Trust" text="We ensure clear communication and food safety guidelines for all donations and reservations."/>
+        <Box title="Accessibility and Convenience" text="Our app is user-friendly and accessible for everyone, regardless of technical skills."/>
+        <Box title="Community-Driven Impact" text="Every donation and reservation makes a difference, directly impacting lives and the environment."/>
     </div>
-
-    <h2>Join the Movement:</h2>
-    <p>Download <b>CommmuniFridge</b> today and be a part of building a more inclusive and sustainable Singapore. <b>Donate, reserve, and share</b> your experience to create a ripple effect of kindness and empower your community.</p>
-    <p><b>Together, we can ensure that everyone has access to the nourishment they deserve.</b></p>
+    <div className="cssanimation sequence fadeInBottom" style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
+      <h2 style={{marginBlock: "10px"}}>There have been</h2>
+      <h3 style={{marginBlock: "10px"}}><ReactOdometer value={value} format="(,ddd),dd"/></h3>
+      <p>donations since 2000</p>
+    </div>
 </div>
     </>
   )

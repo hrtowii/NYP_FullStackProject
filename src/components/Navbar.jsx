@@ -6,10 +6,21 @@ import { NavLink } from 'react-router-dom'
 export default function Navbar() {
   return (
     <div className='navbar'>
-      <NavLink to={"/"} className={({ isActive }) => isActive ? "active" : ""}>Home</NavLink>
+      <NavLink to={"/"}>Home</NavLink>
       <NavLink to={"/about"}>About Us</NavLink>
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
+    </div>
+  )
+}
+
+export function DonatorNavbar() {
+  return (
+    <div className='navbar'>
+      <NavLink to={"/donator"}>Home</NavLink>
+      <NavLink to={"/donator/inventory"}>Inventory</NavLink>
+      <NavLink to={"/donator/donations"}>Manage Donations</NavLink>
+      <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
     </div>
   )
 }

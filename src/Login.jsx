@@ -16,7 +16,8 @@ const handleSubmit = async (event, formData, navigate, setError) => {
       body: JSON.stringify(formData),
     });
     if (response.ok) {
-      navigate('/login')
+      // TODO: determine whether the user is donator or user, then navigate to the corresponding landing page.
+      navigate('/donator')
     } else {
       console.log(response)
       setError('Failed to login')
