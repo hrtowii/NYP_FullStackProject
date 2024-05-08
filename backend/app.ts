@@ -5,6 +5,11 @@ import dotenv from "dotenv"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
 import cors from "cors"
+import * as crypto from 'crypto';
+// used for email verification
+import { Resend } from "resend"
+const resend = new Resend(process.env.RESEND_SECRET)
+
 const prisma = new PrismaClient() // -> database
 dotenv.config()
 
@@ -124,6 +129,31 @@ app.post('/login', async (req, res) => {
             secure: true
         })
         .json({ success: true });
+})
+
+interface emailDetails {
+    email: string,
+}
+
+app.post('/sendEmail', async (req, res) => {
+    const emailDetails: emailDetails = req.body;
+    const ourOtp: number = crypto.randomInt(0, 999999);
+
+    // We need somewhere to temporarily save our OTP codes linked to the email address. The easiest way to do this is to use a temporary key-value store like Redis
+    // Alternatively, just use Vercel's KV to do it for us, but it's an external service so eh idk
+
+    const { data, error } = await resend.emails.send({
+        from: "ecosanct@hrtowii.dev",
+        to: [emailDetails.email],
+        subject: "Test email for fullstack",
+        html: `Email verification code: ${ourOtp}`,
+    });
+    
+    if (error) {
+      return res.status(400).json({ error });
+    }
+    
+    return res.status(200).json({ data });
 })
 
 app.post('/logout', async (req, res) => {
