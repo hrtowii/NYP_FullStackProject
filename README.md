@@ -10,10 +10,10 @@
 
 ## Project structure
 ### src/*
-src/user directory: all the frontend pages for User (reservation, frontpage, making comments) are stored here
-src/donator directory: all the frontend pages for Donator (donation, frontpage, profile reviews) are stored here
-src/components: Make components here that you think are useful. for example Button, Navbar, Comment, Profile. -> Basically ANYTHING THAT CAN BE REUSED
-src/Landing/Login/Signup/About: Pages that are displayed when in the signed out state.
+* src/user directory: all the frontend pages for User (reservation, frontpage, making comments) are stored here
+* src/donator directory: all the frontend pages for Donator (donation, frontpage, profile reviews) are stored here
+* src/components: Make components here that you think are useful. for example Button, Navbar, Comment, Profile. -> Basically ANYTHING THAT CAN BE REUSED
+* src/Landing/Login/Signup/About: Pages that are displayed when in the signed out state.
 
 ### prisma
 * schema.prisma: models for our backend data is stored here. our data is all in dev.db as we are using SQLite.
