@@ -6,6 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button, TextField } from '@mui/material';
 const backendRoute = 'http://localhost:3000'
 
+// TODO: handle roles on the backend routes, post to it with the role you want to create a user/donator depending on selection
+// TODO: handle email OTP verification with Resend
 const handleSubmit = async (event, formData, navigate, setError) => {
   event.preventDefault();
   console.log(formData)
