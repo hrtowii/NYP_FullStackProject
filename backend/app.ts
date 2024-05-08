@@ -76,6 +76,10 @@ app.post('/login', async (req, res) => {
     const person = await prisma.person.findUnique({
         where: {
             email: request.email,
+        },
+        include: { // needed to fix the type error? idk
+            user: true,
+            donator: true
         }
     })
     if (!person) {
@@ -100,8 +104,10 @@ app.post('/login', async (req, res) => {
             .set('Content-Type', 'application/json')
             .json(responseObj);
     }
+    const ourRole = person.user ? 'user' : person.donator ? 'donator' : null;
     const token = jwt.sign(
-        { id: person.id },
+        // TODO: determine whether the person is a User or Donator via Prisma and set its role into the JWT token.
+        { id: person.id, role: ourRole },
         process.env.JWT_SECRET,
         {
             algorithm: 'HS256',

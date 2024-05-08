@@ -20,6 +20,7 @@ export default function About() {
           clearTimeout(timeoutId);
       };
   }, []);
+  // runs every 5 seconds to increment the counter value
   useEffect(() => {
     const intervalId = setInterval(() => {
       const incrementValue = Math.floor(Math.random() * 7) + 4; // Random value between 4 and 10
@@ -31,7 +32,7 @@ export default function About() {
   return (
     <>
     <Navbar/>
-    <div class="content">
+    <div className="content">
             <h2 className="heroGreen">Connecting Your Kindness, Empowering Communities</h2>
             <div style={{display: 'flex', gap: '10%', alignItems: 'center'}}>
                 <div style={{width: '50%'}}>
@@ -42,7 +43,7 @@ export default function About() {
                 </div>
             </div>
 
-            <h2>Our Mission</h2>
+            <h2 style={{marginBlock: "0px"}}>Our Mission</h2>
             <ul>
               <li><b>Reduce food waste:</b> We aim to minimize the environmental impact of discarded food by providing a convenient way for individuals and businesses to donate unwanted, yet edible, items.</li>
               <li><b>Empower communities:</b> We promote self-sufficiency and dignity by creating a platform where anyone can easily access essential food items.</li>
@@ -75,7 +76,9 @@ export default function About() {
     </div>
     <div className="cssanimation sequence fadeInBottom" style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
       <h2 style={{marginBlock: "10px"}}>There have been</h2>
-      <h3 style={{marginBlock: "10px"}}><ReactOdometer value={value} format="(,ddd),dd"/></h3>
+      <h3 style={{marginBlock: "10px"}}>
+        <ReactOdometer value={value} format="(,ddd),dd"/>
+      </h3>
       <p>donations since 2000</p>
     </div>
 </div>

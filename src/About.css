@@ -32,9 +32,8 @@
 .ourBox {
   display: flex;
   flex-direction: column;
-  width: 33%;
+  width: 32.333%;
   margin-inline: 1%;
-  margin-block: 3%;
   padding: 20px;
   border: 2px #739bd0 solid;
   border-radius: 16px;
