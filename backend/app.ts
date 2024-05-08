@@ -30,6 +30,7 @@ interface User {
     name: string,
     email: string,
     password: string,
+    role: "user" | "donator",
 }
 
 app.post('/signup', async (req, res) => {
@@ -50,6 +51,13 @@ app.post('/signup', async (req, res) => {
                 name: user.name,
                 hashedPassword: await bcrypt.hash(user.password, 12),
                 email: user.email,
+                [user.role]: {
+                    create: {}
+                }
+            },
+            include: {
+                user: true,
+                donator: true
             }
         })
         res.status(200).json({ success: true });

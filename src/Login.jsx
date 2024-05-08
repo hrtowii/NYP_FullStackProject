@@ -8,7 +8,7 @@ const backendRoute = 'http://localhost:3000'
 
 const handleSubmit = async (event, formData, navigate, setError) => {
   event.preventDefault();
-  console.log(formData)
+  // console.log(formData)
   try {
     const response = await fetch(`${backendRoute}/login`, {
       method: 'POST',
