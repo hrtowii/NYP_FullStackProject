@@ -25,4 +25,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - RESEND_SECRET=${RESEND_SECRET}
       - DATABASE_URL=${DATABASE_URL}
-    
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: redis
+    command: redis-server /etc/keydb/redis.conf
+    volumes:
+      - ./redis.conf:/etc/keydb/redis.conf
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    # no need data persistence so we won't add a volume

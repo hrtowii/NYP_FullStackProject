@@ -4,48 +4,63 @@ import "./index.css"
 import "./Signup.css"
 import { useNavigate, Link } from 'react-router-dom';
 import { Button, TextField, MenuItem } from '@mui/material';
+import OTPInput from 'react-otp-input';
 const backendRoute = 'http://localhost:3000'
-
 // TODO: handle roles on the backend routes, post to it with the role you want to create a user/donator depending on selection
 // TODO: handle email OTP verification with Resend
-const handleSubmit = async (event, formData, navigate, setError) => {
+const sendEmail = async (setPageStatus, event, formData, setError) => {
   event.preventDefault();
-  console.log(formData)
   try {
-    const response = await fetch(`${backendRoute}/signup`, {
+    //1. send email. if return 200, change to another component by setting state, then having parent component conditionally render
+    const response = await fetch(`${backendRoute}/sendEmail`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({email: formData.email}),
     });
     if (response.ok) {
-      navigate('/login')
+      setPageStatus("verifyOtp")
     } else {
-      console.log(response)
       setError('Failed to create account')
     }
   } catch (e) {
     console.log(e)
-    // setError(e)
+    setError(e)
   }
 }
 
-export default function Signup() {
-  const [formData, setFormData] = useState({ role: '', name: '', email: '', password: '' });
+const signupFunction = async (event, formData, otp) => {
+  event.preventDefault();
+  // console.log(formData)
+  const requestBody = {...formData, otp} // create a new object that merges together the otp code into the existing request body
+  try {
+    const response = await fetch(`${backendRoute}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify(requestBody),
+    });
+    if (response.ok) {
+      const navigate = useNavigate(); // https://reactrouter.com/en/main/hooks/use-navigate
+      navigate('/login')
+    } else {
+      console.log(response)
+    }
+  } catch (e) {
+    console.log(e)
+  }
+}
+
+function ActualSignup({formData, setFormData, setPageStatus}) {
+  const [error, setError] = useState(null)
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value })
   }
-
-  const navigate = useNavigate(); // https://reactrouter.com/en/main/hooks/use-navigate
-  const [error, setError] = useState(null)
-
-
   return (
     <>
       <Navbar />
       <div className='content'>
         <h1 style={{ color: "#4D4D4D" }}>Sign up</h1>
         <p style={{ color: "#808080" }}>Create an account to access all features.</p>
-        <form onSubmit={(event) => handleSubmit(event, formData, navigate, setError)}>
+        <form onSubmit={(event) => sendEmail(setPageStatus, event, formData, setError)}>
           <div className="inputSplit">
             <div className="roleField">
               <TextField
@@ -64,9 +79,42 @@ export default function Signup() {
           <TextField margin="normal" label="Password" type="password" name="password" value={formData.password} onChange={handleChange} />
           <Button variant="contained" type="submit">Sign up</Button>
           <p className='smallText'>Already a member? <Link to={'/login'}>Log in here</Link></p>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
+          {/* {error && <p style={{ color: 'red' }}>{error}</p>} */}
         </form>
       </div>
     </>
   )
+}
+
+function VerifyOTP({formData}) {
+  const [otp, setOtp] = useState("");
+  return (
+    <>
+    <Navbar/>
+    <div className='content'>
+      <form onSubmit={(event) => signupFunction(event, formData, otp)}> 
+        <OTPInput
+          value={otp}
+          onChange={setOtp}
+          numInputs={6}
+          renderSeparator={<span>-</span>}
+          renderInput={(props) => <input {...props} />}
+        />
+        <Button variant="contained" type="submit">Sign up</Button>
+      </form>
+    </div>
+    </>
+  )
+}
+
+export default function Signup() {
+  // parent component that either renders ActualSignup() or VerifyOTP() depending on whether the user has submitted their email for OTP verification
+  // this conditional render is determined by useState(pageStatus)
+  const [pageStatus, setPageStatus] = useState("signup");
+  const [formData, setFormData] = useState({ role: '', name: '', email: '', password: '' });
+  return (
+    pageStatus === "verifyOtp" ?
+      <VerifyOTP formData={formData}/> :
+      <ActualSignup formData={formData} setFormData={setFormData} setPageStatus={setPageStatus}/>
+  );
 }

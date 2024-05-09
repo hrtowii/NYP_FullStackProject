@@ -39,7 +39,7 @@ export default function About() {
                     <p>We believe in a Singapore where everyone has access to the food they need to thrive. That's why we created <b>CommuniFridge</b>, a community-driven app connecting individuals with <b>excess food</b> to those facing <b>food insecurity</b>.</p>
                 </div>
                 <div style={{width: '50%'}}>
-                    <img style={{width: '100%'}} class="roundedimg" src="/vegetables.png"></img>
+                    <img style={{width: '100%'}} className="roundedimg" src="/vegetables.png"></img>
                 </div>
             </div>
 

@@ -7,6 +7,11 @@ import cors from "cors"
 import * as crypto from 'crypto';
 // used for email verification
 import { Resend } from "resend"
+// Redis is used for storing OTP tokens temporarily
+import { createClient } from 'redis';
+
+const redisClient = createClient();
+await redisClient.connect();
 const resend = new Resend(process.env.RESEND_SECRET)
 const prisma = new PrismaClient() // -> database
 
@@ -36,9 +41,7 @@ interface User {
 }
 
 app.post('/signup', async (req, res) => {
-    // if (req.body.user == null) {return res.status(400).json({error:})}
     const user: User = req.body
-    // check if user exists
     const exists = await prisma.person.findUnique({
         where: {
             email: user.email
@@ -47,25 +50,34 @@ app.post('/signup', async (req, res) => {
     if (exists) {
         return res.status(409).json({error: "User already exists"})
     }
+    
     try {
-        const person = await prisma.person.create({
-            data: {
-                name: user.name,
-                hashedPassword: await bcrypt.hash(user.password, 12),
-                email: user.email,
-                [user.role]: {
-                    create: {}
+        // add verifying to the sign up route instead of making a separate route because you can just post that way kekw
+        const verification = req.body.otp;
+        const actualOtp = await redisClient.get(user.email);
+
+        if (actualOtp == verification) {
+            await prisma.person.create({
+                data: {
+                    name: user.name,
+                    hashedPassword: await bcrypt.hash(user.password, 12),
+                    email: user.email,
+                    [user.role]: {
+                        create: {}
+                    }
+                },
+                include: {
+                    user: true,
+                    donator: true
                 }
-            },
-            include: {
-                user: true,
-                donator: true
-            }
-        })
-        res.status(200).json({ success: true });
+            })
+            return res.status(200).json({ success: true });
+        } else {
+            return res.status(403).json({error: "Invalid OTP code"});
+        }
     } catch (e) {
         console.log(e)
-        return res.sendStatus(501)
+        return res.sendStatus(500)
     }
 })
 
@@ -79,7 +91,7 @@ app.post('/login', async (req, res) => {
         where: {
             email: request.email,
         },
-        include: { // needed to fix the type error? idk
+        include: {
             user: true,
             donator: true
         }
@@ -108,7 +120,6 @@ app.post('/login', async (req, res) => {
     }
     const ourRole = person.user ? 'user' : person.donator ? 'donator' : null;
     const token = jwt.sign(
-        // TODO: determine whether the person is a User or Donator via Prisma and set its role into the JWT token.
         { id: person.id, role: ourRole },
         process.env.JWT_SECRET,
         {
@@ -136,8 +147,10 @@ app.post('/sendEmail', async (req, res) => {
     const emailDetails: emailDetails = req.body;
     const ourOtp: number = crypto.randomInt(0, 999999);
 
-    // We need somewhere to temporarily save our OTP codes linked to the email address. The easiest way to do this is to use a temporary key-value store like Redis
-    // Alternatively, just use Vercel's KV to do it for us, but it's an external service so eh idk
+    // We need somewhere to temporarily save our OTP codes linked to the email address. 
+    // The easiest way to do this is to use a temporary key-value store like Redis, KeyDB, Garnet, Snapdragon etc.
+    // Alternatively, just use Vercel's KV to do it for us, but it's an external service so eh idk. Let's do it locally :fire:
+    await redisClient.set(emailDetails.email, ourOtp);
 
     const { data, error } = await resend.emails.send({
         from: "ecosanct@hrtowii.dev",
@@ -147,7 +160,8 @@ app.post('/sendEmail', async (req, res) => {
     });
     
     if (error) {
-      return res.status(400).json({ error });
+        console.log(error)
+        return res.status(400).json({ error });
     }
     
     return res.status(200).json({ data });

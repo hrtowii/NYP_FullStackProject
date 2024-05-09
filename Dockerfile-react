@@ -4,8 +4,7 @@ WORKDIR /react
 
 COPY package.json .
 
-RUN npm install
-RUN 
+RUN npm install --omit=dev
 
 COPY . .
 
