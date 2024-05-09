@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import "./index.css"
 import "./Signup.css"
 import { useNavigate, Link } from 'react-router-dom';
-import { Button, FormControl, TextField, InputLabel, MenuItem, Select } from '@mui/material';
+import { Button, TextField, MenuItem } from '@mui/material';
 const backendRoute = 'http://localhost:3000'
 
 // TODO: handle roles on the backend routes, post to it with the role you want to create a user/donator depending on selection
@@ -14,7 +14,7 @@ const handleSubmit = async (event, formData, navigate, setError) => {
   try {
     const response = await fetch(`${backendRoute}/signup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify(formData),
     });
     if (response.ok) {

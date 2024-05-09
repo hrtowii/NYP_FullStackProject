@@ -2,11 +2,13 @@
 ## Stack / Technologies used:
 * Vite / React on frontend 
 * Prisma ORM + SQLite on backend / database
+* Docker
+* KeyDB (Redis Fork) used for OTP email verification (temporary storage of codes)
+
 ## Running
-1. npm i
-2. npx prisma migrate dev
-3. npm run backend -> this runs on port 3000
-4. in another terminal: npm run dev
+0. Create a .env file with JWT_SECRET, RESEND_URL, and DATABASE_URL
+1. Download Docker Desktop
+2. docker compose -f docker-compose.dev.yml up --build
 
 ## Project structure
 ### src/*
@@ -20,3 +22,7 @@
 
 ## DBML visualisation
 * Just paste the generated dbml file in prisma/dbml/ into dbdiagrams.io
+
+## Todo:
+-[x] Get a docker compose file to run everything in one shot so that it's easier to run
+-[] Set up Redis (or a fork of it) to set up email OTP storage.

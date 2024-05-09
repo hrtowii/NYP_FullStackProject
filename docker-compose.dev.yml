@@ -1,0 +1,28 @@
+version: '3'
+services:
+  react:
+    container_name: react-alpine
+    depends_on: [express]
+    build:
+      context: .
+      dockerfile: Dockerfile-react
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_SECRET=${RESEND_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+  express:
+    container_name: expressjs
+    build:
+      context: .
+      dockerfile: Dockerfile-express
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_SECRET=${RESEND_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+    

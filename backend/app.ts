@@ -1,7 +1,6 @@
 // the backend will be here. Models and data will be placed in backend/models/etcetc.js
 import express from "express"
 import jwt from "jsonwebtoken"
-import dotenv from "dotenv"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
 import cors from "cors"
@@ -9,9 +8,7 @@ import * as crypto from 'crypto';
 // used for email verification
 import { Resend } from "resend"
 const resend = new Resend(process.env.RESEND_SECRET)
-
 const prisma = new PrismaClient() // -> database
-dotenv.config()
 
 const app = express();
 app.use(express.json())
@@ -21,8 +18,8 @@ app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     next();
 });
-// const corsOptions =
-// app.use(cors(corsOptions))
+
+app.use(cors())
 
 const port = process.env.PORT || 3000;
 
