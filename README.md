@@ -18,7 +18,8 @@
 * src/Landing/Login/Signup/About: Pages that are displayed when in the signed out state.
 
 ### prisma
-* schema.prisma: models for our backend data is stored here. our data is all in dev.db as we are using SQLite.
+* schema.prisma: models for our backend data is stored here. 
+* Our data is all in dev.db as we are using SQLite.
 
 ## DBML visualisation
 * Just paste the generated dbml file in prisma/dbml/ into dbdiagrams.io
