@@ -15,6 +15,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import { TokenProvider } from './utils/TokenContext.jsx'
 
 
 const router = createBrowserRouter([
@@ -79,6 +80,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <TokenProvider>
+      <RouterProvider router={router} />
+    </TokenProvider>
   </React.StrictMode>,
 )

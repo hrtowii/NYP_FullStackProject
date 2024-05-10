@@ -2,7 +2,9 @@ version: '3'
 services:
   react:
     container_name: react-alpine
-    depends_on: [express]
+    depends_on:
+      express:
+          condition: service_started
     build:
       context: .
       dockerfile: Dockerfile-react
@@ -15,6 +17,9 @@ services:
       - DATABASE_URL=${DATABASE_URL}
   express:
     container_name: expressjs
+    depends_on: 
+      redis:
+        condition: service_started
     build:
       context: .
       dockerfile: Dockerfile-express

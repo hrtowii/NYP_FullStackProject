@@ -51,7 +51,7 @@ export default function About() {
             </ul>
             <h2>How does it work?</h2>
       <div style={{display: "flex"}}>
-        <div id="gridleft" class="gridthings">
+        <div id="gridleft" className="gridthings">
             <h3>Donors</h3>
             <ul>
               <li><b>List your unwanted food:</b> Simply upload photos and descriptions of items you wish to donate (within expiry dates and following safety guidelines).</li>
@@ -59,7 +59,7 @@ export default function About() {
               <li><b>Track your impact:</b> See how your contributions have helped reduce food waste and support your community.</li>
             </ul>
         </div>
-        <div id="gridright" class="gridthings">
+        <div id="gridright" className="gridthings">
             <h3>Recipients</h3>
             <ul>
               <li><b>Browse available items:</b> Explore a variety of food options across multiple community fridges in Singapore.</li>

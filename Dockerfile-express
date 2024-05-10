@@ -7,7 +7,7 @@ COPY .env ./
 COPY ./backend ./backend
 COPY ./prisma ./prisma
 
-RUN npm install --omit=dev
+RUN npm install
 RUN npx prisma migrate dev
 
 ENV HOSTNAME "0.0.0.0"

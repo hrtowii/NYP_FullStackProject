@@ -2,7 +2,7 @@ import { React, useState } from 'react'
 import Navbar from "./components/Navbar";
 import "./index.css"
 import "./Signup.css"
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button, TextField, MenuItem } from '@mui/material';
 import OTPInput from 'react-otp-input';
 const backendRoute = 'http://localhost:3000'
@@ -28,9 +28,8 @@ const sendEmail = async (setPageStatus, event, formData, setError) => {
   }
 }
 
-const signupFunction = async (event, formData, otp) => {
+const signupFunction = async (event, formData, otp, navigate) => {
   event.preventDefault();
-  // console.log(formData)
   const requestBody = {...formData, otp} // create a new object that merges together the otp code into the existing request body
   try {
     const response = await fetch(`${backendRoute}/signup`, {
@@ -39,8 +38,7 @@ const signupFunction = async (event, formData, otp) => {
       body: JSON.stringify(requestBody),
     });
     if (response.ok) {
-      const navigate = useNavigate(); // https://reactrouter.com/en/main/hooks/use-navigate
-      navigate('/login')
+      navigate("/login")
     } else {
       console.log(response)
     }
@@ -87,12 +85,13 @@ function ActualSignup({formData, setFormData, setPageStatus}) {
 }
 
 function VerifyOTP({formData}) {
+  const navigate = useNavigate();
   const [otp, setOtp] = useState("");
   return (
     <>
     <Navbar/>
     <div className='content'>
-      <form onSubmit={(event) => signupFunction(event, formData, otp)}> 
+      <form onSubmit={(event) => signupFunction(event, formData, otp, navigate)}> 
         <OTPInput
           value={otp}
           onChange={setOtp}

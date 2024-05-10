@@ -10,8 +10,14 @@ import { Resend } from "resend"
 // Redis is used for storing OTP tokens temporarily
 import { createClient } from 'redis';
 
-const redisClient = createClient();
-await redisClient.connect();
+const redisClient = createClient({
+    // legacyMode: true,
+    // socket: {
+    //     port: 6379,
+    //     host: "redis"
+    // }
+});
+await redisClient.connect().catch(console.error);
 const resend = new Resend(process.env.RESEND_SECRET)
 const prisma = new PrismaClient() // -> database
 
@@ -136,7 +142,7 @@ app.post('/login', async (req, res) => {
             sameSite: 'strict',
             secure: true
         })
-        .json({ success: true });
+        .json({ success: true, token: token });
 })
 
 interface emailDetails {
@@ -146,10 +152,7 @@ interface emailDetails {
 app.post('/sendEmail', async (req, res) => {
     const emailDetails: emailDetails = req.body;
     const ourOtp: number = crypto.randomInt(0, 999999);
-
-    // We need somewhere to temporarily save our OTP codes linked to the email address. 
-    // The easiest way to do this is to use a temporary key-value store like Redis, KeyDB, Garnet, Snapdragon etc.
-    // Alternatively, just use Vercel's KV to do it for us, but it's an external service so eh idk. Let's do it locally :fire:
+    // redis set otp code
     await redisClient.set(emailDetails.email, ourOtp);
 
     const { data, error } = await resend.emails.send({

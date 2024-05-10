@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import { jwtVerify } from 'jose'; // we use jose instead of jsonwebtoken in the browser, because of this issue https://www.thecodingcouple.com/uncaught-typeerror-util-inherits-is-not-a-function/
 import { Navigate, useLocation } from 'react-router-dom';
 // NOTE: all routes that need authentication will go through here for JWT validation. 
@@ -12,19 +12,22 @@ import { Navigate, useLocation } from 'react-router-dom';
 // children: the actual component obviously
 // allowedRoles: donator || user
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
-    const location = useLocation();
-    // get from our token our user role
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
-    const token = tokenCookie ? tokenCookie.split('=')[1] : null;
+import { TokenContext } from '../utils/TokenContext';
+import {Buffer} from "buffer"
+function parseJwt(token) {
+    var base64Payload = token.split('.')[1];
+    var payload = Buffer.from(base64Payload, 'base64');
+    return JSON.parse(payload.toString());
+}
 
+const ProtectedRoute = ({ children, allowedRoles }) => {
+    const { token, setToken } = useContext(TokenContext);
     if (!token) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     try {
-        const { payload } = jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
+        const { payload } = parseJwt(token)
         const userRole = payload.role;
 
         if (!allowedRoles.includes(userRole)) {
@@ -33,7 +36,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
         return children;
     } catch (error) {
-        console.log(e);
+        console.log(error);
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
