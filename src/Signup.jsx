@@ -11,6 +11,7 @@ const backendRoute = 'http://localhost:3000'
 const sendEmail = async (setPageStatus, event, formData, setError) => {
   event.preventDefault();
   try {
+    //0. CHECK IF THE ACCOUNT EXISTS FIRST
     //1. send email. if return 200, change to another component by setting state, then having parent component conditionally render
     const response = await fetch(`${backendRoute}/sendEmail`, {
       method: 'POST',
@@ -20,11 +21,12 @@ const sendEmail = async (setPageStatus, event, formData, setError) => {
     if (response.ok) {
       setPageStatus("verifyOtp")
     } else {
-      setError('Failed to create account')
+      let ourError = await response.json()
+      setError(`Failed to create account. Error: ${ourError.error}`)
     }
   } catch (e) {
     console.log(e)
-    setError(e)
+    setError("Unexpected error signing up.")
   }
 }
 
@@ -77,7 +79,7 @@ function ActualSignup({formData, setFormData, setPageStatus}) {
           <TextField margin="normal" label="Password" type="password" name="password" value={formData.password} onChange={handleChange} />
           <Button variant="contained" type="submit">Sign up</Button>
           <p className='smallText'>Already a member? <Link to={'/login'}>Log in here</Link></p>
-          {/* {error && <p style={{ color: 'red' }}>{error}</p>} */}
+          {error && <p style={{ color: 'red' }}>{error}</p>}
         </form>
       </div>
     </>

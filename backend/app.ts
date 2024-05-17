@@ -47,16 +47,7 @@ interface User {
 }
 
 app.post('/signup', async (req, res) => {
-    const user: User = req.body
-    const exists = await prisma.person.findUnique({
-        where: {
-            email: user.email
-        }
-    })
-    if (exists) {
-        return res.status(409).json({error: "User already exists"})
-    }
-    
+    const user: User = req.body    
     try {
         // add verifying to the sign up route instead of making a separate route because you can just post that way kekw
         const verification = req.body.otp;
@@ -151,6 +142,14 @@ interface emailDetails {
 
 app.post('/sendEmail', async (req, res) => {
     const emailDetails: emailDetails = req.body;
+    const exists = await prisma.person.findUnique({
+        where: {
+            email: emailDetails.email
+        }
+    })
+    if (exists) {
+        return res.status(409).json({error: "User already exists"})
+    }
     const ourOtp: number = crypto.randomInt(0, 999999);
     // redis set otp code
     await redisClient.set(emailDetails.email, ourOtp);
