@@ -1,0 +1,16 @@
+FROM node:18-alpine
+
+WORKDIR /express-server
+
+COPY package.json ./
+COPY .env ./
+COPY ./backend ./backend
+COPY ./prisma ./prisma
+
+RUN npm install
+RUN npx prisma migrate dev
+
+ENV HOSTNAME "0.0.0.0"
+EXPOSE 3000
+
+CMD [ "npm", "run", "backend" ]

@@ -1,0 +1,42 @@
+version: '3'
+services:
+  react:
+    container_name: react-alpine
+    depends_on:
+      express:
+          condition: service_started
+    build:
+      context: .
+      dockerfile: Dockerfile-react
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_SECRET=${RESEND_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+  express:
+    container_name: expressjs
+    depends_on: 
+      redis:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: Dockerfile-express
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_SECRET=${RESEND_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: redis
+    command: redis-server /etc/keydb/redis.conf
+    volumes:
+      - ./redis.conf:/etc/keydb/redis.conf
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    # no need data persistence so we won't add a volume

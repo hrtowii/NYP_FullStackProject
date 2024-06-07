@@ -1,12 +1,25 @@
 // the backend will be here. Models and data will be placed in backend/models/etcetc.js
 import express from "express"
 import jwt from "jsonwebtoken"
-import dotenv from "dotenv"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
 import cors from "cors"
+import * as crypto from 'crypto';
+// used for email verification
+import { Resend } from "resend"
+// Redis is used for storing OTP tokens temporarily
+import { createClient } from 'redis';
+
+const redisClient = createClient({
+    // legacyMode: true,
+    // socket: {
+    //     port: 6379,
+    //     host: "redis"
+    // }
+});
+await redisClient.connect().catch(console.error);
+const resend = new Resend(process.env.RESEND_SECRET)
 const prisma = new PrismaClient() // -> database
-dotenv.config()
 
 const app = express();
 app.use(express.json())
@@ -16,8 +29,8 @@ app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     next();
 });
-// const corsOptions =
-// app.use(cors(corsOptions))
+
+app.use(cors())
 
 const port = process.env.PORT || 3000;
 
@@ -30,32 +43,38 @@ interface User {
     name: string,
     email: string,
     password: string,
+    role: "user" | "donator",
 }
 
 app.post('/signup', async (req, res) => {
-    // if (req.body.user == null) {return res.status(400).json({error:})}
-    const user: User = req.body
-    // check if user exists
-    const exists = await prisma.person.findUnique({
-        where: {
-            email: user.email
-        }
-    })
-    if (exists) {
-        return res.status(409).json({error: "User already exists"})
-    }
+    const user: User = req.body    
     try {
-        const person = await prisma.person.create({
-            data: {
-                name: user.name,
-                hashedPassword: await bcrypt.hash(user.password, 12),
-                email: user.email,
-            }
-        })
-        res.status(200).json({ success: true });
+        // add verifying to the sign up route instead of making a separate route because you can just post that way kekw
+        const verification = req.body.otp;
+        const actualOtp = await redisClient.get(user.email);
+
+        if (actualOtp == verification) {
+            await prisma.person.create({
+                data: {
+                    name: user.name,
+                    hashedPassword: await bcrypt.hash(user.password, 12),
+                    email: user.email,
+                    [user.role]: {
+                        create: {}
+                    }
+                },
+                include: {
+                    user: true,
+                    donator: true
+                }
+            })
+            return res.status(200).json({ success: true });
+        } else {
+            return res.status(403).json({error: "Invalid OTP code"});
+        }
     } catch (e) {
         console.log(e)
-        return res.sendStatus(501)
+        return res.sendStatus(500)
     }
 })
 
@@ -68,6 +87,10 @@ app.post('/login', async (req, res) => {
     const person = await prisma.person.findUnique({
         where: {
             email: request.email,
+        },
+        include: {
+            user: true,
+            donator: true
         }
     })
     if (!person) {
@@ -92,8 +115,9 @@ app.post('/login', async (req, res) => {
             .set('Content-Type', 'application/json')
             .json(responseObj);
     }
+    const ourRole = person.user ? 'user' : person.donator ? 'donator' : null;
     const token = jwt.sign(
-        { id: person.id },
+        { id: person.id, role: ourRole },
         process.env.JWT_SECRET,
         {
             algorithm: 'HS256',
@@ -109,7 +133,40 @@ app.post('/login', async (req, res) => {
             sameSite: 'strict',
             secure: true
         })
-        .json({ success: true });
+        .json({ success: true, token: token });
+})
+
+interface emailDetails {
+    email: string,
+}
+
+app.post('/sendEmail', async (req, res) => {
+    const emailDetails: emailDetails = req.body;
+    const exists = await prisma.person.findUnique({
+        where: {
+            email: emailDetails.email
+        }
+    })
+    if (exists) {
+        return res.status(409).json({error: "User already exists"})
+    }
+    const ourOtp: number = crypto.randomInt(0, 999999);
+    // redis set otp code
+    await redisClient.set(emailDetails.email, ourOtp);
+
+    const { data, error } = await resend.emails.send({
+        from: "ecosanct@hrtowii.dev",
+        to: [emailDetails.email],
+        subject: "Test email for fullstack",
+        html: `Email verification code: ${ourOtp}`,
+    });
+    
+    if (error) {
+        console.log(error)
+        return res.status(400).json({ error });
+    }
+    
+    return res.status(200).json({ data });
 })
 
 app.post('/logout', async (req, res) => {

@@ -5,3 +5,20 @@ form {
     display: flex;
     flex-direction: column;
 }
+
+.inputSplit {
+    display: flex;
+    gap: 12px;
+}
+
+.roleField {
+    display: flex;
+    width: 20%;
+}
+
+.roleField > .MuiTextField-root {
+    width: 100%;
+}
+.inputSplit > .MuiTextField-root {
+    width: 80%;
+}
