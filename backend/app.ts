@@ -11,11 +11,11 @@ import { Resend } from "resend"
 import { createClient } from 'redis';
 
 const redisClient = createClient({
-    // legacyMode: true,
-    // socket: {
-    //     port: 6379,
-    //     host: "redis"
-    // }
+    legacyMode: true,
+    socket: {
+        port: 6379,
+        host: "redis"
+    }
 });
 await redisClient.connect().catch(console.error);
 const resend = new Resend(process.env.RESEND_SECRET)

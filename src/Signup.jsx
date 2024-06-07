@@ -4,7 +4,8 @@ import "./index.css"
 import "./Signup.css"
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, TextField, MenuItem } from '@mui/material';
-import OTPInput from 'react-otp-input';
+import { MuiOtpInput } from 'mui-one-time-password-input'
+
 const backendRoute = 'http://localhost:3000'
 // TODO: handle roles on the backend routes, post to it with the role you want to create a user/donator depending on selection
 // TODO: handle email OTP verification with Resend
@@ -94,12 +95,10 @@ function VerifyOTP({formData}) {
     <Navbar/>
     <div className='content'>
       <form onSubmit={(event) => signupFunction(event, formData, otp, navigate)}> 
-        <OTPInput
+        <MuiOtpInput
           value={otp}
           onChange={setOtp}
-          numInputs={6}
-          renderSeparator={<span>-</span>}
-          renderInput={(props) => <input {...props} />}
+          length={6}
         />
         <Button variant="contained" type="submit">Sign up</Button>
       </form>
