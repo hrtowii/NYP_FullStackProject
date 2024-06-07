@@ -21,23 +21,24 @@ function parseJwt(token) {
 }
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-    const { token, setToken } = useContext(TokenContext);
+    const { token, updateToken } = useContext(TokenContext);
     if (!token) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        console.log("No token")
+        return <Navigate to="/login" />;
     }
 
     try {
-        const { payload } = parseJwt(token)
+        const payload = parseJwt(token)
         const userRole = payload.role;
 
         if (!allowedRoles.includes(userRole)) {
-            return <Navigate to="/forbidden" state={{ from: location }} replace />;
+            return <Navigate to="/forbidden" />;
         }
 
         return children;
     } catch (error) {
         console.log(error);
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        return <Navigate to="/login" />;
     }
 
 };

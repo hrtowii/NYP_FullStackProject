@@ -7,6 +7,7 @@ export const TokenProvider = ({ children }) => {
   const [token, setToken] = useState(null);
 
   const updateToken = (newToken) => {
+    console.log("new token: "+newToken)
     setToken(newToken);
   };
 

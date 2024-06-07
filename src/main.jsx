@@ -55,10 +55,9 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     // NOTE: include subroutes under user here in the future 
-
     // children: [
     //   {
-    //     path: "profile", -> so this would be /user/profile
+    //     path: "profile",
     //     element: <UserProfilePage />,
     //   },
     //   {
@@ -75,6 +74,16 @@ const router = createBrowserRouter([
         <DonatorLanding />
       </ProtectedRoute>
     ),
+    // children: [
+    //   {
+    //     path: "profile",
+    //     element: <UserProfilePage />,
+    //   },
+    //   {
+    //     path: "settings",
+    //     element: <UserSettingsPage />,
+    //   },
+    // ],
   },
 ]);
 
