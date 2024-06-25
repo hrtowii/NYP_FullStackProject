@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserLanding from "./user/UserLanding.jsx"
 import DonatorLanding from './donator/DonatorLanding.jsx'
 import Reservation from './Reservation.jsx'
+import DonatorEvents from './donator/DonatorEvents.jsx'
 
 import './index.css'
 import {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
   {
     path: "/reservation",
     element: <Reservation/>
+  },
+  {
+    path: "/events",
+    element: <DonatorEvents/>
   },
   {
     path: "/forbidden",
@@ -84,6 +89,12 @@ const router = createBrowserRouter([
         <DonatorLanding />
       </ProtectedRoute>
     ),
+    // children: [
+    //   {
+    //     path: "events",
+    //     element: <DonatorEvents />
+    //   }
+    // ]
     // children: [
     //   {
     //     path: "profile",

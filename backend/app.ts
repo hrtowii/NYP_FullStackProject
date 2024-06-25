@@ -236,7 +236,6 @@ app.post('/reservation', async (req, res) => {
                 } 
             }
         });
-
         // Create or find donation
         const donation = await prisma.donation.upsert({
             where: { id: 1 },
@@ -308,7 +307,82 @@ app.get('/reservation', async (req, res) => {
     return res.status(200).json({ success: true });
 })
 
+interface EventBody {
+    title: string,
+    summary: string,
+    date: Date,
+    donatorId: number,
+}
 
+// {
+//     title: asdasdasd
+//     summary: asdasdasd
+//     date: Date,
+//     donatorId: 1 use this for postman, when sending data
+// }
+app.post('/event', async (req, res) => {
+    const { title, summary, date, donatorId }: EventBody = req.body;
+    console.log(req.body);
+    
+    try {
+      const newEvent = await prisma.event.create({
+        data: {
+          title,
+          summary,
+          dates: new Date(), // Assuming 'date' is a string in a valid date format
+          donatorId: 1, // Ensure donatorId is an integer
+        },
+      });
+      
+      res.status(200).json(newEvent);
+    } catch (error) {
+      console.error('Error creating event:', error);
+      res.status(500).json({ error: 'Failed to create event' });
+    }
+  });
+
+interface updateEventBody {
+    eventId: number,
+    title: string,
+    summary: string,
+    date: Date,
+    donatorId: number,
+}
+app.put('/event', async (req, res) => {
+    const {eventId, title, summary, date, donatorId} = req.body
+    const updatedEvent = await prisma.event.update({
+        where: {
+            id: eventId
+        },
+        data: {
+            title: title,
+            summary: summary,
+            dates: date ? new Date() : undefined,
+            donatorId: donatorId    
+        }
+    })
+    res.status(200).json(updatedEvent)
+})
+
+app.post('/findeventsfromdonator', async (req, res) => {
+    const {donatorId} = req.body
+    const donator = await prisma.event.findMany({
+        where: {
+            donatorId: donatorId
+        }
+    })
+    res.status(200).json(donator)
+})
+
+app.delete('/event/:id', async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    await prisma.event.delete({
+        where: {
+            id: eventId
+        }
+    })
+    res.status(200)
+})
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req, res, next) {
     const header = req.headers['authorization']
