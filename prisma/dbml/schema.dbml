@@ -45,6 +45,7 @@ Table Donation {
 
 Table Food {
   id Int [pk, increment]
+  imageLink String [not null]
   quantity Int [not null]
   type String [not null]
   expiryDate DateTime [not null]
@@ -62,6 +63,9 @@ Table Reservation {
   user User [not null]
   foodId Int [not null]
   food Food [not null]
+  CollectionTimeStart DateTime [not null]
+  CollectionTimeEnd DateTime [not null]
+  CollectionStatus String [not null]
 }
 
 Table Review {

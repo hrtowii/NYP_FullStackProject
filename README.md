@@ -32,3 +32,6 @@
 ## Todo:
 -[x] Get a docker compose file to run everything in one shot so that it's easier to run
 -[x] Set up Redis (or a fork of it) to set up email OTP storage.
+
+## Iruss Eng Notes:
+- when update prisma db must enter 'npx prisma migrate' cmd

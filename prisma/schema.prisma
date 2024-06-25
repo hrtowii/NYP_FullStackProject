@@ -16,12 +16,12 @@ datasource db {
 }
 
 model Person {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  hashedPassword  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  name           String
+  hashedPassword String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user    User?
   donator Donator?
@@ -56,6 +56,7 @@ model Donation {
 
 model Food {
   id          Int           @id @default(autoincrement())
+  imageLink   String
   quantity    Int
   type        String
   expiryDate  DateTime
@@ -65,14 +66,23 @@ model Food {
   Reservation Reservation[]
 }
 
+// enum ourStatus {
+//   PENDING
+//   COMPLETE
+//   CANCELLED
+// }
+
 model Reservation {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  foodId    Int
-  food      Food     @relation(fields: [foodId], references: [id])
+  id                  Int      @id @default(autoincrement())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  userId              Int
+  user                User     @relation(fields: [userId], references: [id])
+  foodId              Int
+  food                Food     @relation(fields: [foodId], references: [id])
+  CollectionTimeStart DateTime
+  CollectionTimeEnd   DateTime
+  CollectionStatus    String
 }
 
 model Review {

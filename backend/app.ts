@@ -22,7 +22,7 @@ const resend = new Resend(process.env.RESEND_SECRET)
 const prisma = new PrismaClient() // -> database
 
 const app = express();
-app.use(express.json())
+app.use(express.json());
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
@@ -30,7 +30,7 @@ app.use(function(req, res, next) {
     next();
 });
 
-app.use(cors())
+app.use(cors());
 
 const port = process.env.PORT || 3000;
 
@@ -173,6 +173,141 @@ app.post('/logout', async (req, res) => {
     return res.status(200).json({ success: true })
               .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
 })
+
+
+
+// Iruss - Reservation
+let reservationList: String[] = [];
+
+interface ReservationBody {
+    userId: number;
+    foodId: number;
+    collectionTimeStart: string;
+    collectionTimeEnd: string;
+    collectionStatus: 'PENDING' | 'COMPLETE' | 'CANCELLED';
+}   
+
+app.post('/reservation', async (req, res) => {
+    try {
+        const {
+            userId,
+            foodId,
+            collectionTimeStart,
+            collectionTimeEnd,
+            collectionStatus
+        }: ReservationBody = req.body;
+        console.log(req.body);
+
+        // Validate input
+        if (!userId || !foodId || !collectionTimeStart || !collectionTimeEnd || !collectionStatus) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
+
+        // Create or find person
+        const person = await prisma.person.upsert({
+            where: { id: userId },
+            update: {},
+            create: {
+                id: userId,
+                email: `user${userId}@example.com`,
+                name: `User ${userId}`,
+                hashedPassword: await bcrypt.hash('defaultpassword', 10)
+            }
+        });
+
+        // Create or find user
+        const user = await prisma.user.upsert({
+            where: { id: userId },
+            update: {},
+            create: { person: { connect: { id: userId } } }
+        });
+
+        // Create or find donator
+        const donator = await prisma.donator.upsert({
+            where: { id: 1 },
+            update: {},
+            create: { 
+                person: { 
+                    create: {
+                        email: 'donator@example.com',
+                        name: 'Mock Donator',
+                        hashedPassword: await bcrypt.hash('defaultpassword', 10)
+                    }
+                } 
+            }
+        });
+
+        // Create or find donation
+        const donation = await prisma.donation.upsert({
+            where: { id: 1 },
+            update: {},
+            create: { 
+                id: 1,
+                title: "Mock Donation",
+                foodReserved: false,
+                donatorId: donator.id
+            }
+        });
+
+        // Create or find food
+        const food = await prisma.food.upsert({
+            where: { id: foodId },
+            update: {},
+            create: { 
+                id: foodId, 
+                imageLink: "https://example.com/mock-food-image.jpg", 
+                quantity: 1, 
+                type: "Mock Food", 
+                expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+                donationId: donation.id 
+            }
+        });
+
+        // Create the reservation
+        const newReservation = await prisma.reservation.create({
+            data: {
+                userId: user.id,
+                foodId: food.id,
+                CollectionTimeStart: new Date(collectionTimeStart),
+                CollectionTimeEnd: new Date(collectionTimeEnd),
+                CollectionStatus: collectionStatus
+            },
+            include: {
+                user: {
+                    include: {
+                        person: true
+                    }
+                },
+                food: {
+                    include: {
+                        donation: {
+                            include: {
+                                donator: {
+                                    include: {
+                                        person: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return res.status(201).json({ success: true, data: newReservation });
+    } catch (error) {
+        console.error("Error creating reservation:", error);
+        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    }
+});
+
+// Retrieve reservations
+app.get('/reservation', async (req, res) => {
+    res.json(reservationList);
+    
+    return res.status(200).json({ success: true });
+})
+
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req, res, next) {
