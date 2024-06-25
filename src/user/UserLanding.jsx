@@ -4,8 +4,8 @@ import './UserLanding.css'
 
 export default function UserLanding() {
   return (
-    <div>
-      
-    </div>
+    <>
+    
+    </>
   )
 }
