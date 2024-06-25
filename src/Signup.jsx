@@ -94,7 +94,7 @@ function VerifyOTP({formData}) {
     <>
     <Navbar/>
     <div className='content'>
-      <form onSubmit={(event) => signupFunction(event, formData, otp, navigate)}> 
+      <form onSubmit={(event) => signupFunction(event, formData, otp, navigate, navigate)}> 
         <MuiOtpInput
           value={otp}
           onChange={setOtp}

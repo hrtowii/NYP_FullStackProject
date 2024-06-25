@@ -10,6 +10,32 @@ import {Buffer} from "buffer"
 const backendRoute = 'http://localhost:3000'
 
 function parseJwt(token) {
+  var base64Url = token.split('.')[1];
+  var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+function navigateToAppropiatePage(navigate) {
+  const cookies = document.cookie.split(';');
+  const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
+  const token = tokenCookie ? tokenCookie.split('=')[1] : null;
+  const {payload} = parseJwt(token)
+  console.log(payload)
+  const userRole = payload.role;
+  if (userRole == "user") {
+    navigate("/user")
+  } else if (userRole == "donator") {
+    navigate("/donator")
+  } else {
+    console.log("wtf?")
+  }
+}
+
+const handleSubmit = async (event, formData, setError, navigate) => {
+function parseJwt(token) {
     var base64Payload = token.split('.')[1];
     var payload = Buffer.from(base64Payload, 'base64');
     return JSON.parse(payload.toString());
@@ -37,11 +63,7 @@ const handleSubmit = async (event, formData, setError, navigate, updateToken, to
     });
     if (response.ok) {
       // TODO: determine whether the user is donator or user, then navigate to the corresponding landing page. Ideally, get the token then send an api route to lookup
-      let whatever = await response.json();
-      const token = whatever.token
-      console.log(token)
-      updateToken(token);
-      navigateToAppropiatePage(navigate, token)
+      navigateToAppropiatePage(navigate)
     } else {
       console.log(response)
       setError('Failed to login')
