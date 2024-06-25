@@ -10,6 +10,11 @@
 1. Download Docker Desktop
 2. docker compose up --build
 
+1. docker compose up --build redis
+2. npm run backend
+3. npm run dev
+
+
 ## Project structure
 ### src/*
 * src/user directory: all the frontend pages for User (reservation, frontpage, making comments) are stored here
