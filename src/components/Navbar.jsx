@@ -13,6 +13,8 @@ export default function Navbar() {
       <NavLink to={"/review"}>Reviews</NavLink>
       <NavLink to={"/reservation"}>Reservations (temporary)</NavLink>
       <NavLink to={"/fridge"}>Fridge (temporary)</NavLink>
+      <NavLink to={"/events"}>Manage Events</NavLink>
+
     </div>
   )
 }
@@ -24,6 +26,8 @@ export function DonatorNavbar() {
       <NavLink to={"/donator/inventory"}>Inventory</NavLink>
       <NavLink to={"/donator/donations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
+      {/* <NavLink to={"/donator/events"}>Manage Events</NavLink> */}
+      {/* Commented this out ^ will change to put in donator */}
     </div>
   )
 }

@@ -12,6 +12,7 @@ import UserLanding from "./user/UserLanding.jsx"
 import DonatorLanding from './donator/DonatorLanding.jsx'
 import Reservation from './Reservation.jsx'
 import Fridge from './Fridge.jsx'
+import DonatorEvents from './donator/DonatorEvents.jsx'
 
 import './index.css'
 import {
@@ -51,6 +52,10 @@ const router = createBrowserRouter([
     element: <Fridge/>
   },
   {
+    path: "/events",
+    element: <DonatorEvents/>
+  },
+  {
     path: "/forbidden",
     element: <Forbidden/>
   },
@@ -63,43 +68,30 @@ const router = createBrowserRouter([
 
   // MARK: User protected routes
   {
-    path: "user",
+    path: "/user",
     element: (
       <ProtectedRoute allowedRoles={['user']}>
         <UserLanding />
       </ProtectedRoute>
     ),
-    // NOTE: include subroutes under user here in the future 
-    // children: [
-    //   {
-    //     path: "profile",
-    //     element: <UserProfilePage />,
-    //   },
-    //   {
-    //     path: "settings",
-    //     element: <UserSettingsPage />,
-    //   },
-    // ],
   },
   // MARK: Donator protected routes
   {
-    path: "donator",
+    path: "/donator",
     element: (
       <ProtectedRoute allowedRoles={['donator']}>
         <DonatorLanding />
       </ProtectedRoute>
     ),
-    // children: [
-    //   {
-    //     path: "profile",
-    //     element: <UserProfilePage />,
-    //   },
-    //   {
-    //     path: "settings",
-    //     element: <UserSettingsPage />,
-    //   },
-    // ],
   },
+  {
+    path: "/donator/donations",
+    element: (
+      <ProtectedRoute allowedRoles={['donator']}>
+        <DonatorLanding/>
+      </ProtectedRoute>
+    )
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -41,6 +41,7 @@ model Donator {
   person    Person     @relation(fields: [id], references: [id])
   donations Donation[]
   reviews   Review[]   @relation("DonatorReviews")
+  events    Event[]    @relation("Events")
 
   @@id([id])
 }
@@ -95,4 +96,13 @@ model Review {
   // user      User     @relation("UserReviews", fields: [userId], references: [id])
   donatorId Int
   donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
+}
+
+model Event {
+  id             Int      @id @default(autoincrement())
+  title          String
+  summary        String
+  dates          DateTime
+  donatorId      Int
+  eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
 }

@@ -28,6 +28,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
     try {
+        // const { payload } = jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
         const payload = parseJwt(token)
         const userRole = payload.role;
 

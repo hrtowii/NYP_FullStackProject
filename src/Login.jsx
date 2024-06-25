@@ -5,15 +5,18 @@ import "./Login.css"
 import { useNavigate, Link } from 'react-router-dom';
 import { Button, TextField } from '@mui/material';
 import { TokenContext } from './utils/TokenContext';
-import {Buffer} from "buffer"
 
 const backendRoute = 'http://localhost:3000'
 
 function parseJwt(token) {
-    var base64Payload = token.split('.')[1];
-    var payload = Buffer.from(base64Payload, 'base64');
-    return JSON.parse(payload.toString());
+  var base64Url = token.split('.')[1];
+  var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
 }
+
 function navigateToAppropiatePage(navigate, token) {
   const payload = parseJwt(token)
   const userRole = payload.role;
@@ -51,7 +54,6 @@ const handleSubmit = async (event, formData, setError, navigate, updateToken, to
     // setError(e)
   }
 }
-
 export default function Login() {
   const { token, updateToken } = useContext(TokenContext);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });

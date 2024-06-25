@@ -28,6 +28,7 @@ Table Donator {
   person Person [not null]
   donations Donation [not null]
   reviews Review [not null]
+  events Event [not null]
 
   indexes {
     (id) [pk]
@@ -78,6 +79,15 @@ Table Review {
   donator Donator [not null]
 }
 
+Table Event {
+  id Int [pk, increment]
+  title String [not null]
+  summary String [not null]
+  dates DateTime [not null]
+  donatorId Int [not null]
+  eventOrganiser Donator [not null]
+}
+
 Ref: User.id - Person.id
 
 Ref: Donator.id - Person.id
@@ -91,3 +101,5 @@ Ref: Reservation.userId > User.id
 Ref: Reservation.foodId > Food.id
 
 Ref: Review.donatorId > Donator.id
+
+Ref: Event.donatorId > Donator.id
