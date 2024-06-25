@@ -10,6 +10,7 @@ export default function Navbar() {
       <NavLink to={"/about"}>About Us</NavLink>
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
+      <NavLink to={"/reservation"}>Reservation(temporary)</NavLink>  
     </div>
   )
 }
@@ -21,6 +22,19 @@ export function DonatorNavbar() {
       <NavLink to={"/donator/inventory"}>Inventory</NavLink>
       <NavLink to={"/donator/donations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
+    </div>
+  )
+}
+
+export function UserNavbar() {
+  return (
+    <div className='navbar'>
+      {/* Navlink to "User Home" */}
+      {/* Navlink to "Reservation" Page */}
+      {/* Navlink to "Fridge" Page */}
+      {/* Navlink to "Reviews" Page */}
+      {/* Navlink to "Events" Page */}
+
     </div>
   )
 }

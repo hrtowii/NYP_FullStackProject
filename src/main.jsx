@@ -9,6 +9,7 @@ import Forbidden from './Forbidden.jsx'
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserLanding from "./user/UserLanding.jsx"
 import DonatorLanding from './donator/DonatorLanding.jsx'
+import Reservation from './Reservation.jsx'
 
 import './index.css'
 import {
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
   {
     path: "/about",
     element: <About/>
+  },
+  {
+    path: "/reservation",
+    element: <Reservation/>
   },
   {
     path: "/forbidden",
