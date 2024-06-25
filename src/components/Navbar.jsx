@@ -11,6 +11,8 @@ export default function Navbar() {
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
       <NavLink to={"/review"}>Reviews</NavLink>
+      <NavLink to={"/reservation"}>Reservations (temporary)</NavLink>
+      <NavLink to={"/fridge"}>Fridge (temporary)</NavLink>
     </div>
   )
 }
