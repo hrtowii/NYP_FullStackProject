@@ -5,7 +5,6 @@ import "./Login.css"
 import { useNavigate, Link } from 'react-router-dom';
 import { Button, TextField } from '@mui/material';
 import { TokenContext } from './utils/TokenContext';
-import {Buffer} from "buffer"
 
 const backendRoute = 'http://localhost:3000'
 
@@ -18,28 +17,6 @@ function parseJwt(token) {
   return JSON.parse(jsonPayload);
 }
 
-function navigateToAppropiatePage(navigate) {
-  const cookies = document.cookie.split(';');
-  const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
-  const token = tokenCookie ? tokenCookie.split('=')[1] : null;
-  const {payload} = parseJwt(token)
-  console.log(payload)
-  const userRole = payload.role;
-  if (userRole == "user") {
-    navigate("/user")
-  } else if (userRole == "donator") {
-    navigate("/donator")
-  } else {
-    console.log("wtf?")
-  }
-}
-
-const handleSubmit = async (event, formData, setError, navigate) => {
-function parseJwt(token) {
-    var base64Payload = token.split('.')[1];
-    var payload = Buffer.from(base64Payload, 'base64');
-    return JSON.parse(payload.toString());
-}
 function navigateToAppropiatePage(navigate, token) {
   const payload = parseJwt(token)
   const userRole = payload.role;
@@ -63,7 +40,11 @@ const handleSubmit = async (event, formData, setError, navigate, updateToken, to
     });
     if (response.ok) {
       // TODO: determine whether the user is donator or user, then navigate to the corresponding landing page. Ideally, get the token then send an api route to lookup
-      navigateToAppropiatePage(navigate)
+      let whatever = await response.json();
+      const token = whatever.token
+      console.log(token)
+      updateToken(token);
+      navigateToAppropiatePage(navigate, token)
     } else {
       console.log(response)
       setError('Failed to login')
@@ -73,7 +54,6 @@ const handleSubmit = async (event, formData, setError, navigate, updateToken, to
     // setError(e)
   }
 }
-
 export default function Login() {
   const { token, updateToken } = useContext(TokenContext);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
