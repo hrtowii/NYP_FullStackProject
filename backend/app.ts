@@ -517,7 +517,15 @@ app.delete('/event/:id', async (req, res) => {
     })
     res.status(200)
 })
-
+app.get('/events', async (req, res) => {
+    try {
+      const events = await prisma.event.findMany();
+      res.status(200).json(events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      res.status(500).json({ error: 'Failed to fetch events' });
+    }
+  });
 
 // MARK: review CRUD
 app.post('/review_submit', async (req, res) => {
@@ -561,6 +569,7 @@ app.post('/reviews/:id', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req: any, res: any, next: any) {
