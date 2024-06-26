@@ -25,6 +25,7 @@ model Person {
 
   user    User?
   donator Donator?
+  admin Admin?
 }
 
 model User {
@@ -44,6 +45,12 @@ model Donator {
   events    Event[]    @relation("Events")
 
   @@id([id])
+}
+
+model Admin {
+  id Int @unique
+  @@id([id])
+  person Person @relation(fields: [id], references: [id])
 }
 
 model Donation {

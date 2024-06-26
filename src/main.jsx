@@ -14,6 +14,7 @@ import Reservation from './user/Reservation.jsx'  // gon change to ./user/Reserv
 import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
+import Profile from './Profile.jsx'
 import ReservationForm from './user/Cart.jsx'
 
 import './index.css'
@@ -22,6 +23,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
+import AdminLanding from './admin/AdminLanding.jsx'
 
 
 const router = createBrowserRouter([
@@ -62,6 +64,10 @@ const router = createBrowserRouter([
     element: <Cart/>
   },
   {
+    path: "/profile/:donatorId",
+    element: <Profile/>
+  },
+  {
     path: "/forbidden",
     element: <Forbidden/>
   },
@@ -76,7 +82,7 @@ const router = createBrowserRouter([
   {
     path: "/user",
     element: (
-      <ProtectedRoute allowedRoles={['user']}>
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
         <UserLanding />
       </ProtectedRoute>
     ),
@@ -85,7 +91,7 @@ const router = createBrowserRouter([
   {
     path: "/donator",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonatorLanding />
       </ProtectedRoute>
     ),
@@ -93,11 +99,20 @@ const router = createBrowserRouter([
   {
     path: "/donator/donations",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonatorLanding/>
       </ProtectedRoute>
     )
-  }
+  },
+  // MARK: Admin protected routes
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminLanding/>
+      </ProtectedRoute>
+    )
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

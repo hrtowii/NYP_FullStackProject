@@ -5,8 +5,7 @@ import "./Login.css"
 import { useNavigate, Link } from 'react-router-dom';
 import { Button, TextField } from '@mui/material';
 import { TokenContext } from './utils/TokenContext';
-
-const backendRoute = 'http://localhost:3000'
+import { backendRoute } from './utils/BackendUrl';
 
 function parseJwt(token) {
   var base64Url = token.split('.')[1];
@@ -24,8 +23,10 @@ function navigateToAppropiatePage(navigate, token) {
     navigate("/user")
   } else if (userRole == "donator") {
     navigate("/donator")
+  } else if (userRole == "admin") {
+    navigate("/admin")
   } else {
-    console.log("wtf?")
+    console.log(userRole)
   }
 }
 

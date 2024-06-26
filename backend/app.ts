@@ -37,13 +37,14 @@ const port = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.send('this is homepage')
 })
+// MARK: Auth
 
 // what the user object should look like:
 interface User {
     name: string,
     email: string,
     password: string,
-    role: "user" | "donator",
+    role: "user" | "donator" | "admin",
 }
 
 app.post('/signup', async (req, res) => {
@@ -65,7 +66,8 @@ app.post('/signup', async (req, res) => {
                 },
                 include: {
                     user: true,
-                    donator: true
+                    donator: true,
+                    admin: true
                 }
             })
             return res.status(200).json({ success: true });
@@ -90,7 +92,8 @@ app.post('/login', async (req, res) => {
         },
         include: {
             user: true,
-            donator: true
+            donator: true,
+            admin: true
         }
     })
     if (!person) {
@@ -115,7 +118,7 @@ app.post('/login', async (req, res) => {
             .set('Content-Type', 'application/json')
             .json(responseObj);
     }
-    const ourRole = person.user ? 'user' : person.donator ? 'donator' : null;
+    const ourRole = person.user ? 'user' : person.donator ? 'donator' : person.admin ? "admin" : null;
     const token = jwt.sign(
         { id: person.id, role: ourRole },
         process.env.JWT_SECRET,
@@ -174,7 +177,131 @@ app.post('/logout', async (req, res) => {
               .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
 })
 
+//MARK: Admin functions
 
+// Create a test admin account. NEVER ADD THIS IN REAL LIFE
+// app.post('/createAdminAccount', async(req, res) => {
+//     const user: User = {
+//         name: "admin",
+//         email: "test@gmail.com",
+//         password: "1234",
+//         role: "admin"
+//     }
+//     await prisma.person.create({
+//         data: {
+//             name: user.name,
+//             hashedPassword: await bcrypt.hash(user.password, 12),
+//             email: user.email,
+//             [user.role]: {
+//                 create: {}
+//             }
+//         },
+//         include: {
+//             user: true,
+//             donator: true,
+//             admin: true
+//         }
+//     })
+//     return res.status(200).json({ success: true });
+// })
+
+// View all users
+app.post('/users', isAdmin, async (req, res) => {
+    try {
+      const users = await prisma.person.findMany({
+        include: {
+          user: true,
+          donator: true,
+          admin: true,
+        },
+      });
+      res.status(200).json(users)
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching users' });
+    }
+  });
+  
+  // Delete a user
+  app.delete('/users/:id', isAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+      await prisma.person.delete({
+        where: { id: parseInt(id) },
+      });
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Error deleting user' });
+    }
+  });
+  
+  // Update user details
+  app.put('/users/:id', isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { email, name } = req.body;
+    try {
+      const updatedUser = await prisma.person.update({
+        where: { id: parseInt(id) },
+        data: { email, name },
+      });
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ error: 'Error updating user' });
+    }
+  });
+  
+  // Additional admin features
+  
+  // Get user statistics
+  app.get('/stats', isAdmin, async (req, res) => {
+    try {
+      let totalPeople = await prisma.person.count();
+      const totalDonators = await prisma.donator.count();
+      const totalUsers = await prisma.user.count();
+      res.json({ totalUsers, totalDonators });
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching statistics' });
+    }
+  });
+  
+  app.get('/search', isAdmin, async (req, res) => {
+    let { query } = req.query;
+    query = query as string
+    try {
+      const users = await prisma.person.findMany({
+        where: {
+          OR: [
+            { email: { contains: query } },
+            { name: { contains: query } },
+          ],
+        },
+        include: {
+          user: true,
+          donator: true,
+        },
+      });
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: 'Error searching users' });
+    }
+  });
+  
+  app.post('/reset-password/:id', isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    try {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await prisma.person.update({
+        where: { id: parseInt(id) },
+        data: { hashedPassword },
+      });
+      res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Error resetting password' });
+    }
+  });
+
+
+//MARK: Reservation CRUD
 
 // Iruss - Reservation
 let reservationList: String[] = [];
@@ -307,6 +434,7 @@ app.get('/reservation', async (req, res) => {
     return res.status(200).json({ success: true });
 })
 
+// MARK: event CRUD
 interface EventBody {
     title: string,
     summary: string,
@@ -383,6 +511,40 @@ app.delete('/event/:id', async (req, res) => {
     })
     res.status(200)
 })
+
+// MARK: review CRUD
+app.post('/review_submit', async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        const newReview = await prisma.review.create({
+          data: {
+            rating,
+            comment,
+            donator: { connect: { id: 1 } }
+          },
+        });
+        res.status(200).json(newReview);
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({ error: error.message });
+    }
+})
+
+app.post('/reviews/:id', async (req, res) => {
+    try {
+        const donatorId = parseInt(req.params.id);
+        const reviews = await prisma.review.findMany({
+            where: {
+                donatorId: donatorId
+            }
+        });
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req, res, next) {
     const header = req.headers['authorization']
@@ -391,8 +553,26 @@ function authenticateToken(req, res, next) {
     if (token == null) {
         return res.sendStatus(401)
     }
-    jwt.verify(token, process.env.JWT_TOKEN, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) {
+            return res.sendStatus(403)
+        }
+        req.user = user
+        next()
+    })
+}
+
+// Middleware function in expressjs so that routes that want authentication will have to go through this route
+function isAdmin(req, res, next) {
+    const header = req.headers['authorization']
+    const token = header && header.split(' ')[1]
+    // looks like this -> Bearer <token> so split at the first space
+    if (token == null) {
+        return res.sendStatus(401)
+    }
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            console.log(err)
             return res.sendStatus(403)
         }
         req.user = user
