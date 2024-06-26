@@ -60,6 +60,7 @@ import "./index.css";
 import './About.css';
 import './review.css';
 import './assets/odometer.css';
+import { useNavigate } from 'react-router-dom';
 
 const backendRoute = 'http://localhost:3000';
 
@@ -86,16 +87,19 @@ export default function Review() {
     };
 
     const handleSubmit = async (event) => {
+        // const navigate = useNavigate();
+
         event.preventDefault();
         try {
             const response = await fetch(`${backendRoute}/review_submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(formData),      
             });
             if (response.ok) {
                 // Handle successful submission
                 console.log("Review submitted successfully");
+                
             } else {
                 // Handle errors
                 console.error("Failed to submit review");
@@ -103,6 +107,7 @@ export default function Review() {
         } catch (e) {
             console.error("Unexpected error submitting review:", e);
         }
+        // navigate("/")
     };
 
     return (

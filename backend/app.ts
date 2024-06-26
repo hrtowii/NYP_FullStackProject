@@ -221,18 +221,7 @@ app.post('/users', isAdmin, async (req, res) => {
     }
   });
   
-  // Delete a user
-  app.delete('/users/:id', isAdmin, async (req, res) => {
-    const { id } = req.params;
-    try {
-      await prisma.person.delete({
-        where: { id: parseInt(id) },
-      });
-      res.json({ message: 'User deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Error deleting user' });
-    }
-  });
+
   
   // Update user details
   app.put('/users/:id', isAdmin, async (req, res) => {
@@ -512,6 +501,7 @@ app.delete('/event/:id', async (req, res) => {
     res.status(200)
 })
 
+
 // MARK: review CRUD
 app.post('/review_submit', async (req, res) => {
     try {
@@ -528,6 +518,16 @@ app.post('/review_submit', async (req, res) => {
         console.log(error)
         res.status(400).json({ error: error.message });
     }
+})
+
+app.delete('/reviews/:id', async (req, res) => {
+    const reviewId = parseInt(req.params.id, 10);
+    await prisma.review.delete({
+        where: {
+            id: reviewId
+        }
+    })
+    res.status(200)
 })
 
 app.post('/reviews/:id', async (req, res) => {
