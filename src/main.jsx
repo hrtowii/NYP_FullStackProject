@@ -10,9 +10,10 @@ import Forbidden from './Forbidden.jsx'
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserLanding from "./user/UserLanding.jsx"
 import DonatorLanding from './donator/DonatorLanding.jsx'
-import Reservation from './Reservation.jsx'
-import Fridge from './Fridge.jsx'
+import Reservation from './user/Reservation.jsx'  // gon change to ./user/Reservation.jsx
+import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
+import Cart from './user/Cart.jsx'
 
 import './index.css'
 import {
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
   {
     path: "/events",
     element: <DonatorEvents/>
+  },
+  {
+    path: "/cart",
+    element: <Cart/>
   },
   {
     path: "/forbidden",

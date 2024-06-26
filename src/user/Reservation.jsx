@@ -1,6 +1,6 @@
 // import shit
 import React, { useState, useEffect } from 'react';
-import Navbar from "./components/Navbar";
+import Navbar from "../components/Navbar";
 import "./Reservation.css"
 
 

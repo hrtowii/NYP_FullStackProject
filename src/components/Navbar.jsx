@@ -11,9 +11,10 @@ export default function Navbar() {
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
       <NavLink to={"/review"}>Reviews</NavLink>
-      <NavLink to={"/reservation"}>Reservations (temporary)</NavLink>
-      <NavLink to={"/fridge"}>Fridge (temporary)</NavLink>
+      <NavLink to={"/reservation"}>Reservations (user)</NavLink>
+      <NavLink to={"/fridge"}>Fridge (user)</NavLink>
       <NavLink to={"/events"}>Manage Events</NavLink>
+      <NavLink to={"/cart"}>Cart (user)</NavLink>
 
     </div>
   )
@@ -36,8 +37,8 @@ export function UserNavbar() {
   return (
     <div className='navbar'>
       {/* Navlink to "User Home" */}
-      {/* Navlink to "Reservation" Page */}
-      {/* Navlink to "Fridge" Page */}
+      {/* <NavLink to={"/user/reservation"}>Reservations</NavLink> */}
+      {/* <NavLink to={"/user/fridge"}>Fridge</NavLink> */}
       {/* Navlink to "Reviews" Page */}
       {/* Navlink to "Events" Page */}
 
