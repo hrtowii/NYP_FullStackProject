@@ -212,9 +212,10 @@ app.post('/users', isAdmin, async (req, res) => {
         include: {
           user: true,
           donator: true,
+          admin: true,
         },
       });
-      res.json(users);
+      res.status(200).json(users)
     } catch (error) {
       res.status(500).json({ error: 'Error fetching users' });
     }
@@ -552,7 +553,7 @@ function authenticateToken(req, res, next) {
     if (token == null) {
         return res.sendStatus(401)
     }
-    jwt.verify(token, process.env.JWT_TOKEN, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) {
             return res.sendStatus(403)
         }
@@ -569,8 +570,9 @@ function isAdmin(req, res, next) {
     if (token == null) {
         return res.sendStatus(401)
     }
-    jwt.verify(token, process.env.JWT_TOKEN, (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) {
+            console.log(err)
             return res.sendStatus(403)
         }
         req.user = user

@@ -49,9 +49,9 @@ export function UserNavbar() {
 export function AdminNavbar() {
   return (
     <div className='navbar'>
-      <NavLink to={"/admin"}>Home</NavLink>
-      <NavLink to={"/admin/users"}>Users</NavLink>
-      <NavLink to={"/admin/donators"}>Donators</NavLink>
+      <NavLink to={"/admin"}>Admin</NavLink>
+      <NavLink to={"/donator"}>Donator</NavLink>
+      <NavLink to={"/user"}>User</NavLink>
     </div>
   )
 }

@@ -23,8 +23,6 @@ import {
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
 import AdminLanding from './admin/AdminLanding.jsx'
-import AdminDonators from './admin/AdminDonators.jsx'
-import AdminUsers from './admin/AdminUsers.jsx'
 
 
 const router = createBrowserRouter([
@@ -114,22 +112,6 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
-  {
-    path: "/admin/users",
-    element: (
-      <ProtectedRoute allowedRoles={['admin']}>
-        <AdminUsers/>
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/admin/donators",
-    element: (
-      <ProtectedRoute allowedRoles={['admin']}>
-        <AdminDonators/>
-      </ProtectedRoute>
-    )
-  }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
