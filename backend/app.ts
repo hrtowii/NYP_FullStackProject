@@ -1,6 +1,6 @@
 // the backend will be here. Models and data will be placed in backend/models/etcetc.js
 import express from "express"
-import jwt from "jsonwebtoken"
+import jwt, { Secret } from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
 import cors from "cors"
@@ -17,13 +17,19 @@ const redisClient = createClient({
     //     host: "redis"
     // }
 });
-await redisClient.connect().catch(console.error);
+(async () => {
+    await redisClient.connect();
+})();
+
+redisClient.on('connect', () => console.log('::> Redis Client Connected'));
+redisClient.on('error', (err) => console.log('<:: Redis Client Error', err));
+
 const resend = new Resend(process.env.RESEND_SECRET)
 const prisma = new PrismaClient() // -> database
 
 const app = express();
 app.use(express.json());
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
@@ -48,7 +54,7 @@ interface User {
 }
 
 app.post('/signup', async (req, res) => {
-    const user: User = req.body    
+    const user: User = req.body
     try {
         // add verifying to the sign up route instead of making a separate route because you can just post that way kekw
         const verification = req.body.otp;
@@ -72,7 +78,7 @@ app.post('/signup', async (req, res) => {
             })
             return res.status(200).json({ success: true });
         } else {
-            return res.status(403).json({error: "Invalid OTP code"});
+            return res.status(403).json({ error: "Invalid OTP code" });
         }
     } catch (e) {
         console.log(e)
@@ -121,7 +127,7 @@ app.post('/login', async (req, res) => {
     const ourRole = person.user ? 'user' : person.donator ? 'donator' : person.admin ? "admin" : null;
     const token = jwt.sign(
         { id: person.id, role: ourRole },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET as Secret,
         {
             algorithm: 'HS256',
             allowInsecureKeySizes: true,
@@ -151,7 +157,7 @@ app.post('/sendEmail', async (req, res) => {
         }
     })
     if (exists) {
-        return res.status(409).json({error: "User already exists"})
+        return res.status(409).json({ error: "User already exists" })
     }
     const ourOtp: number = crypto.randomInt(0, 999999);
     // redis set otp code
@@ -163,18 +169,18 @@ app.post('/sendEmail', async (req, res) => {
         subject: "Test email for fullstack",
         html: `Email verification code: ${ourOtp}`,
     });
-    
+
     if (error) {
         console.log(error)
         return res.status(400).json({ error });
     }
-    
+
     return res.status(200).json({ data });
 })
 
 app.post('/logout', async (req, res) => {
     return res.status(200).json({ success: true })
-              .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+        .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
 })
 
 //MARK: Admin functions
@@ -301,7 +307,7 @@ interface ReservationBody {
     collectionTimeStart: string;
     collectionTimeEnd: string;
     collectionStatus: 'PENDING' | 'COMPLETE' | 'CANCELLED';
-}   
+}
 
 app.post('/reservation', async (req, res) => {
     try {
@@ -342,21 +348,21 @@ app.post('/reservation', async (req, res) => {
         const donator = await prisma.donator.upsert({
             where: { id: 1 },
             update: {},
-            create: { 
-                person: { 
+            create: {
+                person: {
                     create: {
                         email: 'donator@example.com',
                         name: 'Mock Donator',
                         hashedPassword: await bcrypt.hash('defaultpassword', 10)
                     }
-                } 
+                }
             }
         });
         // Create or find donation
         const donation = await prisma.donation.upsert({
             where: { id: 1 },
             update: {},
-            create: { 
+            create: {
                 id: 1,
                 title: "Mock Donation",
                 foodReserved: false,
@@ -368,13 +374,13 @@ app.post('/reservation', async (req, res) => {
         const food = await prisma.food.upsert({
             where: { id: foodId },
             update: {},
-            create: { 
-                id: foodId, 
-                imageLink: "https://example.com/mock-food-image.jpg", 
-                quantity: 1, 
-                type: "Mock Food", 
+            create: {
+                id: foodId,
+                imageLink: "https://example.com/mock-food-image.jpg",
+                quantity: 1,
+                type: "Mock Food",
                 expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-                donationId: donation.id 
+                donationId: donation.id
             }
         });
 
@@ -410,7 +416,7 @@ app.post('/reservation', async (req, res) => {
         });
 
         return res.status(201).json({ success: true, data: newReservation });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating reservation:", error);
         return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
@@ -419,70 +425,88 @@ app.post('/reservation', async (req, res) => {
 // Retrieve reservations
 app.get('/reservation', async (req, res) => {
     res.json(reservationList);
-    
+
     return res.status(200).json({ success: true });
 })
 
+<<<<<<< Updated upstream
 // MARK: event CRUD
+=======
+
+// Event
+
+
+>>>>>>> Stashed changes
 interface EventBody {
     title: string,
-    summary: string,
-    date: Date,
+    briefSummary: string,
+    fullSummary: string,
+    phoneNumber: string,
+    emailAddress: string,
+    startDate: Date,
+    endDate: Date,
     donatorId: number,
 }
 
-// {
-//     title: asdasdasd
-//     summary: asdasdasd
-//     date: Date,
-//     donatorId: 1 use this for postman, when sending data
-// }
+
 app.post('/event', async (req, res) => {
-    const { title, summary, date, donatorId }: EventBody = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId }: EventBody = req.body;
     console.log(req.body);
-    
+
     try {
-      const newEvent = await prisma.event.create({
-        data: {
-          title,
-          summary,
-          dates: new Date(), // Assuming 'date' is a string in a valid date format
-          donatorId: 1, // Ensure donatorId is an integer
-        },
-      });
-      
-      res.status(200).json(newEvent);
+        const newEvent = await prisma.event.create({
+            data: {
+                title,
+                briefSummary,
+                fullSummary,
+                phoneNumber,
+                emailAddress,
+                startDate: new Date(),
+                endDate: new Date(),
+                donatorId: 1, // Ensure donatorId is an integer
+            },
+        });
+
+        res.status(200).json(newEvent);
     } catch (error) {
-      console.error('Error creating event:', error);
-      res.status(500).json({ error: 'Failed to create event' });
+        console.error('Error creating event:', error);
+        res.status(500).json({ error: 'Failed to create event' });
     }
-  });
+});
 
 interface updateEventBody {
-    eventId: number,
     title: string,
-    summary: string,
-    date: Date,
+    briefSummary: string,
+    fullSummary: string,
+    phoneNumber: string,
+    emailAddress: string,
+    startDate: Date,
+    endDate: Date,
     donatorId: number,
 }
 app.put('/event', async (req, res) => {
-    const {eventId, title, summary, date, donatorId} = req.body
+    const { eventId, title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId } = req.body
     const updatedEvent = await prisma.event.update({
         where: {
             id: eventId
         },
         data: {
             title: title,
-            summary: summary,
-            dates: date ? new Date() : undefined,
-            donatorId: donatorId    
+            briefSummary: briefSummary,
+            fullSummary: fullSummary,
+            phoneNumber: phoneNumber,
+            emailAddress: emailAddress,
+            startDate: startDate ? new Date() : undefined,
+            endDate: startDate ? new Date() : undefined,
+
+            donatorId: donatorId
         }
     })
     res.status(200).json(updatedEvent)
 })
 
 app.post('/findeventsfromdonator', async (req, res) => {
-    const {donatorId} = req.body
+    const { donatorId } = req.body
     const donator = await prisma.event.findMany({
         where: {
             donatorId: donatorId
@@ -492,7 +516,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
 })
 
 app.delete('/event/:id', async (req, res) => {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = parseInt(req.params.id, 10);    
     await prisma.event.delete({
         where: {
             id: eventId
@@ -501,6 +525,7 @@ app.delete('/event/:id', async (req, res) => {
     res.status(200)
 })
 
+<<<<<<< Updated upstream
 
 // MARK: review CRUD
 app.post('/review_submit', async (req, res) => {
@@ -544,16 +569,31 @@ app.post('/reviews/:id', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+=======
+app.get('/events', async (req, res) => {
+    try {
+      const events = await prisma.event.findMany();
+      res.status(200).json(events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      res.status(500).json({ error: 'Failed to fetch events' });
+    }
+  });
+>>>>>>> Stashed changes
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
-function authenticateToken(req, res, next) {
+function authenticateToken(req: any, res: any, next: any) {
     const header = req.headers['authorization']
     const token = header && header.split(' ')[1]
     // looks like this -> Bearer <token> so split at the first space
     if (token == null) {
         return res.sendStatus(401)
     }
+<<<<<<< Updated upstream
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+=======
+    jwt.verify(token, process.env.JWT_TOKEN as Secret, (err: any, user: any) => {
+>>>>>>> Stashed changes
         if (err) {
             return res.sendStatus(403)
         }
