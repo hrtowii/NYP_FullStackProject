@@ -14,6 +14,7 @@ import Reservation from './user/Reservation.jsx'  // gon change to ./user/Reserv
 import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
+import Profile from './Profile.jsx'
 
 import './index.css'
 import {
@@ -62,6 +63,10 @@ const router = createBrowserRouter([
   {
     path: "/cart",
     element: <Cart/>
+  },
+  {
+    path: "/profile/:donatorId",
+    element: <Profile/>
   },
   {
     path: "/forbidden",

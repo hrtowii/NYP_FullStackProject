@@ -47,23 +47,19 @@ Table Admin {
 
 Table Donation {
   id Int [pk, increment]
-  title String [not null, default: '']
-  foodReserved Boolean [not null, default: false]
+  food String [not null]
+  quantity Float [not null]
+  category String [not null]
+  expiryDate DateTime [not null]
+  deliveryDate DateTime [not null]
+  location String [not null]
+  remarks String
+  imageUrl String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
   donatorId Int [not null]
   donator Donator [not null]
-  foods Food [not null]
-}
-
-Table Food {
-  id Int [pk, increment]
-  imageLink String [not null]
-  quantity Int [not null]
-  type String [not null]
-  expiryDate DateTime [not null]
-  createdAt DateTime [default: `now()`, not null]
-  donationId Int [not null]
-  donation Donation [not null]
-  Reservation Reservation [not null]
+  reservations Reservation [not null]
 }
 
 Table Reservation {
@@ -72,11 +68,12 @@ Table Reservation {
   updatedAt DateTime [not null]
   userId Int [not null]
   user User [not null]
-  foodId Int [not null]
-  food Food [not null]
-  CollectionTimeStart DateTime [not null]
-  CollectionTimeEnd DateTime [not null]
-  CollectionStatus String [not null]
+  donationId Int [not null]
+  donation Donation [not null]
+  collectionDate DateTime [not null]
+  collectionTimeSlot String [not null]
+  collectionStatus String [not null]
+  remarks String
 }
 
 Table Review {
@@ -106,11 +103,9 @@ Ref: Admin.id - Person.id
 
 Ref: Donation.donatorId > Donator.id
 
-Ref: Food.donationId > Donation.id
-
 Ref: Reservation.userId > User.id
 
-Ref: Reservation.foodId > Food.id
+Ref: Reservation.donationId > Donation.id
 
 Ref: Review.donatorId > Donator.id
 

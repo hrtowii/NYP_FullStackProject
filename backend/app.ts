@@ -511,6 +511,38 @@ app.delete('/event/:id', async (req, res) => {
     res.status(200)
 })
 
+// MARK: review CRUD
+app.post('/review_submit', async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        const newReview = await prisma.review.create({
+          data: {
+            rating,
+            comment,
+            donator: { connect: { id: 1 } }
+          },
+        });
+        res.status(200).json(newReview);
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({ error: error.message });
+    }
+})
+
+app.post('/reviews/:id', async (req, res) => {
+    try {
+        const donatorId = parseInt(req.params.id);
+        const reviews = await prisma.review.findMany({
+            where: {
+                donatorId: donatorId
+            }
+        });
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ error: error.message });
+    }
+});
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req, res, next) {
