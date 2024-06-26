@@ -27,7 +27,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
-import AdminLanding from './admin/AdminLanding.jsx'
+import AdminLanding from './admin/AdminLanding.tsx'
 
 
 const router = createBrowserRouter([
