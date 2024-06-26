@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "../components/Navbar";
 import "./Fridge.css"
+import ReactOdometer from 'react-odometerjs';
 
 const AnimatedCounter = ({ value }) => {
     const [displayValue, setDisplayValue] = useState(0);
@@ -77,15 +78,15 @@ export default function Fridge() {
 
                 <div className="fridge-stats">
                     <div className="fridge-stat-item">
-                        <AnimatedCounter value={fridgesCount} />
+                        <ReactOdometer value={fridgesCount} />
                         <p>Self-Collect Fridges</p>
                     </div>
                     <div className="fridge-stat-item">
-                        <AnimatedCounter value={foodDonated} />
+                        <ReactOdometer value={foodDonated} />
                         <p>Fresh Food Donated</p>
                     </div>
                     <div className="fridge-stat-item">
-                        <AnimatedCounter value={familiesSupported} />
+                        <ReactOdometer value={familiesSupported} />
                         <p>Families Supported</p>
                     </div>
                 </div>

@@ -47,24 +47,20 @@ model Donator {
 }
 
 model Donation {
-  id           Int     @id @default(autoincrement())
-  title        String  @default("")
-  foodReserved Boolean @default(false)
+  id           Int           @id @default(autoincrement())
+  food         String
+  quantity     Float
+  category     String
+  expiryDate   DateTime
+  deliveryDate DateTime
+  location     String
+  remarks      String?
+  imageUrl     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   donatorId    Int
-  donator      Donator @relation(fields: [donatorId], references: [id])
-  foods        Food[]
-}
-
-model Food {
-  id          Int           @id @default(autoincrement())
-  imageLink   String
-  quantity    Int
-  type        String
-  expiryDate  DateTime
-  createdAt   DateTime      @default(now())
-  donationId  Int
-  donation    Donation      @relation(fields: [donationId], references: [id])
-  Reservation Reservation[]
+  donator      Donator       @relation(fields: [donatorId], references: [id])
+  reservations Reservation[]
 }
 
 // enum ourStatus {
@@ -74,16 +70,17 @@ model Food {
 // }
 
 model Reservation {
-  id                  Int      @id @default(autoincrement())
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  userId              Int
-  user                User     @relation(fields: [userId], references: [id])
-  foodId              Int
-  food                Food     @relation(fields: [foodId], references: [id])
-  CollectionTimeStart DateTime
-  CollectionTimeEnd   DateTime
-  CollectionStatus    String
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  userId             Int
+  user               User     @relation(fields: [userId], references: [id])
+  donationId         Int
+  donation           Donation @relation(fields: [donationId], references: [id])
+  collectionDate     DateTime
+  collectionTimeSlot String
+  collectionStatus   String
+  remarks            String?
 }
 
 model Review {

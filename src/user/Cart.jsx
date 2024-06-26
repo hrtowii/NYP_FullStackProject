@@ -9,9 +9,11 @@ export default function Cart() {
             <Navbar />
 
             <div className="cart-header">
-                <h1>Reservation Cart</h1> <br></br>
+                <h1>Shopping Cart</h1> <br></br>
                 <p>[Display table of selected items below.]</p>
             </div>
         </>
     )
 }
+
+
