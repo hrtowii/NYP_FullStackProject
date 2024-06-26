@@ -21,6 +21,9 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
+import AdminLanding from './admin/AdminLanding.jsx'
+import AdminDonators from './admin/AdminDonators.jsx'
+import AdminUsers from './admin/AdminUsers.jsx'
 
 
 const router = createBrowserRouter([
@@ -75,7 +78,7 @@ const router = createBrowserRouter([
   {
     path: "/user",
     element: (
-      <ProtectedRoute allowedRoles={['user']}>
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
         <UserLanding />
       </ProtectedRoute>
     ),
@@ -84,7 +87,7 @@ const router = createBrowserRouter([
   {
     path: "/donator",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonatorLanding />
       </ProtectedRoute>
     ),
@@ -92,8 +95,33 @@ const router = createBrowserRouter([
   {
     path: "/donator/donations",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonatorLanding/>
+      </ProtectedRoute>
+    )
+  },
+  // MARK: Admin protected routes
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminLanding/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/admin/users",
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminUsers/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/admin/donators",
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminDonators/>
       </ProtectedRoute>
     )
   }

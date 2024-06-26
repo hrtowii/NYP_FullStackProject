@@ -5,8 +5,7 @@ import "./Signup.css"
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, TextField, MenuItem } from '@mui/material';
 import { MuiOtpInput } from 'mui-one-time-password-input'
-
-const backendRoute = 'http://localhost:3000'
+import { backendRoute } from './utils/BackendUrl';
 // TODO: handle roles on the backend routes, post to it with the role you want to create a user/donator depending on selection
 // TODO: handle email OTP verification with Resend
 const sendEmail = async (setPageStatus, event, formData, setError) => {

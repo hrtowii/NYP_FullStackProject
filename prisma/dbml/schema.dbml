@@ -11,6 +11,7 @@ Table Person {
   updatedAt DateTime [not null]
   user User
   donator Donator
+  admin Admin
 }
 
 Table User {
@@ -29,6 +30,15 @@ Table Donator {
   donations Donation [not null]
   reviews Review [not null]
   events Event [not null]
+
+  indexes {
+    (id) [pk]
+  }
+}
+
+Table Admin {
+  id Int [pk]
+  person Person [not null]
 
   indexes {
     (id) [pk]
@@ -91,6 +101,8 @@ Table Event {
 Ref: User.id - Person.id
 
 Ref: Donator.id - Person.id
+
+Ref: Admin.id - Person.id
 
 Ref: Donation.donatorId > Donator.id
 

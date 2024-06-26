@@ -45,3 +45,13 @@ export function UserNavbar() {
     </div>
   )
 }
+
+export function AdminNavbar() {
+  return (
+    <div className='navbar'>
+      <NavLink to={"/admin"}>Home</NavLink>
+      <NavLink to={"/admin/users"}>Users</NavLink>
+      <NavLink to={"/admin/donators"}>Donators</NavLink>
+    </div>
+  )
+}
