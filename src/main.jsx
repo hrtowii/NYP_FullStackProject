@@ -13,13 +13,10 @@ import DonatorLanding from './donator/DonatorLanding.jsx'
 import Reservation from './user/Reservation.jsx'  // gon change to ./user/Reservation.jsx
 import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
-<<<<<<< Updated upstream
 import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
 import ReservationForm from './user/Cart.jsx'
-=======
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
->>>>>>> Stashed changes
 
 import './index.css'
 import {
@@ -64,17 +61,16 @@ const router = createBrowserRouter([
     element: <DonatorEvents/>
   },
   {
-<<<<<<< Updated upstream
     path: "/cart",
     element: <Cart/>
   },
   {
     path: "/profile/:donatorId",
     element: <Profile/>
-=======
+  },
+  {
     path: "/eventsadd",
     element: <DonatorEventsAdd/>
->>>>>>> Stashed changes
   },
   {
     path: "/forbidden",

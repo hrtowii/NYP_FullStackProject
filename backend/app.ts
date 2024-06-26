@@ -429,14 +429,7 @@ app.get('/reservation', async (req, res) => {
     return res.status(200).json({ success: true });
 })
 
-<<<<<<< Updated upstream
 // MARK: event CRUD
-=======
-
-// Event
-
-
->>>>>>> Stashed changes
 interface EventBody {
     title: string,
     briefSummary: string,
@@ -525,7 +518,6 @@ app.delete('/event/:id', async (req, res) => {
     res.status(200)
 })
 
-<<<<<<< Updated upstream
 
 // MARK: review CRUD
 app.post('/review_submit', async (req, res) => {
@@ -569,17 +561,6 @@ app.post('/reviews/:id', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
-=======
-app.get('/events', async (req, res) => {
-    try {
-      const events = await prisma.event.findMany();
-      res.status(200).json(events);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      res.status(500).json({ error: 'Failed to fetch events' });
-    }
-  });
->>>>>>> Stashed changes
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
 function authenticateToken(req: any, res: any, next: any) {
@@ -589,11 +570,7 @@ function authenticateToken(req: any, res: any, next: any) {
     if (token == null) {
         return res.sendStatus(401)
     }
-<<<<<<< Updated upstream
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-=======
     jwt.verify(token, process.env.JWT_TOKEN as Secret, (err: any, user: any) => {
->>>>>>> Stashed changes
         if (err) {
             return res.sendStatus(403)
         }
