@@ -26,7 +26,6 @@ model Person {
   user    User?
   donator Donator?
   admin Admin?
-  admin Admin?
 }
 
 model User {
