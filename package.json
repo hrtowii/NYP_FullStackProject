@@ -30,7 +30,6 @@
     "jose": "^5.2.4",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.396.0",
-    "mui": "^0.0.1",
     "mui-one-time-password-input": "^2.0.2",
     "prisma": "^5.13.0",
     "prisma-dbml-generator": "^0.12.0",

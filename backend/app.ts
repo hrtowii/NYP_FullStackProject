@@ -40,8 +40,6 @@ app.use(function (req, res, next) {
 
 app.use(cors());
 
-const port = process.env.PORT || 3000;
-
 app.get('/', (req, res) => {
     res.send('this is homepage')
 })
@@ -456,7 +454,7 @@ app.put('/reservation/:id/cancel', authenticateToken, async (req, res) => {  // 
     } catch (e) {
         console.error('Error cancelling reservation:', e);
     }
-}
+})
 
 
 // MARK: event CRUD
@@ -478,16 +476,16 @@ app.post('/event', async (req, res) => {
 
 
     try {
-        const newEvent = await prisma.event.create({
-            data: {
-                title,
-                summary,
-                dates: new Date(), // Assuming 'date' is a string in a valid date format
-                donatorId: 1, // Ensure donatorId is an integer
-            },
-        });
+        // const newEvent = await prisma.event.create({
+        //     data: {
+        //         title,
+        //         summary,
+        //         dates: new Date(), // Assuming 'date' is a string in a valid date format
+        //         donatorId: 1, // Ensure donatorId is an integer
+        //     },
+        // });
 
-        res.status(200).json(newEvent);
+        // res.status(200).json(newEvent);
         const newEvent = await prisma.event.create({
             data: {
                 title,
@@ -522,7 +520,7 @@ interface updateEventBody {
     donatorId: number,
 }
 app.put('/event', async (req, res) => {
-    const { eventId, title, summary, date, donatorId } = req.body
+    // const { eventId, title, summary, date, donatorId } = req.body
     const { eventId, title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId } = req.body
     const updatedEvent = await prisma.event.update({
         where: {
@@ -532,22 +530,19 @@ app.put('/event', async (req, res) => {
             title: title,
             summary: summary,
             dates: date ? new Date() : undefined,
-            donatorId: donatorId
+            donatorId: donatorId,
             briefSummary: briefSummary,
             fullSummary: fullSummary,
             phoneNumber: phoneNumber,
             emailAddress: emailAddress,
             startDate: startDate ? new Date() : undefined,
             endDate: startDate ? new Date() : undefined,
-
-            donatorId: donatorId
         }
     })
     res.status(200).json(updatedEvent)
 })
 
 app.post('/findeventsfromdonator', async (req, res) => {
-    const { donatorId } = req.body
     const { donatorId } = req.body
     const donator = await prisma.event.findMany({
         where: {
@@ -659,6 +654,7 @@ app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')
 })
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`server is running at port number ${port}`)
 });
