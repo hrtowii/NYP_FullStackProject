@@ -111,20 +111,20 @@ Table Event {
   eventOrganiser Donator [not null]
 }
 
-Ref: User.id - Person.id
+Ref: User.id - Person.id [delete: Cascade]
 
-Ref: Donator.id - Person.id
+Ref: Donator.id - Person.id [delete: Cascade]
 
-Ref: Admin.id - Person.id
+Ref: Admin.id - Person.id [delete: Cascade]
 
-Ref: Donation.donatorId > Donator.id
+Ref: Donation.donatorId > Donator.id [delete: Cascade]
 
 Ref: Food.donationId > Donation.id
 
-Ref: Reservation.userId > User.id
+Ref: Reservation.userId > User.id [delete: Cascade]
 
 Ref: Reservation.donationId > Donation.id
 
-Ref: Review.donatorId > Donator.id
+Ref: Review.donatorId > Donator.id [delete: Cascade]
 
-Ref: Event.donatorId > Donator.id
+Ref: Event.donatorId > Donator.id [delete: Cascade]

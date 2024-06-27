@@ -186,31 +186,71 @@ app.post('/logout', async (req, res) => {
 
 //MARK: Admin functions
 
-// Create a test admin account. NEVER ADD THIS IN REAL LIFE
-// app.post('/createAdminAccount', async(req, res) => {
-//     const user: User = {
-//         name: "admin",
-//         email: "test@gmail.com",
-//         password: "1234",
-//         role: "admin"
-//     }
-//     await prisma.person.create({
-//         data: {
-//             name: user.name,
-//             hashedPassword: await bcrypt.hash(user.password, 12),
-//             email: user.email,
-//             [user.role]: {
-//                 create: {}
-//             }
-//         },
-//         include: {
-//             user: true,
-//             donator: true,
-//             admin: true
-//         }
-//     })
-//     return res.status(200).json({ success: true });
-// })
+// Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
+app.post('/createAccounts', async(req, res) => {
+    const user: User = {
+        name: "admin",
+        email: "test@gmail.com",
+        password: "1234",
+        role: "admin"
+    }
+    await prisma.person.create({
+        data: {
+            name: user.name,
+            hashedPassword: await bcrypt.hash(user.password, 12),
+            email: user.email,
+            [user.role]: {
+                create: {}
+            }
+        },
+        include: {
+            user: true,
+            donator: true,
+            admin: true
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "lucas",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "leonghongkit@gmail.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "andric",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "lucasleong09@gmail.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "iruss",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "230446k@gmail.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ron",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "lucasleong1000@gmail.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    return res.status(200).json({ success: true });
+})
 
 // View all users
 app.post('/users', isAdmin, async (req, res) => {
@@ -237,6 +277,7 @@ app.delete('/users/:id', isAdmin, async (req, res) => {
         });
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ error: 'Error deleting user' });
     }
 });
@@ -244,91 +285,31 @@ app.delete('/users/:id', isAdmin, async (req, res) => {
   interface editUserDetails {
     name: string,
     email: string,
-    role: "user" | "donator" | "admin",
+    // role: "user" | "donator" | "admin",
   }
+
+  // limitation: cannot really update role...
 
   // remember that user roles are subclass models and not a simple attribute. 
   // this complicates updating a role for us because we have to delete the existing role first
   // so 1: find a user and check what roles it possesses
   // 2. update the user to remove the roles it has. 
   //    we cannot just remove every role because prisma errors if you try to remove a role that does not exist
-  // 3: add the new role
-  app.put('/updateUser/:id', isAdmin, async (req, res) => {
+  app.put('/users/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
-    const { name, email, role }: editUserDetails = req.body;
+    const { name, email }: editUserDetails = req.body;
     try {
-        // step 1
-        const ourUser = await prisma.person.findUnique({
-            where: {id: parseInt(id)}
-        })
-        let ourUpdateData = {
-            email,
-            name
-        }
-        if (ourUser.user) {
-            ourUpdateData.user = { delete: true }
-        }
-        if (ourUser.donator) {
-            ourUpdateData.donator = { delete: true }
-        }
-        if (ourUser?.admin) {
-            ourUpdateData.admin = { delete: true }
-        }
-        // conditionally add in the remove if the role exists here
-        await prisma.person.update({
-            where: {id: parseInt(id)},
-            data: ourUpdateData,
-        })
-        // step 2
         const updatedUser = await prisma.person.update({
             where: { id: parseInt(id) },
             data: {
                 email,
                 name,
-                [role.toLowerCase()]: {
-                    create: {}
-                }
             },
         });
       res.status(200).json({updatedUser})
     } catch (error) {
+        console.log(error)
         res.status(500).json({ error: 'Error updating user' });
-    }
-});
-
-// Additional admin features
-
-// Get user statistics
-app.get('/stats', isAdmin, async (req, res) => {
-    try {
-        let totalPeople = await prisma.person.count();
-        const totalDonators = await prisma.donator.count();
-        const totalUsers = await prisma.user.count();
-        res.json({ totalUsers, totalDonators });
-    } catch (error) {
-        res.status(500).json({ error: 'Error fetching statistics' });
-    }
-});
-
-app.get('/search', isAdmin, async (req, res) => {
-    let { query } = req.query;
-    query = query as string
-    try {
-        const users = await prisma.person.findMany({
-            where: {
-                OR: [
-                    { email: { contains: query } },
-                    { name: { contains: query } },
-                ],
-            },
-            include: {
-                user: true,
-                donator: true,
-            },
-        });
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Error searching users' });
     }
 });
 

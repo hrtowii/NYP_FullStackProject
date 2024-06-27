@@ -21,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { AdminNavbar } from '../components/Navbar';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
+import { EditIcon } from 'lucide-react';
 // admin page. Admins can:
 // view all users
 // delete any user
@@ -36,26 +37,26 @@ export default function AdminLanding() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openModal, setOpenModal] = useState(false);
-  const [editData, setEditData] = useState({ id: '', name: '', email: '', role: '' });
+  const [editData, setEditData] = useState({ id: '', name: '', email: '' });
 
   const { token, setToken } = useContext(TokenContext)
   const [users, updateUsers] = useState<any>([])
+  let [updated, setUpdated] = useState<number>(0)
   const [columns, setColumns] = useState<any>([{ id: 'id', label: 'ID', minWidth: 50 },
     { id: 'name', label: 'Name', minWidth: 100 },
     { id: 'email', label: 'Email', minWidth: 170 },
-    { id: 'role', label: 'Role', minWidth: 100 }]);
+    { id: 'role', label: 'Role', minWidth: 100 },
+    { id: 'actions', label: 'Actions', minWith: 100}]);
   const [rows, setRows] = useState<any>([]);
   useEffect(() => {
     fetch(`${backendRoute}/users`, {
-      method: 'POST',
+      method: 'POST', // this should be a GET request since it's GETting data but nvm
       headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
-      // body: JSON.stringify({email: formData.email}),
     }).then(async (result) => {
       const users: any[] = await result.json()
       updateUsers(users)
-      // console.log(users)
     })
-  }, [token]);
+  }, [token, updated]);
 
   useEffect(() => {
     const dynamicRows = users.map(user => ({
@@ -94,16 +95,16 @@ export default function AdminLanding() {
 
 
   const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
+    // if (reason === 'clickaway') {
+    //   return;
+    // }
     setSnackbarOpen(false);
   };
 
   const snackbarAction = (
     <React.Fragment>
       <Button color="secondary" size="small" onClick={handleClose}>
-        UNDO
+        Close
       </Button>
       <IconButton
         size="small"
@@ -117,12 +118,13 @@ export default function AdminLanding() {
   );
 
   const handleSave = () => {
-    fetch(`${backendRoute}/updateUser/${editData.id}`, {
+    fetch(`${backendRoute}/users/${editData.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(editData)
     }).then(async (result) => {
       if (result.ok) {
+        setUpdated(updated += 1)
         setSnackbarOpen(true);
       }
     })
@@ -130,7 +132,7 @@ export default function AdminLanding() {
   };
 
   const handleDelete = (id: number) => {
-    fetch(`${backendRoute}/deleteUser/${id}`, {
+    fetch(`${backendRoute}/users/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
     }).then(async (result) => {
@@ -146,7 +148,7 @@ export default function AdminLanding() {
     <>
     <AdminNavbar/>
     <Paper sx={{ width: '100%' }}>
-      <TableContainer sx={{ maxHeight: 440 }}>
+      <TableContainer>
         <Table stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
@@ -171,11 +173,16 @@ export default function AdminLanding() {
                       return (
                         <TableCell key={column.id}>
                             {column.id === 'actions' ? (
+                              <>
                               <IconButton onClick={() => handleDelete(row.id)}>
                                 <DeleteIcon />
                               </IconButton>
+                              <IconButton onClick={() => handleOpenModal(row)}>
+                                <EditIcon/>
+                              </IconButton>
+                              </>
                             ) : (
-                              <div onClick={() => handleOpenModal(row)}>
+                              <div>
                                 {value}
                               </div>
                             )}
@@ -211,8 +218,9 @@ export default function AdminLanding() {
           transform: 'translate(-50%, -50%)',
           width: 400,
           bgcolor: 'background.paper',
-          border: '2px solid #000',
-          boxShadow: 24,
+          // border: '2px solid #000',
+          borderRadius: '8px',
+          boxShadow: 16,
           p: 4,
         }}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
@@ -236,7 +244,7 @@ export default function AdminLanding() {
             value={editData.email}
             onChange={handleInputChange}
           />
-          <TextField
+          {/* <TextField
             margin="normal"
             fullWidth
             id="role"
@@ -244,7 +252,7 @@ export default function AdminLanding() {
             name="role"
             value={editData.role}
             onChange={handleInputChange}
-          />
+          /> */}
           <Button onClick={handleSave} variant="contained" sx={{ mt: 2 }}>
             Save
           </Button>
