@@ -17,6 +17,7 @@ import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
 import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
+import fileRoute from './components/file.jsx'
 
 import './index.css'
 import {
@@ -71,6 +72,10 @@ const router = createBrowserRouter([
   {
     path: "/eventsadd",
     element: <DonatorEventsAdd/>
+  },
+  {
+    path: "/file",
+    element: <fileRoute/>
   },
   {
     path: "/forbidden",

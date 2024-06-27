@@ -214,86 +214,86 @@ app.post('/logout', async (req, res) => {
 // View all users
 app.post('/users', isAdmin, async (req, res) => {
     try {
-      const users = await prisma.person.findMany({
-        include: {
-          user: true,
-          donator: true,
-          admin: true,
-        },
-      });
-      res.status(200).json(users)
+        const users = await prisma.person.findMany({
+            include: {
+                user: true,
+                donator: true,
+                admin: true,
+            },
+        });
+        res.status(200).json(users)
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching users' });
+        res.status(500).json({ error: 'Error fetching users' });
     }
-  });
-  
+});
 
-  
-  // Update user details
-  app.put('/users/:id', isAdmin, async (req, res) => {
+
+
+// Update user details
+app.put('/users/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
     const { email, name } = req.body;
     try {
-      const updatedUser = await prisma.person.update({
-        where: { id: parseInt(id) },
-        data: { email, name },
-      });
-      res.json(updatedUser);
+        const updatedUser = await prisma.person.update({
+            where: { id: parseInt(id) },
+            data: { email, name },
+        });
+        res.json(updatedUser);
     } catch (error) {
-      res.status(500).json({ error: 'Error updating user' });
+        res.status(500).json({ error: 'Error updating user' });
     }
-  });
-  
-  // Additional admin features
-  
-  // Get user statistics
-  app.get('/stats', isAdmin, async (req, res) => {
+});
+
+// Additional admin features
+
+// Get user statistics
+app.get('/stats', isAdmin, async (req, res) => {
     try {
-      let totalPeople = await prisma.person.count();
-      const totalDonators = await prisma.donator.count();
-      const totalUsers = await prisma.user.count();
-      res.json({ totalUsers, totalDonators });
+        let totalPeople = await prisma.person.count();
+        const totalDonators = await prisma.donator.count();
+        const totalUsers = await prisma.user.count();
+        res.json({ totalUsers, totalDonators });
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching statistics' });
+        res.status(500).json({ error: 'Error fetching statistics' });
     }
-  });
-  
-  app.get('/search', isAdmin, async (req, res) => {
+});
+
+app.get('/search', isAdmin, async (req, res) => {
     let { query } = req.query;
     query = query as string
     try {
-      const users = await prisma.person.findMany({
-        where: {
-          OR: [
-            { email: { contains: query } },
-            { name: { contains: query } },
-          ],
-        },
-        include: {
-          user: true,
-          donator: true,
-        },
-      });
-      res.json(users);
+        const users = await prisma.person.findMany({
+            where: {
+                OR: [
+                    { email: { contains: query } },
+                    { name: { contains: query } },
+                ],
+            },
+            include: {
+                user: true,
+                donator: true,
+            },
+        });
+        res.json(users);
     } catch (error) {
-      res.status(500).json({ error: 'Error searching users' });
+        res.status(500).json({ error: 'Error searching users' });
     }
-  });
-  
-  app.post('/reset-password/:id', isAdmin, async (req, res) => {
+});
+
+app.post('/reset-password/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
     try {
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await prisma.person.update({
-        where: { id: parseInt(id) },
-        data: { hashedPassword },
-      });
-      res.json({ message: 'Password reset successfully' });
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.person.update({
+            where: { id: parseInt(id) },
+            data: { hashedPassword },
+        });
+        res.json({ message: 'Password reset successfully' });
     } catch (error) {
-      res.status(500).json({ error: 'Error resetting password' });
+        res.status(500).json({ error: 'Error resetting password' });
     }
-  });
+});
 
 
 //MARK: Reservation CRUD
@@ -509,7 +509,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
 })
 
 app.delete('/event/:id', async (req, res) => {
-    const eventId = parseInt(req.params.id, 10);    
+    const eventId = parseInt(req.params.id, 10);
     await prisma.event.delete({
         where: {
             id: eventId
@@ -519,24 +519,24 @@ app.delete('/event/:id', async (req, res) => {
 })
 app.get('/events', async (req, res) => {
     try {
-      const events = await prisma.event.findMany();
-      res.status(200).json(events);
+        const events = await prisma.event.findMany();
+        res.status(200).json(events);
     } catch (error) {
-      console.error('Error fetching events:', error);
-      res.status(500).json({ error: 'Failed to fetch events' });
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Failed to fetch events' });
     }
-  });
+});
 
 // MARK: review CRUD
 app.post('/review_submit', async (req, res) => {
     try {
         const { rating, comment } = req.body;
         const newReview = await prisma.review.create({
-          data: {
-            rating,
-            comment,
-            donator: { connect: { id: 1 } }
-          },
+            data: {
+                rating,
+                comment,
+                donator: { connect: { id: 1 } }
+            },
         });
         res.status(200).json(newReview);
     } catch (error) {
