@@ -93,6 +93,7 @@ export default function Fridge() {
 
                 <h2>Fridge</h2>
                 {/* Display fridge table */}
+                <p>// TODO: Display fridge table w sorting function + Add to cart button + set alert to only allow up to 5 reservations</p>
             </div>
         </>
     );

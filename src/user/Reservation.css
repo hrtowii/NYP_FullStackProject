@@ -1,4 +1,129 @@
-.reservation_header {
+.reservation-page {
+    margin: 0 auto;
+}
+
+.reservation-header {
+    background-color: gray;
+    background-image: url('/path/to/header-image.jpg');
+    background-size: cover;
+    color: green;
+    padding: 40px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.reservation-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.reservation-sections {
+    display: flex;
+    justify-content: space-between;
+}
+
+.reservation-section {
+    max-width: 1200px;
+    width: 48%;
+    background-color: gray;
+    border-radius: 15px;
+    margin: 20px;
+    padding-bottom: 40px;
+}
+
+.reservation-section h2 {
+    font-size: 25px;
+    padding-left: 13px;
+    font-weight: 500;
+}
+
+.reservation-card {
+    display: flex;
+    align-items: center;  
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 85%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.food-image {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    margin-right: 15px;
+    background-color: green;
+}
+
+.reservation-details {
+    flex-grow: 1;
+}
+
+.reservation-details h3 {
+    margin: 0 0 0px 0;
+    font-size: 25px;
+}
+
+.reservation-details p {
+    margin: 3px 0;
+    font-size: 14px;
+}
+
+.reschedule-link {
+    color: blue;
+    cursor: pointer;
+    margin: 10px;
+}
+
+.status {
+    font-weight: bold;
+    font-size: 14px;
+    color: black;
+}
+
+.status-text.uncollected {
+    color: #FDE541;
+}
+
+.status-text.collected {
+    color: green;
+}
+
+.status-text.cancelled {
+    color: red;
+}
+
+.reservation-amount {
+    font-size: 20px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.cancel-btn, .review-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.cancel-btn {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+.review-btn {
+    background-color: #4da6ff;
+    color: white;
+}
+
+
+/* Attempt 1 */
+
+/* .reservation_header {
     background-color: gray;
     text-align: center;
     width: auto;
@@ -16,10 +141,10 @@
     padding: 0px 100px 0px 100px;
 }
 
-/* From Claude */
+
 .reservation-display {
     display: flex;
-    flex-direction: space-around; /* or column */
+    flex-direction: space-around; 
     padding: 2rem;
     background-color: white;
 }
@@ -43,11 +168,11 @@
     margin-bottom: 1rem;
     border: 1px solid white;
     border-radius: 0.25rem; 
-    background-color: white; /* from gpt - start */
+    background-color: white; 
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    height: auto; /* from gpt - end */
+    height: auto; 
 }
 
 .reservation-details div {
@@ -111,4 +236,4 @@
 
 .btn-cancel {
     background-color: red;
-}
+} */

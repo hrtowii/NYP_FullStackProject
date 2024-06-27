@@ -25,7 +25,7 @@ model Person {
 
   user    User?
   donator Donator?
-  admin Admin?
+  admin   Admin?
 }
 
 model User {
@@ -48,15 +48,16 @@ model Donator {
 }
 
 model Admin {
-  id Int @unique
-  @@id([id])
+  id     Int    @unique
   person Person @relation(fields: [id], references: [id])
+
+  @@id([id])
 }
 
 model Donation {
   id           Int           @id @default(autoincrement())
   food         String
-  quantity     Float
+  amount       Float
   category     String
   expiryDate   DateTime
   deliveryDate DateTime
