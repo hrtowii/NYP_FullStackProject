@@ -59,10 +59,8 @@ Table Donation {
   updatedAt DateTime [not null]
   donatorId Int [not null]
   donator Donator [not null]
-<<<<<<< Updated upstream
-  reservations Reservation [not null]
-=======
   foods Food [not null]
+  reservations Reservation [not null]
 }
 
 Table Food {
@@ -74,8 +72,6 @@ Table Food {
   createdAt DateTime [default: `now()`, not null]
   donationId Int [not null]
   donation Donation [not null]
-  Reservation Reservation [not null]
->>>>>>> Stashed changes
 }
 
 Table Reservation {
@@ -122,6 +118,8 @@ Ref: Donator.id - Person.id
 Ref: Admin.id - Person.id
 
 Ref: Donation.donatorId > Donator.id
+
+Ref: Food.donationId > Donation.id
 
 Ref: Reservation.userId > User.id
 

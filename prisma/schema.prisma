@@ -80,7 +80,6 @@ model Food {
   createdAt   DateTime      @default(now())
   donationId  Int
   donation    Donation      @relation(fields: [donationId], references: [id])
-  Reservation Reservation[]
 }
 
 model Reservation {

@@ -295,6 +295,43 @@ app.post('/users', isAdmin, async (req, res) => {
     }
   });
 
+// MARK: Donation CRUD - Andric
+interface donationInterface {
+    foodName: string,
+    quantity: string,
+    expiryDate: string,
+    type: string
+}
+app.post('/donation', async (req, res) => {
+    let formData: donationInterface = req.body
+    const result = await prisma.donation.create({
+        data: {
+            food: formData.foodName,
+            donator: {
+                connect: {
+                    id: 1,
+                },
+            },
+            expiryDate: new Date(formData.expiryDate),
+            quantity: parseInt(formData.quantity, 10),
+            category: "asd",
+            deliveryDate: new Date(formData.expiryDate),
+            location: "asd",
+            foods: {
+                create: {
+                    name: formData.foodName,
+                    quantity: parseInt(formData.quantity, 10),
+                    type: formData.type,
+                    expiryDate: new Date(formData.expiryDate),
+                },
+            },
+        },
+        include: {
+            foods: true,
+        },
+    });
+    res.status(200).json(result)
+})
 
 //MARK: Reservation CRUD
 

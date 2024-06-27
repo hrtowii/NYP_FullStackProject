@@ -4,9 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
-
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { backendRoute } from '../utils/BackendUrl';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 
@@ -49,31 +47,18 @@ export default function DonateItem() {
     const handleConfirm = async () => {
         setShowConfirmDialog(false);
         try {
-            const result = await prisma.donation.create({
-                data: {
-                    title: formData.foodName,
-                    donator: {
-                        connect: {
-                            id: 1, // Replace with actual donator ID
-                        },
-                    },
-                    foods: {
-                        create: {
-                            name: formData.foodName,
-                            quantity: parseInt(formData.quantity, 10),
-                            type: formData.type,
-                            expiryDate: new Date(formData.expiryDate),
-                        },
-                    },
-                },
-                include: {
-                    foods: true,
-                },
+            const response = await fetch(`${backendRoute}/donation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
             });
-
-            console.log('Donation created:', result);
-            setActiveStep((prevActiveStep) => prevActiveStep + 1);
-            setSnackbar({ show: true, message: 'Donation submitted successfully!', type: 'success' });
+            if (response.ok) {
+                console.log('Donation created:', response);
+                setActiveStep((prevActiveStep) => prevActiveStep + 1);
+                setSnackbar({ show: true, message: 'Donation submitted successfully!', type: 'success' });
+            } else {
+                setSnackbar({ show: true, message: 'Error submitting donation. Please try again.', type: 'error' });
+            }
         } catch (error) {
             console.error('Error submitting donation:', error);
             setSnackbar({ show: true, message: 'Error submitting donation. Please try again.', type: 'error' });
@@ -166,7 +151,7 @@ export default function DonateItem() {
                     </div>
                 );
             default:
-                return <div>Unknown step</div>;
+                return <div></div>;
         }
     };
 
