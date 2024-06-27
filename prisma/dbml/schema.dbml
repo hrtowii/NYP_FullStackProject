@@ -59,7 +59,23 @@ Table Donation {
   updatedAt DateTime [not null]
   donatorId Int [not null]
   donator Donator [not null]
+<<<<<<< Updated upstream
   reservations Reservation [not null]
+=======
+  foods Food [not null]
+}
+
+Table Food {
+  id Int [pk, increment]
+  name String [not null]
+  quantity Int [not null]
+  type String [not null]
+  expiryDate DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  donationId Int [not null]
+  donation Donation [not null]
+  Reservation Reservation [not null]
+>>>>>>> Stashed changes
 }
 
 Table Reservation {

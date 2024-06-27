@@ -8,7 +8,11 @@
 ## Running
 0. Create a .env file with JWT_SECRET, RESEND_URL, and DATABASE_URL
 1. Download Docker Desktop
-2. docker compose up --build
+2. docker compose up --build express # only runs backend
+3. npm run dev # frontend
+
+Else:
+docker compose up --build #both
 
 1. docker compose up --build redis
 2. npm run backend

@@ -25,7 +25,7 @@ export function DonatorNavbar() {
     <div className='navbar'>
       <NavLink to={"/donator"}>Home</NavLink>
       <NavLink to={"/donator/inventory"}>Inventory</NavLink>
-      <NavLink to={"/donator/donations"}>Manage Donations</NavLink>
+      <NavLink to={"/donator/ManageDonations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
       {/* <NavLink to={"/donator/events"}>Manage Events</NavLink> */}
       {/* Commented this out ^ will change to put in donator */}
@@ -55,3 +55,4 @@ export function AdminNavbar() {
     </div>
   )
 }
+
