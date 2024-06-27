@@ -57,7 +57,6 @@ interface User {
 
 app.post('/signup', async (req, res) => {
     const user: User = req.body
-    const user: User = req.body
     try {
         // add verifying to the sign up route instead of making a separate route because you can just post that way kekw
         const verification = req.body.otp;
@@ -187,7 +186,6 @@ app.post('/sendEmail', async (req, res) => {
 
 app.post('/logout', async (req, res) => {
     return res.status(200).json({ success: true })
-        .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
         .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
 })
 
@@ -454,228 +452,12 @@ app.put('/reservation/:id/cancel', authenticateToken, async (req, res) => {  // 
                 userId,
                 status: 'Uncollected',
             },
-// Iruss - Reservation
-let reservationList: String[] = [];
-
-interface ReservationBody {
-    userId: number;
-    foodId: number;
-    collectionTimeStart: string;
-    collectionTimeEnd: string;
-    collectionStatus: 'PENDING' | 'COMPLETE' | 'CANCELLED';
+        })
+    } catch (e) {
+        console.error('Error cancelling reservation:', e);
+    }
 }
 
-app.post('/reservation', async (req, res) => {
-    try {
-        const {
-            userId,
-            foodId,
-            collectionTimeStart,
-            collectionTimeEnd,
-            collectionStatus
-        }: ReservationBody = req.body;
-        console.log(req.body);
-
-        // Validate input
-        if (!userId || !foodId || !collectionTimeStart || !collectionTimeEnd || !collectionStatus) {
-            return res.status(400).json({ success: false, message: "Missing required fields" });
-        }
-
-        // Create or find person
-        const person = await prisma.person.upsert({
-            where: { id: userId },
-            update: {},
-            create: {
-                id: userId,
-                email: `user${userId}@example.com`,
-                name: `User ${userId}`,
-                hashedPassword: await bcrypt.hash('defaultpassword', 10)
-            }
-        });
-
-        // Create or find user
-        const user = await prisma.user.upsert({
-            where: { id: userId },
-            update: {},
-            create: { person: { connect: { id: userId } } }
-        });
-
-        // Create or find donator
-        const donator = await prisma.donator.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                person: {
-                    create: {
-                        email: 'donator@example.com',
-                        name: 'Mock Donator',
-                        hashedPassword: await bcrypt.hash('defaultpassword', 10)
-                    }
-                }
-            }
-        });
-        // Create or find donation
-        const donation = await prisma.donation.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                id: 1,
-                title: "Mock Donation",
-                foodReserved: false,
-                donatorId: donator.id
-            }
-        });
-
-        // Create or find food
-        const food = await prisma.food.upsert({
-            where: { id: foodId },
-            update: {},
-            create: {
-                id: foodId,
-                imageLink: "https://example.com/mock-food-image.jpg",
-                quantity: 1,
-                type: "Mock Food",
-                expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-                donationId: donation.id
-            }
-        });
-
-        // Create the reservation
-        const newReservation = await prisma.reservation.create({
-            data: {
-                status: 'Cancelled',
-            },
-        });
-
-        if (cancelledReservation.count === 0) {
-            return res.status(404).json({ error: 'Reservation not found or already collected/cancelled' });
-        }
-
-        res.json({ message: 'Reservation cancelled successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Unable to cancel reservation' });
-    }
-});
-
-// Iruss - Reservation
-// let reservationList: String[] = [];
-
-// interface ReservationBody {
-//     userId: number;
-//     foodId: number;
-//     collectionDate: Date,
-//     collectionTime: string,
-// }   
-
-// app.post('/reservation', async (req, res) => {
-//     try {
-//         const { collectionDate, collectionTime, remarks } = req.body;
-//         console.log(req.body);
-
-//         // Validate input
-//         if (!collectionDate || !collectionTime) {
-//             return res.status(400).json({ success: false, message: "Missing required fields" });
-//         }
-
-//         // Split the collectionTime into start and end times
-//         const [collectionTimeStartStr, collectionTimeEndStr] = collectionTime.split('-');
-
-//         // Parse the collection times using dayjs
-//         const collectionTimeStart = dayjs(`${collectionDate} ${collectionTimeStartStr}`, 'YYYY-MM-DD HH:mm').toISOString();
-//         const collectionTimeEnd = dayjs(`${collectionDate} ${collectionTimeEndStr}`, 'YYYY-MM-DD HH:mm').toISOString();
-
-//         // Example placeholders for userId, foodId, and collectionStatus (replace these with actual values as needed)
-//         const userId = 1; // Replace with actual user ID
-//         const foodId = 1; // Replace with actual food ID
-//         const collectionStatus = 'Uncollected'; // Default status
-
-//         // Validate the parsed times
-//         if (!collectionTimeStart || !collectionTimeEnd) {
-//             return res.status(400).json({ success: false, message: "Invalid collection time range" });
-//         }
-
-//         // Create the reservation object
-//         const reservation = {
-//             userId,
-//             foodId,
-//             collectionTimeStart,
-//             collectionTimeEnd,
-//             collectionStatus,
-//             remarks
-//         };
-
-//         // Simulate saving the reservation to the database
-//         // Replace this with your actual database saving logic
-//         console.log('Reservation saved:', reservation);
-
-//         res.status(201).json({ success: true, reservation });
-//     } catch (error) {
-//         console.error('Error creating reservation:', error);
-//         res.status(500).json({ success: false, message: 'Server error' });
-//     }
-// });
-                userId: user.id,
-                foodId: food.id,
-                CollectionTimeStart: new Date(collectionTimeStart),
-                CollectionTimeEnd: new Date(collectionTimeEnd),
-                CollectionStatus: collectionStatus
-            },
-            include: {
-                user: {
-                    include: {
-                        person: true
-                    }
-                },
-                food: {
-                    include: {
-                        donation: {
-                            include: {
-                                donator: {
-                                    include: {
-                                        person: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        return res.status(201).json({ success: true, data: newReservation });
-    } catch (error: any) {
-        console.error("Error creating reservation:", error);
-        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-    }
-});
-
-// // Retrieve reservations
-// app.get('/reservation', async (req, res) => {
-//     res.json(reservationList);
-
-//     return res.status(200).json({ success: true });
-// })
-// Retrieve reservations
-app.get('/reservation', async (req, res) => {
-    res.json(reservationList);
-
-    return res.status(200).json({ success: true });
-})
-
-// // MARK: event CRUD
-// interface EventBody {
-//     title: string,
-//     summary: string,
-//     date: Date,
-//     donatorId: number,
-// }
-
-// // {
-// //     title: asdasdasd
-// //     summary: asdasdasd
-// //     date: Date,
-// //     donatorId: 1 use this for postman, when sending data
-// // }
 
 // MARK: event CRUD
 interface EventBody {
