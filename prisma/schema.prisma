@@ -25,7 +25,7 @@ model Person {
 
   user    User?
   donator Donator?
-  admin Admin?
+  admin   Admin?
 }
 
 model User {
@@ -48,15 +48,16 @@ model Donator {
 }
 
 model Admin {
-  id Int @unique
-  @@id([id])
+  id     Int    @unique
   person Person @relation(fields: [id], references: [id])
+
+  @@id([id])
 }
 
 model Donation {
   id           Int           @id @default(autoincrement())
   food         String
-  quantity     Float
+  amount       Float
   category     String
   expiryDate   DateTime
   deliveryDate DateTime
@@ -66,15 +67,21 @@ model Donation {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   donatorId    Int
-  donator      Donator       @relation(fields: [donatorId], references: [id])
+  donator      Donator @relation(fields: [donatorId], references: [id])
+  foods        Food[]
   reservations Reservation[]
 }
 
-// enum ourStatus {
-//   PENDING
-//   COMPLETE
-//   CANCELLED
-// }
+model Food {
+  id          Int           @id @default(autoincrement())
+  name        String
+  quantity    Int
+  type        String
+  expiryDate  DateTime
+  createdAt   DateTime      @default(now())
+  donationId  Int
+  donation    Donation      @relation(fields: [donationId], references: [id])
+}
 
 model Reservation {
   id                 Int      @id @default(autoincrement())

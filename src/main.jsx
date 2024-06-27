@@ -17,7 +17,8 @@ import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
 import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
-import fileRoute from './components/file.jsx'
+import ManageDonations from './donator/ManageDonations.jsx'
+import DonateItem from './donator/DonateItem.jsx'
 
 import './index.css'
 import {
@@ -106,22 +107,31 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/donator/donations",
+    path: "donator/ManageDonations",
     element: (
-      <ProtectedRoute allowedRoles={['donator', 'admin']}>
-        <DonatorLanding/>
+      <ProtectedRoute allowedRoles={['donator']}>
+        
+        <ManageDonations/>
       </ProtectedRoute>
     )
   },
-  // MARK: Admin protected routes
   {
-    path: "/admin",
+    path: "donator/DonateItem",
     element: (
-      <ProtectedRoute allowedRoles={['admin']}>
-        <AdminLanding/>
+      <ProtectedRoute allowedRoles={['donator']}>
+        <DonateItem />
       </ProtectedRoute>
-    )
-  },
+    ),
+  }
+  // {
+  //   path: "donator/TrackDonations",
+  //   element: (
+  //     <ProtectedRoute allowedRoles={['donator']}>
+  //       <TrackDonations />
+  //     </ProtectedRoute>
+  //   ),
+  // }
+
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -48,7 +48,7 @@ Table Admin {
 Table Donation {
   id Int [pk, increment]
   food String [not null]
-  quantity Float [not null]
+  amount Float [not null]
   category String [not null]
   expiryDate DateTime [not null]
   deliveryDate DateTime [not null]
@@ -59,7 +59,19 @@ Table Donation {
   updatedAt DateTime [not null]
   donatorId Int [not null]
   donator Donator [not null]
+  foods Food [not null]
   reservations Reservation [not null]
+}
+
+Table Food {
+  id Int [pk, increment]
+  name String [not null]
+  quantity Int [not null]
+  type String [not null]
+  expiryDate DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  donationId Int [not null]
+  donation Donation [not null]
 }
 
 Table Reservation {
@@ -106,6 +118,8 @@ Ref: Donator.id - Person.id
 Ref: Admin.id - Person.id
 
 Ref: Donation.donatorId > Donator.id
+
+Ref: Food.donationId > Donation.id
 
 Ref: Reservation.userId > User.id
 

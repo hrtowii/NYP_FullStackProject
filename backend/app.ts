@@ -9,6 +9,7 @@ import * as crypto from 'crypto';
 import { Resend } from "resend"
 // Redis is used for storing OTP tokens temporarily
 import { createClient } from 'redis';
+import { Dayjs } from "dayjs"
 
 const redisClient = createClient({
     // legacyMode: true,
@@ -30,6 +31,7 @@ const prisma = new PrismaClient() // -> database
 const app = express();
 app.use(express.json());
 app.use(function (req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
@@ -37,8 +39,6 @@ app.use(function (req, res, next) {
 });
 
 app.use(cors());
-
-const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
     res.send('this is homepage')
@@ -78,6 +78,7 @@ app.post('/signup', async (req, res) => {
             })
             return res.status(200).json({ success: true });
         } else {
+            return res.status(403).json({ error: "Invalid OTP code" });
             return res.status(403).json({ error: "Invalid OTP code" });
         }
     } catch (e) {
@@ -158,6 +159,7 @@ app.post('/sendEmail', async (req, res) => {
     })
     if (exists) {
         return res.status(409).json({ error: "User already exists" })
+        return res.status(409).json({ error: "User already exists" })
     }
     const ourOtp: number = crypto.randomInt(0, 999999);
     // redis set otp code
@@ -170,10 +172,12 @@ app.post('/sendEmail', async (req, res) => {
         html: `Email verification code: ${ourOtp}`,
     });
 
+
     if (error) {
         console.log(error)
         return res.status(400).json({ error });
     }
+
 
     return res.status(200).json({ data });
 })
@@ -226,6 +230,24 @@ app.post('/users', isAdmin, async (req, res) => {
         res.status(500).json({ error: 'Error fetching users' });
     }
 });
+
+// Delete a user
+app.delete('/users/:id', isAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.person.delete({
+            where: { id: parseInt(id) },
+        });
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error deleting user' });
+    }
+});
+
+// Update user details
+app.put('/users/:id', isAdmin, async (req, res) => {
+  });
+  
 
 
 
@@ -295,139 +317,146 @@ app.post('/reset-password/:id', isAdmin, async (req, res) => {
     }
 });
 
+// MARK: Donation CRUD - Andric
+interface donationInterface {
+    foodName: string,
+    quantity: string,
+    expiryDate: string,
+    type: string
+}
+app.post('/donation', async (req, res) => {
+    let formData: donationInterface = req.body
+    const result = await prisma.donation.create({
+        data: {
+            food: formData.foodName,
+            donator: {
+                connect: {
+                    id: 1,
+                },
+            },
+            expiryDate: new Date(formData.expiryDate),
+            quantity: parseInt(formData.quantity, 10),
+            category: "asd",
+            deliveryDate: new Date(formData.expiryDate),
+            location: "asd",
+            foods: {
+                create: {
+                    name: formData.foodName,
+                    quantity: parseInt(formData.quantity, 10),
+                    type: formData.type,
+                    expiryDate: new Date(formData.expiryDate),
+                },
+            },
+        },
+        include: {
+            foods: true,
+        },
+    });
+    res.status(200).json(result)
+})
 
 //MARK: Reservation CRUD
 
-// Iruss - Reservation
-let reservationList: String[] = [];
+app.post('/reservation', authenticateToken, async (req, res) => {  // Create New Reservation
+    const { collectionDate, collectionTime, remarks } = req.body;
+    const userId = req.user.id;
 
-interface ReservationBody {
-    userId: number;
-    foodId: number;
-    collectionTimeStart: string;
-    collectionTimeEnd: string;
-    collectionStatus: 'PENDING' | 'COMPLETE' | 'CANCELLED';
-}
-
-app.post('/reservation', async (req, res) => {
     try {
-        const {
-            userId,
-            foodId,
-            collectionTimeStart,
-            collectionTimeEnd,
-            collectionStatus
-        }: ReservationBody = req.body;
-        console.log(req.body);
-
-        // Validate input
-        if (!userId || !foodId || !collectionTimeStart || !collectionTimeEnd || !collectionStatus) {
-            return res.status(400).json({ success: false, message: "Missing required fields" });
-        }
-
-        // Create or find person
-        const person = await prisma.person.upsert({
-            where: { id: userId },
-            update: {},
-            create: {
-                id: userId,
-                email: `user${userId}@example.com`,
-                name: `User ${userId}`,
-                hashedPassword: await bcrypt.hash('defaultpassword', 10)
-            }
-        });
-
-        // Create or find user
-        const user = await prisma.user.upsert({
-            where: { id: userId },
-            update: {},
-            create: { person: { connect: { id: userId } } }
-        });
-
-        // Create or find donator
-        const donator = await prisma.donator.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                person: {
-                    create: {
-                        email: 'donator@example.com',
-                        name: 'Mock Donator',
-                        hashedPassword: await bcrypt.hash('defaultpassword', 10)
-                    }
-                }
-            }
-        });
-        // Create or find donation
-        const donation = await prisma.donation.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                id: 1,
-                title: "Mock Donation",
-                foodReserved: false,
-                donatorId: donator.id
-            }
-        });
-
-        // Create or find food
-        const food = await prisma.food.upsert({
-            where: { id: foodId },
-            update: {},
-            create: {
-                id: foodId,
-                imageLink: "https://example.com/mock-food-image.jpg",
-                quantity: 1,
-                type: "Mock Food",
-                expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-                donationId: donation.id
-            }
-        });
-
-        // Create the reservation
         const newReservation = await prisma.reservation.create({
             data: {
-                userId: user.id,
-                foodId: food.id,
-                CollectionTimeStart: new Date(collectionTimeStart),
-                CollectionTimeEnd: new Date(collectionTimeEnd),
-                CollectionStatus: collectionStatus
+                userId,
+                collectionDate: new Date(collectionDate),
+                collectionTime,
+                remarks,
+                status: 'Uncollected',
             },
-            include: {
-                user: {
-                    include: {
-                        person: true
-                    }
-                },
-                food: {
-                    include: {
-                        donation: {
-                            include: {
-                                donator: {
-                                    include: {
-                                        person: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         });
-
-        return res.status(201).json({ success: true, data: newReservation });
-    } catch (error: any) {
-        console.error("Error creating reservation:", error);
-        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+        res.json(newReservation);
+    } catch (error) {
+        res.status(500).json({ error: 'Unable to create reservation' });
     }
 });
 
-// Retrieve reservations
-app.get('/reservation', async (req, res) => {
-    res.json(reservationList);
+app.get('/reservation/current', authenticateToken, async (req, res) => {  // Get Current Reservations
+    const userId = req.user.id;
 
-    return res.status(200).json({ success: true });
+    try {
+        const currentReservations = await prisma.reservation.findMany({
+            where: {
+                userId,
+                status: 'Uncollected',
+            },
+        });
+        res.json(currentReservations);
+    } catch (error) {
+        console.error('Error fetching current reservations:', error);  // temporary
+        res.status(500).json({ error: 'Unable to fetch current reservations' });
+    }
+});
+
+app.get('/reservation/past', authenticateToken, async (req, res) => {  // Get Past Reservations
+    const userId = req.user.id;
+
+    try {
+        const pastReservations = await prisma.reservation.findMany({
+            where: {
+                userId,
+                status: 'Collected',
+            },
+        });
+        res.json(pastReservations);
+    } catch (error) {
+        console.error('Error fetching past reservations:', error);
+        res.status(500).json({ error: 'Unable to fetch past reservations' });
+    }
+});
+
+app.put('/resevation/:id/reschedule', authenticateToken, async (req, res) => {  // Reschedule Reservation
+    const { id } = req.params;
+    const { collectionDate, collectionTime, remarks } = req.body;
+    const userId = req.user.id;
+
+    try {
+        const updatedReservation = await prisma.reservation.updateMany({
+            where: {
+                id: parseInt(id),
+                userId,
+                status: 'Uncollected',
+            },
+            data: {
+                collectionDate: new Date(collectionDate),
+                CollectionTime,
+            },
+        });
+
+        if (updatedReservation.count === 0) {
+            return res.status(404).json({ error: 'Reservation not found or already collected/cancelled' });
+        }
+
+        res.json({ message: 'Reservation rescheduled successfully' });
+    } catch (error) {
+        console.error('Error rescheduling reservation:', error);
+        res.status(500).json({ error: 'Unable to reschedule reservation' });
+    }
+});
+
+app.put('/reservation/:id/cancel', authenticateToken, async (req, res) => {  // Cancel Reservation
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const cancelledReservation = await prisma.reservation.updateMany({
+            where: {
+                id: parseInt(id),
+                userId,
+                status: 'Uncollected',
+            },
+        })
+    } catch (e) {
+        console.error('Error cancelling reservation:', e);
+    }
 })
+
 
 // MARK: event CRUD
 interface EventBody {
@@ -446,7 +475,18 @@ app.post('/event', async (req, res) => {
     const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId }: EventBody = req.body;
     console.log(req.body);
 
+
     try {
+        // const newEvent = await prisma.event.create({
+        //     data: {
+        //         title,
+        //         summary,
+        //         dates: new Date(), // Assuming 'date' is a string in a valid date format
+        //         donatorId: 1, // Ensure donatorId is an integer
+        //     },
+        // });
+
+        // res.status(200).json(newEvent);
         const newEvent = await prisma.event.create({
             data: {
                 title,
@@ -464,7 +504,10 @@ app.post('/event', async (req, res) => {
     } catch (error) {
         console.error('Error creating event:', error);
         res.status(500).json({ error: 'Failed to create event' });
+        console.error('Error creating event:', error);
+        res.status(500).json({ error: 'Failed to create event' });
     }
+});
 });
 
 interface updateEventBody {
@@ -478,6 +521,7 @@ interface updateEventBody {
     donatorId: number,
 }
 app.put('/event', async (req, res) => {
+    // const { eventId, title, summary, date, donatorId } = req.body
     const { eventId, title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId } = req.body
     const updatedEvent = await prisma.event.update({
         where: {
@@ -485,14 +529,15 @@ app.put('/event', async (req, res) => {
         },
         data: {
             title: title,
+            summary: summary,
+            dates: date ? new Date() : undefined,
+            donatorId: donatorId,
             briefSummary: briefSummary,
             fullSummary: fullSummary,
             phoneNumber: phoneNumber,
             emailAddress: emailAddress,
             startDate: startDate ? new Date() : undefined,
             endDate: startDate ? new Date() : undefined,
-
-            donatorId: donatorId
         }
     })
     res.status(200).json(updatedEvent)
@@ -610,6 +655,7 @@ app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')
 })
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`server is running at port number ${port}`)
 });

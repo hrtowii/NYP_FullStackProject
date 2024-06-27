@@ -31,6 +31,7 @@ const sendEmail = async (setPageStatus, event, formData, setError) => {
 }
 
 const signupFunction = async (event, formData, otp, navigate) => {
+  console.log(otp)
   event.preventDefault();
   const requestBody = {...formData, otp} // create a new object that merges together the otp code into the existing request body
   try {
@@ -89,6 +90,9 @@ function ActualSignup({formData, setFormData, setPageStatus}) {
 function VerifyOTP({formData}) {
   const navigate = useNavigate();
   const [otp, setOtp] = useState("");
+  function handleOtpChange(newValue) {
+    setOtp(newValue)
+  }
   return (
     <>
     <Navbar/>
@@ -96,7 +100,7 @@ function VerifyOTP({formData}) {
       <form onSubmit={(event) => signupFunction(event, formData, otp, navigate)}> 
         <MuiOtpInput
           value={otp}
-          onChange={setOtp}
+          onChange={handleOtpChange}
           length={6}
         />
         <Button variant="contained" type="submit">Sign up</Button>

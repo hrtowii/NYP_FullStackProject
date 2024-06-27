@@ -9,7 +9,7 @@ export default function DonatorLanding() {
       <DonatorNavbar/>
       <div className="content">
         <div className='currentReservations'>
-          <h4>Your current reservations</h4>
+          <h4>Your current asdasdasd</h4>
         </div>
         <div className='pastReservations'>
           <h4>Your past reservations</h4>
