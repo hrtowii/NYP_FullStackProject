@@ -240,24 +240,57 @@ app.delete('/users/:id', isAdmin, async (req, res) => {
         res.status(500).json({ error: 'Error deleting user' });
     }
 });
+  // Update user details
+  interface editUserDetails {
+    name: string,
+    email: string,
+    role: "user" | "donator" | "admin",
+  }
 
-// Update user details
-app.put('/users/:id', isAdmin, async (req, res) => {
-  });
-  
-
-
-
-// Update user details
-app.put('/users/:id', isAdmin, async (req, res) => {
+  // remember that user roles are subclass models and not a simple attribute. 
+  // this complicates updating a role for us because we have to delete the existing role first
+  // so 1: find a user and check what roles it possesses
+  // 2. update the user to remove the roles it has. 
+  //    we cannot just remove every role because prisma errors if you try to remove a role that does not exist
+  // 3: add the new role
+  app.put('/updateUser/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
-    const { email, name } = req.body;
+    const { name, email, role }: editUserDetails = req.body;
     try {
+        // step 1
+        const ourUser = await prisma.person.findUnique({
+            where: {id: parseInt(id)}
+        })
+        let ourUpdateData = {
+            email,
+            name
+        }
+        if (ourUser.user) {
+            ourUpdateData.user = { delete: true }
+        }
+        if (ourUser.donator) {
+            ourUpdateData.donator = { delete: true }
+        }
+        if (ourUser?.admin) {
+            ourUpdateData.admin = { delete: true }
+        }
+        // conditionally add in the remove if the role exists here
+        await prisma.person.update({
+            where: {id: parseInt(id)},
+            data: ourUpdateData,
+        })
+        // step 2
         const updatedUser = await prisma.person.update({
             where: { id: parseInt(id) },
-            data: { email, name },
+            data: {
+                email,
+                name,
+                [role.toLowerCase()]: {
+                    create: {}
+                }
+            },
         });
-        res.json(updatedUser);
+      res.status(200).json({updatedUser})
     } catch (error) {
         res.status(500).json({ error: 'Error updating user' });
     }
@@ -493,7 +526,7 @@ app.post('/event', async (req, res) => {
                 emailAddress,
                 startDate: new Date(),
                 endDate: new Date(),
-                donatorId: 1, // Ensure donatorId is an integer
+                donatorId: 2, // Ensure donatorId is an integer
             },
         });
 

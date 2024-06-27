@@ -12,8 +12,12 @@ import {
   Box,
   Typography,
   TextField,
-  Button
+  Button,
+  IconButton,
+  Snackbar
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { AdminNavbar } from '../components/Navbar';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
@@ -86,10 +90,56 @@ export default function AdminLanding() {
     setEditData({ ...editData, [event.target.name]: event.target.value });
   };
 
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+
+
+  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const snackbarAction = (
+    <React.Fragment>
+      <Button color="secondary" size="small" onClick={handleClose}>
+        UNDO
+      </Button>
+      <IconButton
+        size="small"
+        aria-label="close"
+        color="inherit"
+        onClick={handleClose}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    </React.Fragment>
+  );
+
   const handleSave = () => {
-    // Here you would typically send the updated data to your backend
-    // console.log('Saving:', editData);
+    fetch(`${backendRoute}/updateUser/${editData.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify(editData)
+    }).then(async (result) => {
+      if (result.ok) {
+        setSnackbarOpen(true);
+      }
+    })
     handleCloseModal();
+  };
+
+  const handleDelete = (id: number) => {
+    fetch(`${backendRoute}/deleteUser/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
+    }).then(async (result) => {
+      if (result.ok) {
+        updateUsers(users.filter(user => user.id !== id));
+      } else {
+        console.error('Failed to delete user');
+      }
+    });
   };
 
   return (
@@ -119,9 +169,17 @@ export default function AdminLanding() {
                     {columns.map((column) => {
                       const value = row[column.id];
                       return (
-                        <TableCell key={column.id} onClick={() => handleOpenModal(row)}>
-                          {value}
-                        </TableCell>
+                        <TableCell key={column.id}>
+                            {column.id === 'actions' ? (
+                              <IconButton onClick={() => handleDelete(row.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            ) : (
+                              <div onClick={() => handleOpenModal(row)}>
+                                {value}
+                              </div>
+                            )}
+                          </TableCell>
                       );
                     })}
                   </TableRow>
@@ -193,6 +251,13 @@ export default function AdminLanding() {
         </Box>
       </Modal>
     </Paper>
+    <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={1000}
+        onClose={handleClose}
+        message="Saved changes!"
+        action={snackbarAction}
+      />
     </>
   )
 }
