@@ -16,6 +16,7 @@ import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
 import ReservationForm from './user/Cart.jsx'
+import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
 
 import './index.css'
 import {
@@ -23,7 +24,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
-import AdminLanding from './admin/AdminLanding.jsx'
+import AdminLanding from './admin/AdminLanding.tsx'
 
 
 const router = createBrowserRouter([
@@ -68,10 +69,13 @@ const router = createBrowserRouter([
     element: <Profile/>
   },
   {
+    path: "/eventsadd",
+    element: <DonatorEventsAdd/>
+  },
+  {
     path: "/forbidden",
     element: <Forbidden/>
   },
-
   // What does this ProtectedRoute do? 
   // -> Essentially, every page that you want to go through that wants a specific role (admin, user, donator etc.) goes through this route. 
   // If it succeeds, it will render the child components inside it.

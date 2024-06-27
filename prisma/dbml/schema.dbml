@@ -89,8 +89,12 @@ Table Review {
 Table Event {
   id Int [pk, increment]
   title String [not null]
-  summary String [not null]
-  dates DateTime [not null]
+  briefSummary String [not null]
+  fullSummary String [not null]
+  phoneNumber String [not null]
+  emailAddress String [not null]
+  startDate DateTime [not null]
+  endDate DateTime [not null]
   donatorId Int [not null]
   eventOrganiser Donator [not null]
 }

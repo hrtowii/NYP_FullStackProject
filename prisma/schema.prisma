@@ -104,10 +104,14 @@ model Review {
 }
 
 model Event {
-  id             Int      @id @default(autoincrement())
-  title          String
-  summary        String
-  dates          DateTime
+  id           Int      @id @default(autoincrement())
+  title        String
+  briefSummary String
+  fullSummary  String
+  phoneNumber  String
+  emailAddress String
+  startDate    DateTime
+  endDate      DateTime
   donatorId      Int
-  eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
+  eventOrganiser Donator @relation("Events", fields: [donatorId], references: [id])
 }
