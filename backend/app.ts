@@ -335,7 +335,7 @@ interface donationInterface {
     expiryDate: string,
     type: string
 }
-app.post('/donator/ManageDonations', async (req, res) => {
+app.post('/donation', async (req, res) => {
     let formData: donationInterface = req.body
     const result = await prisma.donation.create({
         data: {
@@ -363,8 +363,8 @@ app.post('/donator/ManageDonations', async (req, res) => {
     res.status(200).json(result)
 })
 // View donations with pagination and sorting
-app.post('/donator/ManageDonations', async (req, res) => {
-    const { page = '1', limit = '10', sortBy = 'expiryDate', order = 'asc' } = req.query;
+app.post('/donations', async (req, res) => {
+    const { page = '1', limit = '10'} = req.query;
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
@@ -375,9 +375,6 @@ app.post('/donator/ManageDonations', async (req, res) => {
                 include: {
                     foods: true,
                     donator: true,
-                },
-                orderBy: {
-                    [sortBy as string]: order,
                 },
                 skip,
                 take: limitNumber,
@@ -397,20 +394,20 @@ app.post('/donator/ManageDonations', async (req, res) => {
 });
 
 // Delete donations
-app.delete('/donator/ManageDonations/:id', async (req, res) => { 
+app.delete('/donations/:id', async (req, res) => { 
     const donationId = parseInt(req.params.id, 10); 
     console.log(`Received delete request for donation ID: ${donationId}`); 
     const startTime = Date.now(); 
  
     // Set a timeout to force a response after 10 seconds 
     const timeoutId = setTimeout(() => { 
-        console.log(`Delete operation timed out after 10 seconds for review ID: ${donationId}`); 
+        console.log(`Delete operation timed out after 10 seconds for donation ID: ${donationId}`); 
         res.status(504).json({ error: 'Delete operation timed out' }); 
     }, 10000); 
  
     try { 
-        console.log('Attempting to delete review...'); 
-        const deletedDonation = await prisma.review.delete({ 
+        console.log('Attempting to delete donation...'); 
+        const deletedDonation = await prisma.donation.delete({ 
             where: { 
                 id: donationId 
             } 
@@ -432,7 +429,7 @@ app.delete('/donator/ManageDonations/:id', async (req, res) => {
 }); 
 
 // Update donations
-app.put('/donator/ManageDonations/:id', async (req, res) => {
+app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
     const { foods, expiryDate, category, deliveryDate, location } = req.body;
     try {
