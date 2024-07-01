@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
+
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 
@@ -15,12 +16,28 @@ export default function DonateItem() {
         quantity: '',
         expiryDate: '',
         deliveryDate: '',
-        location: '',
+        location: '',   
         type: '',
         image: null,
     });
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+    const [shouldNavigate, setShouldNavigate] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        let timer;
+        if (activeStep === 3) {
+            timer = setTimeout(() => setShouldNavigate(true), 0);
+        }
+        return () => clearTimeout(timer);
+    }, [activeStep]);
+
+    useEffect(() => {
+        if (shouldNavigate) {
+            navigate('/donator');
+        }
+    }, [shouldNavigate, navigate]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

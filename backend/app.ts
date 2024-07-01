@@ -335,18 +335,15 @@ interface donationInterface {
     expiryDate: string,
     type: string
 }
-app.post('/donation', async (req, res) => {
+app.post('/donator/ManageDonations', async (req, res) => {
     let formData: donationInterface = req.body
     const result = await prisma.donation.create({
         data: {
-            food: formData.foodName,
             donator: {
                 connect: {
                     id: 1,
                 },
             },
-            expiryDate: new Date(formData.expiryDate),
-            quantity: parseInt(formData.quantity, 10),
             category: "asd",
             deliveryDate: new Date(formData.expiryDate),
             location: "asd",
@@ -365,6 +362,100 @@ app.post('/donation', async (req, res) => {
     });
     res.status(200).json(result)
 })
+// View donations with pagination and sorting
+app.post('/donator/ManageDonations', async (req, res) => {
+    const { page = '1', limit = '10', sortBy = 'expiryDate', order = 'asc' } = req.query;
+    const pageNumber = parseInt(page as string, 10);
+    const limitNumber = parseInt(limit as string, 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    try {
+        const [donations, totalCount] = await prisma.$transaction([
+            prisma.donation.findMany({
+                include: {
+                    foods: true,
+                    donator: true,
+                },
+                orderBy: {
+                    [sortBy as string]: order,
+                },
+                skip,
+                take: limitNumber,
+            }),
+            prisma.donation.count(),
+        ]);
+
+        res.status(200).json({
+            donations,
+            totalPages: Math.ceil(totalCount / limitNumber),
+            currentPage: pageNumber,
+        });
+    } catch (error) {
+        console.error('Error fetching donations:', error);
+        res.status(500).json({ error: 'Error getting donations', details: error.message });
+      }
+});
+
+// Delete donations
+app.delete('/donator/ManageDonations/:id', async (req, res) => { 
+    const donationId = parseInt(req.params.id, 10); 
+    console.log(`Received delete request for donation ID: ${donationId}`); 
+    const startTime = Date.now(); 
+ 
+    // Set a timeout to force a response after 10 seconds 
+    const timeoutId = setTimeout(() => { 
+        console.log(`Delete operation timed out after 10 seconds for review ID: ${donationId}`); 
+        res.status(504).json({ error: 'Delete operation timed out' }); 
+    }, 10000); 
+ 
+    try { 
+        console.log('Attempting to delete review...'); 
+        const deletedDonation = await prisma.review.delete({ 
+            where: { 
+                id: donationId 
+            } 
+        }); 
+        clearTimeout(timeoutId); 
+        const endTime = Date.now(); 
+        console.log(`donation deleted successfully in ${endTime - startTime}ms:`, deletedDonation); 
+        res.status(200).json({ message: 'donation deleted successfully', deletedDonation, timeTaken: endTime - startTime }); 
+    } catch (error) { 
+        clearTimeout(timeoutId); 
+        const endTime = Date.now(); 
+        console.error(`Error deleting donation after ${endTime - startTime}ms:`, error); 
+        if (error.code === 'P2025') { 
+            res.status(404).json({ error: 'donation not found', timeTaken: endTime - startTime }); 
+        } else { 
+            res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime }); 
+        } 
+    } 
+}); 
+
+// Update donations
+app.put('/donator/ManageDonations/:id', async (req, res) => {
+    const { id } = req.params;
+    const { foods, expiryDate, category, deliveryDate, location } = req.body;
+    try {
+        const updatedDonation = await prisma.donation.update({
+            where: { id: parseInt(id) },
+            data: { 
+                foods: {
+                    update: foods,
+                },
+                expiryDate,
+                category,
+                deliveryDate,
+                location 
+            },
+            include: {
+                foods: true,
+            },
+        });
+        res.json(updatedDonation);
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating donation' });
+    }
+});
 
 //MARK: Reservation CRUD
 
