@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from "../components/Navbar";
+import Navbar, { UserNavbar } from "../components/Navbar";
 import "./Fridge.css"
 import ReactOdometer from 'react-odometerjs';
 
@@ -67,7 +67,7 @@ export default function Fridge() {
 
     return (
         <>
-            <Navbar />
+            <UserNavbar />
 
             <div className="fridge-container">
                 <div className="fridge-header">

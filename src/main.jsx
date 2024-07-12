@@ -32,47 +32,35 @@ import AdminLanding from './admin/AdminLanding.tsx'
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Landing/>,
+    element: <Landing />,
   },
   {
     path: "/signup",
-    element: <Signup/>,
+    element: <Signup />,
   },
   {
     path: "/login",
-    element: <Login/>
+    element: <Login />
   },
   {
     path: "/about",
-    element: <About/>
+    element: <About />
   },
   {
     path: "/review",
-    element: <Review/>
-  },
-  {
-    path: "/reservation",
-    element: <Reservation/>
-  },
-  {
-    path: "/fridge",
-    element: <Fridge/>
+    element: <Review />
   },
   {
     path: "/events",
-    element: <DonatorEvents/>
-  },
-  {
-    path: "/cart",
-    element: <Cart/>
+    element: <DonatorEvents />
   },
   {
     path: "/profile/:donatorId",
-    element: <Profile/>
+    element: <Profile />
   },
   {
     path: "/eventsadd",
-    element: <DonatorEventsAdd/>
+    element: <DonatorEventsAdd />
   },
   {
     path: "/file",
@@ -80,7 +68,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/forbidden",
-    element: <Forbidden/>
+    element: <Forbidden />
   },
   // What does this ProtectedRoute do? 
   // -> Essentially, every page that you want to go through that wants a specific role (admin, user, donator etc.) goes through this route. 
@@ -96,6 +84,27 @@ const router = createBrowserRouter([
         <UserLanding />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/user/cart",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <Cart />
+      </ProtectedRoute>)
+  },
+  {
+    path: "/user/reservation",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <Reservation />
+      </ProtectedRoute>)
+  },
+  {
+    path: "/user/fridge",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <Fridge />
+      </ProtectedRoute>)
   },
   // MARK: Donator protected routes
   {
