@@ -9,33 +9,45 @@ Table Person {
   hashedPassword String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  admin Admin
-  donator Donator
   user User
+  donator Donator
+  admin Admin
 }
 
 Table User {
-  id Int [pk, increment]
-  reservations Reservation [not null]
+  id Int [pk]
   person Person [not null]
+  reservations Reservation [not null]
+
+  indexes {
+    (id) [pk]
+  }
 }
 
 Table Donator {
-  id Int [pk, increment]
-  donations Donation [not null]
+  id Int [pk]
   person Person [not null]
-  events Event [not null]
+  donations Donation [not null]
   reviews Review [not null]
+  events Event [not null]
+
+  indexes {
+    (id) [pk]
+  }
 }
 
 Table Admin {
-  id Int [pk, increment]
+  id Int [pk]
   person Person [not null]
+
+  indexes {
+    (id) [pk]
+  }
 }
 
 Table Donation {
   id Int [pk, increment]
-  expiryDate DateTime [not null]
+  category String [not null]
   deliveryDate DateTime [not null]
   location String [not null]
   remarks String
@@ -44,23 +56,24 @@ Table Donation {
   updatedAt DateTime [not null]
   donatorId Int [not null]
   donator Donator [not null]
-  food Food
+  foods Food [not null]
 }
 
 Table Food {
   id Int [pk, increment]
   name String [not null]
-  quantity String [not null]
+  quantity Int [not null]
   type String [not null]
   expiryDate DateTime [not null]
   createdAt DateTime [default: `now()`, not null]
-  donationId Int [unique, not null]
+  donationId Int [not null]
   donation Donation [not null]
 }
 
 Table Reservation {
   id Int [pk, increment]
   userId Int [not null]
+  user User [not null]
   collectionDate DateTime [not null]
   collectionTimeStart String [not null]
   collectionTimeEnd String [not null]
@@ -68,7 +81,6 @@ Table Reservation {
   remarks String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  user User [not null]
 }
 
 Table Review {
@@ -94,18 +106,20 @@ Table Event {
   eventOrganiser Donator [not null]
 }
 
-Ref: User.id - Person.id
+Ref: User.id - Person.id [delete: Cascade]
 
-Ref: Donator.id - Person.id
+Ref: Donator.id - Person.id [delete: Cascade]
 
-Ref: Admin.id - Person.id
+Ref: Admin.id - Person.id [delete: Cascade]
 
-Ref: Donation.donatorId > Donator.id
+Ref: Donation.donatorId > Donator.id [delete: Cascade]
 
-Ref: Food.donationId - Donation.id
+Ref: Food.donationId > Donation.id
 
-Ref: Reservation.userId > User.id
+Ref: Reservation.userId > User.id [delete: Cascade]
 
-Ref: Review.donatorId > Donator.id
+Ref: Reservation.donationId > Donation.id
 
-Ref: Event.donatorId > Donator.id
+Ref: Review.donatorId > Donator.id [delete: Cascade]
+
+Ref: Event.donatorId > Donator.id [delete: Cascade]
