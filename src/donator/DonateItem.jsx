@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
+import { TokenContext } from '../utils/TokenContext';
 
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 
 export default function DonateItem() {
     const [activeStep, setActiveStep] = useState(0);
+    const { token } = useContext(TokenContext);
     const [formData, setFormData] = useState({
         foodName: '',
         quantity: '',
@@ -64,23 +66,39 @@ export default function DonateItem() {
     const handleConfirm = async () => {
         setShowConfirmDialog(false);
         try {
-            const response = await fetch(`${backendRoute}/donation`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            if (response.ok) {
-                console.log('Donation created:', response);
-                setActiveStep((prevActiveStep) => prevActiveStep + 1);
-                setSnackbar({ show: true, message: 'Donation submitted successfully!', type: 'success' });
-            } else {
-                setSnackbar({ show: true, message: 'Error submitting donation. Please try again.', type: 'error' });
-            }
+          const donatorId = JSON.parse(atob(token.split('.')[1])).id;
+          const donationData = {
+            donatorId,
+            deliveryDate: formData.deliveryDate,
+            expiryDate: formData.expiryDate,
+            location: formData.location,
+            foodName: formData.foodName,
+            quantity: formData.quantity,
+            type: formData.type,
+          };
+          const response = await fetch(`${backendRoute}/donation`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(donationData),
+          });
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Donation created:', result);
+            setActiveStep((prevActiveStep) => prevActiveStep + 1);
+            setSnackbar({ show: true, message: 'Donation submitted successfully!', type: 'success' });
+          } else {
+            const errorData = await response.json();
+            console.error('Error submitting donation: ', errorData);
+            setSnackbar({ show: true, message: `Error submitting donation: ${errorData.details}`, type: 'error' });
+          }
         } catch (error) {
-            console.error('Error submitting donation:', error);
-            setSnackbar({ show: true, message: 'Error submitting donation. Please try again.', type: 'error' });
+          console.error('Error submitting donation:', error);
+          setSnackbar({ show: true, message: 'Error submitting donation. Please try again.', type: 'error' });
         }
-    };
+      };
 
     const renderStepContent = (step) => {
         switch (step) {

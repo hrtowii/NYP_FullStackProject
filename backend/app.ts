@@ -1,7 +1,7 @@
 // the backend will be here. Models and data will be placed in backend/models/etcetc.js
 import express from "express"
 import jwt, { Secret } from "jsonwebtoken"
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, Prisma } from "@prisma/client"
 import bcrypt from "bcrypt"
 import cors from "cors"
 import * as crypto from 'crypto';
@@ -329,38 +329,71 @@ app.post('/reset-password/:id', isAdmin, async (req, res) => {
 
 // MARK: Donation CRUD - Andric
 interface donationInterface {
-    foodName: string,
-    quantity: string,
-    expiryDate: string,
-    type: string
+    foodName:string;
+    quantity: string;
+    expiryDate: string;
+    deliveryDate: string;
+    type: string;
+    location: string;
+    image?: any;
+    donatorId: number;
+    remarks?: string;
 }
+
 app.post('/donation', async (req, res) => {
-    let formData: donationInterface = req.body
-    const result = await prisma.donation.create({
-        data: {
-            donator: {
-                connect: {
-                    id: 1,
+    const formData = req.body;
+    console.log('ReceivedFormData: ', formData);
+
+    if (!formData.foodName || !formData.quantity || !formData.type || !formData.expiryDate) {
+        console.log('Error: Food data is missing');
+        return res.status(400).json({ error: 'All food data fields are required' });
+    }
+
+    try {
+        // Check for null values
+        if (!formData.donatorId || !formData.deliveryDate || !formData.location) {
+            console.log('Error: Missing required fields');
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const result = await prisma.donation.create({
+            data: {
+                donator: {
+                    connect: {
+                        id: formData.donatorId,
+                    },
+                },
+                deliveryDate: new Date(formData.deliveryDate),
+                expiryDate: new Date(formData.expiryDate),
+                location: formData.location,
+                remarks: formData.remarks,
+                food: {
+                    create: {
+                        name: formData.foodName,
+                        quantity: formData.quantity,
+                        type: formData.type,
+                        expiryDate: new Date(formData.expiryDate),
+                    },
                 },
             },
-            category: "asd",
-            deliveryDate: new Date(formData.expiryDate),
-            location: "asd",
-            foods: {
-                create: {
-                    name: formData.foodName,
-                    quantity: parseInt(formData.quantity, 10),
-                    type: formData.type,
-                    expiryDate: new Date(formData.expiryDate),
-                },
+            include: {
+                food: true,
             },
-        },
-        include: {
-            foods: true,
-        },
-    });
-    res.status(200).json(result)
+        });
+        res.status(200).json(result)
+    } catch (error) {
+        console.error('Error creating donation; ', error);
+// Added to show more error msgs
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('Prisma error code:', error.code);
+            console.error('Prisma error message:', error.message);
+            console.error('Affected model:', error.meta?.modelName);
+            console.error('Affected constraint:', error.meta?.constraint);
+        }
+        res.status(500).json({ error: 'Error creating donation', details: error.message, fullError: JSON.stringify(error) });
+    }
 })
+
 // View donations with pagination and sorting
 app.post('/donations', async (req, res) => {
     const { page = '1', limit = '10'} = req.query;
@@ -372,8 +405,12 @@ app.post('/donations', async (req, res) => {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
                 include: {
-                    foods: true,
-                    donator: true,
+                    food: true,
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    },
                 },
                 skip,
                 take: limitNumber,
@@ -435,7 +472,7 @@ app.put('/donations/:id', async (req, res) => {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
             data: { 
-                foods: {
+                food: {
                     update: foods,
                 },
                 expiryDate,
@@ -444,7 +481,7 @@ app.put('/donations/:id', async (req, res) => {
                 location 
             },
             include: {
-                foods: true,
+                food: true,
             },
         });
         res.json(updatedDonation);

@@ -1,11 +1,17 @@
+// TO-DO:
+//  - Amend and fix to replace hardcode user/donation id 
+
+
+
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Box, Typography } from '@mui/material';
+import { TextField, Button, Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { UserNavbar } from "../components/Navbar";
-import "./UserLanding";
+// import "./UserLanding";
 import { backendRoute } from '../utils/BackendUrl';
 
 
-const Cart = ({ cartItems, userId }) => {
+const Cart = ({ selectedItems, userId }) => {
+  const [cartItems, setCartItems] = useState([]);
   const [collectionDate, setCollectionDate] = useState('');
   const [collectionTimeStart, setCollectionTimeStart] = useState('');
   const [collectionTimeEnd, setCollectionTimeEnd] = useState('');
@@ -13,7 +19,7 @@ const Cart = ({ cartItems, userId }) => {
   const [dateError, setDateError] = useState('');
   const [timeError, setTimeError] = useState('');
 
-  // Validate inputs (time, date)
+// Validate inputs (time, date)
   useEffect(() => {
     validateTimes();
   }, [collectionTimeStart, collectionTimeEnd]);
@@ -65,17 +71,30 @@ const Cart = ({ cartItems, userId }) => {
     return time;
   };
 
-  const handleReserve = async () => {
-    if (!validateDate(collectionDate) || !validateTimes()) {
-      return;
-    }
+
+// Fetch selected items
+    const fetchSelectedItems = async () => {
+      const items = await Promise.all(selectedItems.map(async (id) => {
+        const response = await fetch(`${backendRoute}/donations/${id}`);
+        return response.json();
+      }));
+      setCartItems(items);
+    };
+    fetchSelectedItems();
+    
+    [selectedItems]
+
+    const handleReserve = async () => {
+      if (!validateDate(collectionDate) || !validateTimes()) {
+        return;
+      }
 
     const currentUserId = 1;  
     // const selectedDonationId = 1;  // Replace w actual donation ID
 
     const payload = {
-      userId: currentUserId,
-      // donationId: selectedDonationId,
+      userId,
+      donationIds: selectedItems,
       collectionDate,
       collectionTimeStart,
       collectionTimeEnd,
@@ -113,15 +132,31 @@ const Cart = ({ cartItems, userId }) => {
 
       <Box>
         <Typography variant="h4">Reservation Cart</Typography>
-        {/* Display cart items here */}
-        {cartItems && cartItems.length > 0 && (
-          <Box my={2}>
-            <Typography variant="h6">Cart Items:</Typography>
-            {cartItems.map((item, index) => (
-              <Typography key={index}>{item.name} - Quantity: {item.quantity}</Typography>
-            ))}
-          </Box>
-        )}
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Food</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell>Expiry Date</TableCell>
+                <TableCell>Donator</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {cartItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.food.name}</TableCell>
+                  <TableCell>{item.food.quantity}</TableCell>
+                  <TableCell>{item.food.type}</TableCell>
+                  <TableCell>{new Date(item.food.expiryDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{item.donator.person.name}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        
         <TextField
           label="Collection Date"
           type="date"
@@ -172,7 +207,7 @@ const Cart = ({ cartItems, userId }) => {
           fullWidth
           margin="normal"
         />
-        <Button variant="contained" onClick={handleReserve} fullWidth disabled={!!dateError || !!timeError}>
+        <Button variant="contained" onClick={handleReserve} fullWidth disabled={!!dateError || !!timeError || cartItems.length === 0}>
           Reserve
         </Button>
       </Box>
