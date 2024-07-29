@@ -1,5 +1,9 @@
+// TO-DO:
+//  - Add alert/message box to show "Item reserved", upon clicking of "Reserve" button
+
+
 import React, { useState, useEffect, useContext } from 'react';
-import { TextField, Button, Box, Typography } from '@mui/material';
+import { TextField, Button, Box, Typography, Alert, Grid } from '@mui/material';
 import { UserNavbar } from "../components/Navbar";
 import "./UserLanding";
 import { backendRoute } from '../utils/BackendUrl';
@@ -15,6 +19,10 @@ const Cart = ({ cartItems }) => {
   const [remarks, setRemarks] = useState('');
   const [dateError, setDateError] = useState('');
   const [timeError, setTimeError] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  const { token, updateToken } = useContext(TokenContext);
 
 
   function parseJwt(token) {
@@ -25,7 +33,25 @@ const Cart = ({ cartItems }) => {
     }).join(''));
     return JSON.parse(jsonPayload);
   }
-  const { token, updateToken } = useContext(TokenContext);
+
+  const clearForm = () => {
+    setCollectionDate('');
+    setCollectionTimeStart('');
+    setCollectionTimeEnd('');
+    setRemarks('');
+    setDateError('');
+    setTimeError('');
+    setIsFormValid(false);
+  };
+
+  useEffect(() => {
+    validateForm();
+  }, [collectionDate, collectionTimeStart, collectionTimeEnd, dateError, timeError]);
+
+  const validateForm = () => {
+    const isValid = collectionDate && collectionTimeStart && collectionTimeEnd && !dateError && !timeError;
+    setIsFormValid(isValid);
+  }
 
 
   // Validate inputs (time, date)
@@ -81,14 +107,13 @@ const Cart = ({ cartItems }) => {
   };
 
   const handleReserve = async () => {
-    if (!validateDate(collectionDate) || !validateTimes()) {
+    if (!isFormValid || !validateDate(collectionDate) || !validateTimes()) {
       return;
     }
 
 
     const payload = {
       userId,
-      // donationId: selectedDonationId,
       collectionDate,
       collectionTimeStart,
       collectionTimeEnd,
@@ -115,6 +140,8 @@ const Cart = ({ cartItems }) => {
 
       const data = await response.json();
       console.log('Reservation created:', data);
+      setShowAlert(true);
+      clearForm();
       // Handle successful reservation (e.g., clear cart, show success message)
     } catch (error) {
       console.error('Error creating reservation:', error.message);
@@ -122,73 +149,104 @@ const Cart = ({ cartItems }) => {
     }
   };
 
+  useEffect(() => {
+    if (showAlert) {
+      const timer = setTimeout(() => {
+        setShowAlert(false);
+      }, 3000);  // Alert stays for 3s
+
+      return () => clearTimeout(timer);
+    }
+  }, [showAlert]);
+
   return (
     <>
       <UserNavbar />
+      <Box sx={{ padding: 3, maxWidth: 800, margin: 'auto' }}>
+        <Typography variant="h4" align="center" gutterBottom sx={{ mb: 4 }}>
+          Reservation Cart
+        </Typography>
 
-      <Box>
-        <Typography variant="h4">Reservation Cart</Typography>
-        {/* Display cart items here */}
-        {cartItems && cartItems.length > 0 && (
-          <Box my={2}>
-            <Typography variant="h6">Cart Items:</Typography>
-            {cartItems.map((item, index) => (
-              <Typography key={index}>{item.name} - Quantity: {item.quantity}</Typography>
-            ))}
-          </Box>
+        {showAlert && (
+          <Alert
+            severity="success"
+            sx={{
+              mb: 2,
+              width: '100%',
+              justifyContent: 'center',
+              fontSize: '1.1rem',
+              '& .MuiAlert-icon': { fontSize: '2rem' }
+            }}
+          >
+            Reserved Successfully!
+          </Alert>
         )}
-        <TextField
-          label="Collection Date"
-          type="date"
-          value={collectionDate}
-          onChange={handleDateChange}
-          InputLabelProps={{ shrink: true }}
+
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <TextField
+              label="Collection Date"
+              type="date"
+              value={collectionDate}
+              onChange={handleDateChange}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              error={!!dateError}
+              helperText={dateError}
+              inputProps={{
+                min: new Date().toISOString().split('T')[0]
+              }}
+              sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem', padding: '14px' } }}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Collection Time Start"
+              type="time"
+              value={collectionTimeStart}
+              onChange={(e) => setCollectionTimeStart(enforceTimeRestrictions(e.target.value))}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              error={!!timeError}
+              inputProps={{ step: 300 }}
+              sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem', padding: '14px' } }}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Collection Time End"
+              type="time"
+              value={collectionTimeEnd}
+              onChange={(e) => setCollectionTimeEnd(enforceTimeRestrictions(e.target.value))}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              error={!!timeError}
+              helperText={timeError}
+              inputProps={{ step: 300 }}
+              sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem', padding: '14px' } }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Remarks"
+              multiline
+              rows={4}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              fullWidth
+              sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem' } }}
+            />
+          </Grid>
+        </Grid>
+
+        <Button
+          variant="contained"
+          onClick={handleReserve}
           fullWidth
-          margin="normal"
-          error={!!dateError}
-          helperText={dateError}
-          inputProps={{
-            min: new Date().toISOString().split('T')[0]
-          }}
-        />
-        <TextField
-          label="Collection Time Start"
-          type="time"
-          value={collectionTimeStart}
-          onChange={(e) => setCollectionTimeStart(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          margin="normal"
-          error={!!timeError}
-          inputProps={{
-            step: 300, // 5 min steps
-          }}
-        />
-        <TextField
-          label="Collection Time End"
-          type="time"
-          value={collectionTimeEnd}
-          onChange={(e) => setCollectionTimeEnd(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          margin="normal"
-          error={!!timeError}
-          helperText={timeError}
-          inputProps={{
-            step: 300, // 5 min steps
-          }}
-        />
-        <TextField
-          label="Remarks"
-          multiline
-          rows={4}
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
-        <Button variant="contained" onClick={handleReserve} fullWidth disabled={!!dateError || !!timeError}>
-          Reserve
+          disabled={!isFormValid}
+          sx={{ mt: 4, py: 1.5, fontSize: '1.1rem' }}
+        >
+          RESERVE
         </Button>
       </Box>
     </>
@@ -196,3 +254,8 @@ const Cart = ({ cartItems }) => {
 };
 
 export default Cart;
+
+
+
+
+
