@@ -1,111 +1,47 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import '../index.css';
-import './DonatorLanding.css';
-import "./ManageDonations.css";
-import { DonatorNavbar } from '../components/Navbar';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { backendRoute } from '../utils/BackendUrl';
 import { useParams } from 'react-router-dom';
 import {
   Paper,
-  IconButton,
   Typography,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-
-function Row(props) {
-  const { donation, handleDeleteClick } = props;
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <TableRow>
-        <TableCell>
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </TableCell>
-        <TableCell>{donation.category}</TableCell>
-        <TableCell>{new Date(donation.deliveryDate).toLocaleDateString()}</TableCell>
-        <TableCell>{donation.location}</TableCell>
-        <TableCell>{donation.remarks}</TableCell>
-        <TableCell>
-          <IconButton aria-label="delete" onClick={() => handleDeleteClick(donation.id)}>
-            <DeleteIcon />
-          </IconButton>
-        </TableCell>
-      </TableRow>
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={1}>
-              <Typography variant="h6" gutterBottom component="div">
-                Foods
-              </Typography>
-              <Table size="small" aria-label="foods">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Quantity</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Expiry Date</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {donation.foods.map((food) => (
-                    <TableRow key={food.id}>
-                      <TableCell component="th" scope="row">
-                        {food.name}
-                      </TableCell>
-                      <TableCell>{food.quantity}</TableCell>
-                      <TableCell>{food.type}</TableCell>
-                      <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
-  );
-}
+import { DonatorNavbar } from '../components/Navbar';
+import { backendRoute } from '../utils/BackendUrl';
 
 export default function ManageDonations() {
   const [donations, setDonations] = useState([]);
   const { donatorId } = useParams();
-  const [sortBy, setSortBy] = useState('expiryDate');
-  const [order, setOrder] = useState('asc');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [editingDonation, setEditingDonation] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [sortBy, setSortBy] = useState('expiryDate');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const fetchDonations = useCallback(async () => {
-    console.log('Fetching donations...');
     try {
-      const response = await fetch(`${backendRoute}/donations`, {
-        method: 'POST',
+      const response = await fetch(`${backendRoute}/donations?page=1&limit=10&sortBy=${sortBy}&sortOrder=${sortOrder}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -114,179 +50,301 @@ export default function ManageDonations() {
         throw new Error('Failed to fetch donations');
       }
       const data = await response.json();
-      console.log('donations fetched:', data);
-
-      // Ensure data.donations is an array before setting state
-      const donationsArray = Array.isArray(data.donations) ? data.donations : [];
-
-      setDonations(prevDonations => {
-        // Merge new data with existing donations, prioritizing new data
-        const updatedDonations = [...donationsArray];
-        prevDonations.forEach(donation => {
-          if (!updatedDonations.some(newDonation => newDonation.id === donation.id)) {
-            updatedDonations.push(donation);
-          }
-        });
-        return updatedDonations;
-      });
+      setDonations(data.donations);
     } catch (error) {
       console.error('Error fetching donations:', error);
-      // Handle error (e.g., show an error message to the user)
     }
-  }, [backendRoute]);
-
-  const sortedDonations = useMemo(() => {
-    return [...donations].sort((a, b) => {
-      if (sortBy === 'expiryDate') {
-        return order === 'asc'
-          ? new Date(a.expiryDate) - new Date(b.expiryDate)
-          : new Date(b.expiryDate) - new Date(a.expiryDate);
-      } else if (sortBy === 'category') {
-        return order === 'asc'
-          ? a.category.localeCompare(b.category)
-          : b.category.localeCompare(a.category);
-      }
-      // Add more sorting options as needed
-      return 0;
-    });
-  }, [donations, sortBy, order]);
-
-  const handleDeleteClick = useCallback((donationId) => {
-    console.log('Delete clicked for donation:', donationId);
-    setDonationToDelete(donationId);
-    setDeleteDialogOpen(true);
-  }, []);
-
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     fetchDonations();
   }, [fetchDonations]);
 
-  const handleDeleteConfirm = useCallback(async () => {
-    console.log('Delete confirmed for donation:', donationToDelete);
+  const handleDeleteClick = (donationId) => {
+    setDonationToDelete(donationId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (donationToDelete) {
       try {
-        console.log('Sending delete request...');
         const response = await fetch(`${backendRoute}/donations/${donationToDelete}`, {
           method: 'DELETE',
         });
-
-        console.log('Delete response received:', response.status);
-
+        const data = await response.json();
         if (response.ok) {
-          console.log('donation deleted successfully');
-          setReviews(prevDonations => prevDonations.filter(donation => donation.id !== donationToDelete));
+          setDonations(prevDonations => prevDonations.filter(donation => donation.id !== donationToDelete));
+          console.log(data.message);
         } else {
-          console.error('Server responded with an error:', response.status);
-          throw new Error(`Failed to delete donation: ${response.status}`);
+          throw new Error(data.error || 'Failed to delete donation');
         }
       } catch (error) {
         console.error('Error during delete operation:', error);
       } finally {
         setDeleteDialogOpen(false);
         setDonationToDelete(null);
-        // Optionally, refresh the donations list 
-        fetchDonations().catch(err => console.error('Error refreshing donations:', err));
       }
     }
-  }, [donationToDelete, backendRoute, setDonations, setDeleteDialogOpen, setDonationToDelete, fetchDonations]);
-
-  const handleDeleteCancel = useCallback(() => {
-    console.log('Delete cancelled');
-    setDeleteDialogOpen(false);
-    setReviewToDelete(null);
-  }, []);
-
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbar({ ...snackbar, open: false });
   };
 
-  console.log('Rendering donation component', { donations, deleteDialogOpen, donationToDelete });
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDonationToDelete(null);
+  };
 
-  const handleSort = (category) => {
-    if (sortBy === category) {
-      setOrder(order === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(category);
-      setOrder('asc');
+  const handleEditClick = (donationId) => {
+    const donationToEdit = donations.find(donation => donation.id === donationId);
+    setEditingDonation({ ...donationToEdit });
+    setEditDialogOpen(true);
+    setErrors({});
+  };
+
+  const handleEditCancel = () => {
+    setEditingDonation(null);
+    setEditDialogOpen(false);
+    setErrors({});
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!editingDonation.category) newErrors.category = 'Category is required';
+    editingDonation.foods.forEach((food, index) => {
+      if (!food.name) newErrors[`foodName${index}`] = 'Food name is required';
+      if (!food.quantity) newErrors[`foodQuantity${index}`] = 'Quantity is required';
+      if (!food.expiryDate) newErrors[`foodExpiryDate${index}`] = 'Expiry date is required';
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEditSave = async () => {
+    if (validateForm()) {
+      try {
+        const response = await fetch(`${backendRoute}/donations/${editingDonation.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editingDonation),
+        });
+        if (!response.ok) {
+          throw new Error('Failed to update donation');
+        }
+        const updatedDonation = await response.json();
+        setDonations(prevDonations =>
+          prevDonations.map(donation =>
+            donation.id === updatedDonation.id ? updatedDonation : donation
+          )
+        );
+        setEditingDonation(null);
+        setEditDialogOpen(false);
+      } catch (error) {
+        console.error('Error updating donation:', error);
+      }
     }
+  };
+
+  const handleEditChange = (e, field) => {
+    setEditingDonation(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value);
   };
 
   return (
     <div className="container">
       <DonatorNavbar />
       <div className='contents'>
-        <div className="action-buttons">
-          <button className="btn btn-primary">
-            <SettingsIcon className="icon" />
-            <NavLink to="/donator/ManageDonations">Manage Donations</NavLink>
-          </button>
-          <button className="btn btn-secondary">
-            <SettingsIcon className="icon" />
-            <NavLink to="/donator/TrackDonations">Track Donation Progress</NavLink>
-          </button>
-          <button className="btn btn-secondary">
-            <SettingsIcon className="icon" />
-            <NavLink to="/donator/DonateItem">Donate Items</NavLink>
-          </button>
-        </div>
-
-        <div className="container">
-          <DonatorNavbar />
-          <div className='contents'>
-            {/* ... existing action buttons ... */}
-
-            <Container maxWidth="md">
-              <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
-                <Typography variant="h4" gutterBottom>
-                  Donations for {donatorId}
-                </Typography>
-                <TableContainer component={Paper}>
-                  <Table aria-label="collapsible table">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell />
-                        <TableCell>Category</TableCell>
-                        <TableCell>Delivery Date</TableCell>
-                        <TableCell>Location</TableCell>
-                        <TableCell>Remarks</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {donations.map((donation) => (
-                        <Row key={donation.id} donation={donation} handleDeleteClick={handleDeleteClick} />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Paper>
-
-              <Dialog
-                open={deleteDialogOpen}
-                onClose={handleDeleteCancel}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-              >
-                <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
-                <DialogContent>
-                  <DialogContentText id="alert-dialog-description">
-                    Are you sure you want to delete this donation?
-                  </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                  <Button onClick={handleDeleteCancel}>Cancel</Button>
-                  <Button onClick={handleDeleteConfirm} autoFocus>
-                    Delete
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </Container>
+        <div className="centered">
+          <div className="action-buttons">
+            <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
+              Manage Donations
+            </Button>
+            <Button variant="contained" color="secondary" component={NavLink} to="/donator/TrackDonations">
+              Track Donation Progress
+            </Button>
+            <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
+              Donate New Item
+            </Button>
           </div>
         </div>
+
+        <Container maxWidth="md">
+          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+            <Typography variant="h4" gutterBottom>
+              My Donations
+            </Typography>
+            <FormControl fullWidth style={{ marginBottom: '20px' }}>
+              <InputLabel id="sort-select-label">Sort By</InputLabel>
+              <Select
+                labelId="sort-select-label"
+                id="sort-select"
+                value={sortBy}
+                label="Sort By"
+                onChange={handleSortChange}
+              >
+                <MenuItem value="category">Category</MenuItem>
+                <MenuItem value="expiryDate">Expiry Date</MenuItem>
+                <MenuItem value="quantity">Quantity</MenuItem>
+              </Select>
+            </FormControl>
+            <TableContainer>
+              <Table aria-label="donations table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Food</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Quantity (kg)</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Expiry Date</TableCell>
+                    <TableCell>Remarks</TableCell>
+                    <TableCell>Location</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {donations.flatMap((donation) =>
+                    donation.foods.map((food) => (
+                      <TableRow key={`${donation.id}-${food.id}`}>
+                        <TableCell>
+                          {donation.imageUrl && (
+                            <img
+                              src={donation.imageUrl}
+                              alt={food.name}
+                              style={{ width: 50, height: 50, marginRight: 10, objectFit: 'cover' }}
+                            />
+                          )}
+                          {food.name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{food.type || 'N/A'}</TableCell>
+                        <TableCell>{food.quantity || 'N/A'}</TableCell>
+                        <TableCell>{donation.category || 'N/A'}</TableCell>
+                        <TableCell>{new Date(food.expiryDate).toLocaleDateString() || 'N/A'}</TableCell>
+                        <TableCell>{donation.remarks || 'N/A'}</TableCell>
+                        <TableCell>{donation.location || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Button variant="outlined" color="primary" style={{ marginRight: '8px' }} onClick={() => handleEditClick(donation.id)}>
+                            Edit
+                          </Button>
+                          <Button variant="outlined" color="secondary" onClick={() => handleDeleteClick(donation.id)}>
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Container>
+
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this donation?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDeleteCancel}>Cancel</Button>
+            <Button onClick={handleDeleteConfirm} color="secondary">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={editDialogOpen} onClose={handleEditCancel}>
+          <DialogTitle>Edit Donation</DialogTitle>
+          <DialogContent>
+            {editingDonation && (
+              <>
+                <FormControl fullWidth margin="dense" error={!!errors.category}>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={editingDonation.category}
+                    onChange={(e) => handleEditChange(e, 'category')}
+                  >
+                    <MenuItem value="perishable">Perishable</MenuItem>
+                    <MenuItem value="non-perishable">Non-perishable</MenuItem>
+                    <MenuItem value="canned">Canned</MenuItem>
+                    <MenuItem value="frozen">Frozen</MenuItem>
+                  </Select>
+                  {errors.category && <FormHelperText>{errors.category}</FormHelperText>}
+                </FormControl>
+                <TextField
+                  margin="dense"
+                  label="Remarks"
+                  type="text"
+                  fullWidth
+                  value={editingDonation.remarks}
+                  onChange={(e) => handleEditChange(e, 'remarks')}
+                />
+                {editingDonation.foods.map((food, index) => (
+                  <div key={food.id}>
+                    <TextField
+                      margin="dense"
+                      label="Food Name"
+                      type="text"
+                      fullWidth
+                      value={food.name}
+                      onChange={(e) => {
+                        const newFoods = [...editingDonation.foods];
+                        newFoods[index].name = e.target.value;
+                        setEditingDonation({ ...editingDonation, foods: newFoods });
+                      }}
+                      error={!!errors[`foodName${index}`]}
+                      helperText={errors[`foodName${index}`]}
+                    />
+                    <TextField
+                      margin="dense"
+                      label="Quantity"
+                      type="number"
+                      fullWidth
+                      value={food.quantity}
+                      onChange={(e) => {
+                        const newFoods = [...editingDonation.foods];
+                        newFoods[index].quantity = parseInt(e.target.value);
+                        setEditingDonation({ ...editingDonation, foods: newFoods });
+                      }}
+                      error={!!errors[`foodQuantity${index}`]}
+                      helperText={errors[`foodQuantity${index}`]}
+                    />
+                    <TextField
+                      margin="dense"
+                      label="Expiry Date"
+                      type="date"
+                      fullWidth
+                      value={new Date(food.expiryDate).toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const newFoods = [...editingDonation.foods];
+                        newFoods[index].expiryDate = new Date(e.target.value);
+                        setEditingDonation({ ...editingDonation, foods: newFoods });
+                      }}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                      error={!!errors[`foodExpiryDate${index}`]}
+                      helperText={errors[`foodExpiryDate${index}`]}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleEditCancel}>Cancel</Button>
+            <Button onClick={handleEditSave} color="primary">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     </div>
   );

@@ -329,73 +329,45 @@ app.post('/reset-password/:id', isAdmin, async (req, res) => {
 
 // MARK: Donation CRUD - Andric
 interface donationInterface {
-    foodName:string;
-    quantity: string;
-    expiryDate: string;
-    deliveryDate: string;
-    type: string;
-    location: string;
-    image?: any;
-    donatorId: number;
-    remarks?: string;
+    foodName: string,
+    quantity: string,
+    expiryDate: string,
+    type: string,
+    category: string,
+    location: string,
+    remarks: string
 }
 
 app.post('/donation', async (req, res) => {
-    const formData = req.body;
-    console.log('ReceivedFormData: ', formData);
-
-    if (!formData.foodName || !formData.quantity || !formData.type || !formData.expiryDate) {
-        console.log('Error: Food data is missing');
-        return res.status(400).json({ error: 'All food data fields are required' });
-    }
-
-    try {
-        // Check for null values
-        if (!formData.donatorId || !formData.deliveryDate || !formData.location) {
-            console.log('Error: Missing required fields');
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const result = await prisma.donation.create({
-            data: {
-                donator: {
-                    connect: {
-                        id: formData.donatorId,
-                    },
-                },
-                deliveryDate: new Date(formData.deliveryDate),
-                expiryDate: new Date(formData.expiryDate),
-                location: formData.location,
-                remarks: formData.remarks,
-                food: {
-                    create: {
-                        name: formData.foodName,
-                        quantity: formData.quantity,
-                        type: formData.type,
-                        expiryDate: new Date(formData.expiryDate),
-                    },
+    let formData: donationInterface = req.body
+    const result = await prisma.donation.create({
+        data: {
+            donator: {
+                connect: {
+                    id: 1,
                 },
             },
-            include: {
-                food: true,
+            category: formData.category,
+            deliveryDate: new Date(formData.expiryDate),
+            location: formData.location,
+            remarks: formData.remarks,
+            foods: {
+                create: {
+                    name: formData.foodName,
+                    quantity: parseInt(formData.quantity, 10),
+                    type: formData.type,
+                    expiryDate: new Date(formData.expiryDate),
+                },
             },
-        });
-        res.status(200).json(result)
-    } catch (error) {
-        console.error('Error creating donation; ', error);
-// Added to show more error msgs
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            console.error('Prisma error code:', error.code);
-            console.error('Prisma error message:', error.message);
-            console.error('Affected model:', error.meta?.modelName);
-            console.error('Affected constraint:', error.meta?.constraint);
-        }
-        res.status(500).json({ error: 'Error creating donation', details: error.message, fullError: JSON.stringify(error) });
-    }
+        },
+        include: {
+            foods: true,
+        },
+    });
+    res.status(200).json(result)
 })
-
 // View donations with pagination and sorting
-app.post('/donations', async (req, res) => {
+app.get('/donations', async (req, res) => {
     const { page = '1', limit = '10'} = req.query;
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
@@ -430,55 +402,67 @@ app.post('/donations', async (req, res) => {
 });
 
 // Delete donations
-app.delete('/donations/:id', async (req, res) => { 
-    const donationId = parseInt(req.params.id, 10); 
-    console.log(`Received delete request for donation ID: ${donationId}`); 
-    const startTime = Date.now(); 
- 
-    // Set a timeout to force a response after 10 seconds 
-    const timeoutId = setTimeout(() => { 
-        console.log(`Delete operation timed out after 10 seconds for donation ID: ${donationId}`); 
-        res.status(504).json({ error: 'Delete operation timed out' }); 
-    }, 10000); 
- 
-    try { 
-        console.log('Attempting to delete donation...'); 
-        const deletedDonation = await prisma.donation.delete({ 
-            where: { 
-                id: donationId 
-            } 
-        }); 
-        clearTimeout(timeoutId); 
-        const endTime = Date.now(); 
-        console.log(`donation deleted successfully in ${endTime - startTime}ms:`, deletedDonation); 
-        res.status(200).json({ message: 'donation deleted successfully', deletedDonation, timeTaken: endTime - startTime }); 
-    } catch (error) { 
-        clearTimeout(timeoutId); 
-        const endTime = Date.now(); 
-        console.error(`Error deleting donation after ${endTime - startTime}ms:`, error); 
-        if (error.code === 'P2025') { 
-            res.status(404).json({ error: 'donation not found', timeTaken: endTime - startTime }); 
-        } else { 
-            res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime }); 
-        } 
-    } 
-}); 
+app.delete('/donations/:id', async (req, res) => {
+    const donationId = parseInt(req.params.id, 10);
+    console.log(`Received delete request for donation ID: ${donationId}`);
+  
+    try {
+      const result = await prisma.$transaction(async (prisma) => {
+        // Delete related foods
+        await prisma.food.deleteMany({
+          where: { donationId: donationId }
+        });
+  
+        // Delete related reservations
+        await prisma.reservation.deleteMany({
+          where: { donationId: donationId }
+        });
+  
+        // Now delete the donation
+        const deletedDonation = await prisma.donation.delete({
+          where: { id: donationId }
+        });
+  
+        return deletedDonation;
+      });
+  
+      console.log(`Donation deleted successfully:`, result);
+      res.status(200).json({ message: 'Donation deleted successfully', deletedDonation: result });
+    } catch (error) {
+      console.error(`Error deleting donation:`, error);
+      if (error.code === 'P2025') {
+        res.status(404).json({ error: 'Donation not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to delete donation', details: error.message });
+      }
+    }
+  });
 
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, expiryDate, category, deliveryDate, location } = req.body;
+    const { foods, category, remarks, imageUrl } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
             data: { 
-                food: {
+                foods: {
                     update: foods,
                 },
                 expiryDate,
                 category,
-                deliveryDate,
-                location 
+                remarks,
+                imageUrl,
+                foods: {
+                    updateMany: foods.map((food) => ({
+                        where: { id: food.id },
+                        data: {
+                            name: food.name,
+                            quantity: food.quantity,
+                            expiryDate: new Date(food.expiryDate)
+                        }
+                    }))
+                }
             },
             include: {
                 food: true,
@@ -486,9 +470,12 @@ app.put('/donations/:id', async (req, res) => {
         });
         res.json(updatedDonation);
     } catch (error) {
-        res.status(500).json({ error: 'Error updating donation' });
+        console.error('Error updating donation:', error);
+        res.status(500).json({ error: 'Error updating donation', details: error.message });
     }
 });
+
+
 
 //MARK: Reservation CRUD
 
