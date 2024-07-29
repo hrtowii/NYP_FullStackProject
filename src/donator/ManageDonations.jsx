@@ -35,10 +35,12 @@ export default function ManageDonations() {
   const [editingDonation, setEditingDonation] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [errors, setErrors] = useState({});
+  const [sortBy, setSortBy] = useState('expiryDate');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const fetchDonations = useCallback(async () => {
     try {
-      const response = await fetch(`${backendRoute}/donations?page=1&limit=10`, {
+      const response = await fetch(`${backendRoute}/donations?page=1&limit=10&sortBy=${sortBy}&sortOrder=${sortOrder}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +54,7 @@ export default function ManageDonations() {
     } catch (error) {
       console.error('Error fetching donations:', error);
     }
-  }, []);
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     fetchDonations();
@@ -146,6 +148,10 @@ export default function ManageDonations() {
     setEditingDonation(prev => ({ ...prev, [field]: e.target.value }));
   };
 
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value);
+  };
+
   return (
     <div className="container">
       <DonatorNavbar />
@@ -169,6 +175,20 @@ export default function ManageDonations() {
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
+            <FormControl fullWidth style={{ marginBottom: '20px' }}>
+              <InputLabel id="sort-select-label">Sort By</InputLabel>
+              <Select
+                labelId="sort-select-label"
+                id="sort-select"
+                value={sortBy}
+                label="Sort By"
+                onChange={handleSortChange}
+              >
+                <MenuItem value="category">Category</MenuItem>
+                <MenuItem value="expiryDate">Expiry Date</MenuItem>
+                <MenuItem value="quantity">Quantity</MenuItem>
+              </Select>
+            </FormControl>
             <TableContainer>
               <Table aria-label="donations table">
                 <TableHead>
