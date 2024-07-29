@@ -56,10 +56,7 @@ model Admin {
 
     model Donation {
       id           Int           @id @default(autoincrement())
-      food         String
-      amount       Float
       category     String
-      expiryDate   DateTime
       deliveryDate DateTime
       location     String
       remarks      String?

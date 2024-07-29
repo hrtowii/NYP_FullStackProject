@@ -313,7 +313,7 @@ interface editUserDetails {
 });
 
 app.post('/reset-password/:id', isAdmin, async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.param;
     const { newPassword } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -332,20 +332,25 @@ interface donationInterface {
     foodName: string,
     quantity: string,
     expiryDate: string,
-    type: string
+    type: string,
+    category: string,
+    location: string,
+    remarks: string
 }
-app.post('/donation', async (req, res) => {
+app.post('/donation/:id', async (req, res) => {
+    const id: number = parseInt(req.params.id);
     let formData: donationInterface = req.body
     const result = await prisma.donation.create({
         data: {
             donator: {
                 connect: {
-                    id: 1,
+                    id: id,
                 },
             },
-            category: "asd",
+            category: formData.category,
             deliveryDate: new Date(formData.expiryDate),
-            location: "asd",
+            location: formData.location,
+            remarks: formData.remarks,
             foods: {
                 create: {
                     name: formData.foodName,
@@ -362,7 +367,8 @@ app.post('/donation', async (req, res) => {
     res.status(200).json(result)
 })
 // View donations with pagination and sorting
-app.post('/donations', async (req, res) => {
+app.get('/donations/:id', async (req, res) => {
+    const donorId: number = parseInt(req.params.id);
     const { page = '1', limit = '10'} = req.query;
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
@@ -371,6 +377,7 @@ app.post('/donations', async (req, res) => {
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
+                where: { donatorId: donorId },
                 include: {
                     foods: true,
                     donator: true,
@@ -378,7 +385,9 @@ app.post('/donations', async (req, res) => {
                 skip,
                 take: limitNumber,
             }),
-            prisma.donation.count(),
+            prisma.donation.count({
+                where: { donatorId: donorId }
+            }),
         ]);
 
         res.status(200).json({
@@ -389,59 +398,67 @@ app.post('/donations', async (req, res) => {
     } catch (error) {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
-      }
+    }
 });
 
 // Delete donations
-app.delete('/donations/:id', async (req, res) => { 
-    const donationId = parseInt(req.params.id, 10); 
-    console.log(`Received delete request for donation ID: ${donationId}`); 
-    const startTime = Date.now(); 
- 
-    // Set a timeout to force a response after 10 seconds 
-    const timeoutId = setTimeout(() => { 
-        console.log(`Delete operation timed out after 10 seconds for donation ID: ${donationId}`); 
-        res.status(504).json({ error: 'Delete operation timed out' }); 
-    }, 10000); 
- 
-    try { 
-        console.log('Attempting to delete donation...'); 
-        const deletedDonation = await prisma.donation.delete({ 
-            where: { 
-                id: donationId 
-            } 
-        }); 
-        clearTimeout(timeoutId); 
-        const endTime = Date.now(); 
-        console.log(`donation deleted successfully in ${endTime - startTime}ms:`, deletedDonation); 
-        res.status(200).json({ message: 'donation deleted successfully', deletedDonation, timeTaken: endTime - startTime }); 
-    } catch (error) { 
-        clearTimeout(timeoutId); 
-        const endTime = Date.now(); 
-        console.error(`Error deleting donation after ${endTime - startTime}ms:`, error); 
-        if (error.code === 'P2025') { 
-            res.status(404).json({ error: 'donation not found', timeTaken: endTime - startTime }); 
-        } else { 
-            res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime }); 
-        } 
-    } 
-}); 
+app.delete('/donations/:id', async (req, res) => {
+    const donationId = parseInt(req.params.id, 10);
+    console.log(`Received delete request for donation ID: ${donationId}`);
+  
+    try {
+      const result = await prisma.$transaction(async (prisma) => {
+        // Delete related foods
+        await prisma.food.deleteMany({
+          where: { donationId: donationId }
+        });
+  
+        // Delete related reservations
+        await prisma.reservation.deleteMany({
+          where: { donationId: donationId }
+        });
+  
+        // Now delete the donation
+        const deletedDonation = await prisma.donation.delete({
+          where: { id: donationId }
+        });
+  
+        return deletedDonation;
+      });
+  
+      console.log(`Donation deleted successfully:`, result);
+      res.status(200).json({ message: 'Donation deleted successfully', deletedDonation: result });
+    } catch (error) {
+      console.error(`Error deleting donation:`, error);
+      if (error.code === 'P2025') {
+        res.status(404).json({ error: 'Donation not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to delete donation', details: error.message });
+      }
+    }
+  });
 
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, expiryDate, category, deliveryDate, location } = req.body;
+    const { foods, category, remarks, imageUrl } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
             data: { 
-                foods: {
-                    update: foods,
-                },
-                expiryDate,
                 category,
-                deliveryDate,
-                location 
+                remarks,
+                imageUrl,
+                foods: {
+                    updateMany: foods.map((food) => ({
+                        where: { id: food.id },
+                        data: {
+                            name: food.name,
+                            quantity: food.quantity,
+                            expiryDate: new Date(food.expiryDate)
+                        }
+                    }))
+                }
             },
             include: {
                 foods: true,
@@ -449,9 +466,12 @@ app.put('/donations/:id', async (req, res) => {
         });
         res.json(updatedDonation);
     } catch (error) {
-        res.status(500).json({ error: 'Error updating donation' });
+        console.error('Error updating donation:', error);
+        res.status(500).json({ error: 'Error updating donation', details: error.message });
     }
 });
+
+
 
 //MARK: Reservation CRUD
 
@@ -466,16 +486,17 @@ interface ReservationInterface {
     donationId: number;
 }
 
-app.post('/reservation', async (req, res) => {
+app.post('/reservation/:id', async (req, res) => {
+    const id: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
         const user = await prisma.user.findUnique({
-            where: { id: formData.userId },
+            where: { id: id },
         });
         if (!user) {
-            return res.status(400).json({ error: `User with id ${formData.userId} not found` });
+            return res.status(400).json({ error: `User with id ${id} not found` });
         }
         // Remove donation-related for now, to test functionality of just the reservation part
 
@@ -491,7 +512,7 @@ app.post('/reservation', async (req, res) => {
 
         const newReservation = await prisma.reservation.create({
             data: {
-                userId: formData.userId,
+                userId: id,
                 collectionDate: new Date(formData.collectionDate),
                 collectionTimeStart: formData.collectionTimeStart,
                 collectionTimeEnd: formData.collectionTimeEnd,

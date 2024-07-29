@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
-
+import { TokenContext } from '../utils/TokenContext';
+import {
+    Button,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Typography,
+    FormHelperText,
+} from '@mui/material';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 
@@ -16,10 +26,13 @@ export default function DonateItem() {
         quantity: '',
         expiryDate: '',
         deliveryDate: '',
-        location: '',   
+        location: '',
         type: '',
+        category: '',
         image: null,
+        remarks: '',
     });
+    const [errors, setErrors] = useState({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
     const [shouldNavigate, setShouldNavigate] = useState(false);
@@ -39,9 +52,55 @@ export default function DonateItem() {
         }
     }, [shouldNavigate, navigate]);
 
+    const validateForm = () => {
+        let tempErrors = {};
+        tempErrors.foodName = formData.foodName ? "" : "Food name is required";
+        tempErrors.quantity = formData.quantity ? "" : "Quantity is required";
+        if (formData.quantity && !Number.isInteger(Number(formData.quantity))) {
+            tempErrors.quantity = "Quantity must be an integer";
+        }
+        tempErrors.type = formData.type ? "" : "Type is required";
+        tempErrors.category = formData.category ? "" : "Category is required";
+        tempErrors.expiryDate = formData.expiryDate ? "" : "Expiry date is required";
+        tempErrors.deliveryDate = formData.deliveryDate ? "" : "Delivery date is required";
+        tempErrors.location = formData.location ? "" : "Location is required";
+
+        if (formData.expiryDate && formData.deliveryDate) {
+            if (new Date(formData.expiryDate) <= new Date(formData.deliveryDate)) {
+                tempErrors.expiryDate = "Expiry date must be after delivery date";
+            }
+        }
+
+        setErrors(tempErrors);
+        return Object.values(tempErrors).every(x => x === "");
+    };
+
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      }
+    const { token, updateToken } = useContext(TokenContext);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        if (name === 'quantity') {
+            // Only allow integer values for quantity
+            const intValue = parseInt(value);
+            if (!isNaN(intValue) && intValue.toString() === value) {
+                setFormData({ ...formData, [name]: intValue.toString() });
+            } else if (value === '') {
+                setFormData({ ...formData, [name]: '' });
+            }
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
+        if (errors[name]) {
+            setErrors({...errors, [name]: ""});
+        }
     };
 
     const handleImageUpload = (e) => {
@@ -51,7 +110,10 @@ export default function DonateItem() {
 
     const handleNext = () => {
         if (activeStep === 0) {
-            setShowConfirmDialog(true);
+            const isValid = validateForm();
+            if (isValid) {
+                setShowConfirmDialog(true);
+            }
         } else {
             setActiveStep((prevActiveStep) => prevActiveStep + 1);
         }
@@ -64,7 +126,8 @@ export default function DonateItem() {
     const handleConfirm = async () => {
         setShowConfirmDialog(false);
         try {
-            const response = await fetch(`${backendRoute}/donation`, {
+            const id = parseJwt(token).id
+            const response = await fetch(`${backendRoute}/donation/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -87,84 +150,145 @@ export default function DonateItem() {
             case 0:
                 return (
                     <form className="donation-form">
-                        <input
-                            type="text"
+                        <Typography variant="h6" gutterBottom>Food Information</Typography>
+                        <TextField
+                            fullWidth
+                            label="Food Name"
                             name="foodName"
-                            placeholder="Food Name"
                             value={formData.foodName}
                             onChange={handleInputChange}
+                            margin="normal"
                             required
+                            error={!!errors.foodName}
+                            helperText={errors.foodName}
                         />
-                        <input
-                            type="text"
+                        <TextField
+                            fullWidth
+                            label="Quantity (integer value)"
                             name="quantity"
-                            placeholder="Quantity (e.g., 1kg, 500ml)"
                             value={formData.quantity}
                             onChange={handleInputChange}
+                            margin="normal"
                             required
+                            error={!!errors.quantity}
+                            helperText={errors.quantity}
+                            type="number"
+                            inputProps={{ step: 1 }}
                         />
-                        <input
+                        <TextField
+                            fullWidth
+                            label="Remarks"
+                            name="remarks"
+                            value={formData.remarks}
+                            onChange={handleInputChange}
+                            margin="normal"
+                        />
+                        <FormControl fullWidth margin="normal" required error={!!errors.type}>
+                            <InputLabel>Type</InputLabel>
+                            <Select
+                                name="type"
+                                value={formData.type}
+                                onChange={handleInputChange}
+                            >
+                                <MenuItem value="">Select Type</MenuItem>
+                                <MenuItem value="meat">Meat</MenuItem>
+                                <MenuItem value="vegetable">Vegetable</MenuItem>
+                                <MenuItem value="dairy">Dairy</MenuItem>
+                            </Select>
+                            <FormHelperText>{errors.type}</FormHelperText>
+                        </FormControl>
+                        <FormControl fullWidth margin="normal" required error={!!errors.category}>
+                            <InputLabel>Category</InputLabel>
+                            <Select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleInputChange}
+                            >
+                                <MenuItem value="">Select Category</MenuItem>
+                                <MenuItem value="perishable">Perishable</MenuItem>
+                                <MenuItem value="non-perishable">Non-Perishable</MenuItem>
+                                <MenuItem value="canned">Canned</MenuItem>
+                                <MenuItem value="frozen">Frozen</MenuItem>
+                            </Select>
+                            <FormHelperText>{errors.category}</FormHelperText>
+                        </FormControl>
+                        
+                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Dates</Typography>
+                        <TextField
+                            fullWidth
+                            label="Expiry Date"
                             type="date"
                             name="expiryDate"
-                            placeholder="Expiry Date"
                             value={formData.expiryDate}
                             onChange={handleInputChange}
+                            margin="normal"
                             required
+                            InputLabelProps={{ shrink: true }}
+                            error={!!errors.expiryDate}
+                            helperText={errors.expiryDate}
                         />
-                        <input
+                        <TextField
+                            fullWidth
+                            label="Delivery Date"
                             type="date"
                             name="deliveryDate"
-                            placeholder="Delivery Date"
                             value={formData.deliveryDate}
                             onChange={handleInputChange}
+                            margin="normal"
                             required
+                            InputLabelProps={{ shrink: true }}
+                            error={!!errors.deliveryDate}
+                            helperText={errors.deliveryDate}
                         />
-                        <p className="form-note">Please make sure the food is delivered by the end of the day</p>
-                        <input
-                            type="text"
-                            name="location"
-                            placeholder="Location"
-                            value={formData.location}
-                            onChange={handleInputChange}
-                            required
-                        />
-                        <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            required
-                        >
-                            <option value="">Select Type</option>
-                            <option value="meat">Meat</option>
-                            <option value="vegetable">Vegetable</option>
-                            <option value="dairy">Dairy</option>
-                        </select>
+                        <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
+                            Please make sure the food is delivered by the end of the day
+                        </Typography>
+                        
+                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Location</Typography>
+                        <FormControl fullWidth margin="normal" required error={!!errors.location}>
+                            <InputLabel>Location</InputLabel>
+                            <Select
+                                name="location"
+                                value={formData.location}
+                                onChange={handleInputChange}
+                            >
+                                <MenuItem value="">Select Location</MenuItem>
+                                <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
+                                <MenuItem value="Sengkang">Sengkang</MenuItem>
+                            </Select>
+                            <FormHelperText>{errors.location}</FormHelperText>
+                        </FormControl>
+                        
+                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Image Upload</Typography>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleImageUpload}
+                            style={{ marginTop: '10px' }}
                         />
-                        {formData.image && <p>{formData.image.name}</p>}
+                        {formData.image && <Typography variant="body2" style={{ marginTop: '5px' }}>{formData.image.name}</Typography>}
                     </form>
                 );
             case 1:
                 return (
                     <div className="donation-summary">
-                        <h2>Donation Summary</h2>
-                        <p>Food Name: {formData.foodName}</p>
-                        <p>Quantity: {formData.quantity}</p>
-                        <p>Expiry Date: {formData.expiryDate}</p>
-                        <p>Delivery Date: {formData.deliveryDate}</p>
-                        <p>Location: {formData.location}</p>
-                        <p>Type: {formData.type}</p>
-                        {formData.image && <p>Image: {formData.image.name}</p>}
+                        <Typography variant="h6" gutterBottom>Donation Summary</Typography>
+                        <Typography>Food Name: {formData.foodName}</Typography>
+                        <Typography>Quantity: {formData.quantity}</Typography>
+                        <Typography>Type: {formData.type}</Typography>
+                        <Typography>Category: {formData.category}</Typography>
+                        <Typography>Expiry Date: {formData.expiryDate}</Typography>
+                        <Typography>Delivery Date: {formData.deliveryDate}</Typography>
+                        <Typography>Location: {formData.location}</Typography>
+                        {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
+                        {formData.image && <Typography>Image: {formData.image.name}</Typography>}
                     </div>
                 );
             case 2:
                 return (
                     <div className="thank-you">
-                        <h2>Thank You for Your Donation!</h2>
-                        <p>Your contribution will make a difference in someone's life.</p>
+                        <Typography variant="h6" gutterBottom>Thank You for Your Donation!</Typography>
+                        <Typography>Your contribution will make a difference in someone's life.</Typography>
                     </div>
                 );
             default:
@@ -176,19 +300,21 @@ export default function DonateItem() {
         <div className="container">
             <DonatorNavbar />
             <div className='contents'>
-                <div className="action-buttons">
-                    <button className="btn btn-secondary">
-                        <NavLink to="/donator/ManageDonations">Manage Donations</NavLink>
-                    </button>
-                    <button className="btn btn-secondary">
-                        <NavLink to="/donator/TrackDonations">Track Donation Progress</NavLink>
-                    </button>
-                    <button className="btn btn-primary">
-                        <NavLink to="/donator/DonateItem">Donate Items</NavLink>
-                    </button>
+                <div className="centered">
+                    <div className="action-buttons">
+                        <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
+                            Manage Donations
+                        </Button>
+                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/TrackDonations">
+                            Track Donation Progress
+                        </Button>
+                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
+                            Donate New Item
+                        </Button>
+                    </div>
                 </div>
                 <div className="donation-container">
-                    <h1>Food Donation</h1>
+                    <Typography variant="h4" className='Title'>Food Donation</Typography>
                     <div className="stepper">
                         {steps.map((label, index) => (
                             <div key={label} className={`step ${index === activeStep ? 'active' : ''}`}>
@@ -199,29 +325,29 @@ export default function DonateItem() {
                     {renderStepContent(activeStep)}
                     <div className="form-buttons">
                         {activeStep !== 0 && (
-                            <button onClick={handleBack} className="btn btn-secondary">
+                            <Button onClick={handleBack} variant="outlined" style={{ marginRight: '10px' }}>
                                 Back
-                            </button>
+                            </Button>
                         )}
-                        <button onClick={handleNext} className="btn btn-primary">
+                        <Button onClick={handleNext} variant="contained" color="primary">
                             {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
                 {showConfirmDialog && (
                     <div className="confirm-dialog">
-                        <h2>Confirm Donation</h2>
-                        <p>Are you sure you want to submit this donation?</p>
-                        <button onClick={() => setShowConfirmDialog(false)} className="btn btn-secondary">Cancel</button>
-                        <button onClick={handleConfirm} className="btn btn-primary">Confirm</button>
+                        <Typography variant="h6" gutterBottom>Confirm Donation</Typography>
+                        <Typography>Are you sure you want to submit this donation?</Typography>
+                        <Button onClick={() => setShowConfirmDialog(false)} variant="outlined" style={{ marginRight: '10px' }}>Cancel</Button>
+                        <Button onClick={handleConfirm} variant="contained" color="primary">Confirm</Button>
                     </div>
                 )}
 
                 {snackbar.show && (
                     <div className={`snackbar ${snackbar.type}`}>
                         {snackbar.message}
-                        <button onClick={() => setSnackbar({ ...snackbar, show: false })}>Close</button>
+                        <Button onClick={() => setSnackbar({ ...snackbar, show: false })}>Close</Button>
                     </div>
                 )}
             </div>
