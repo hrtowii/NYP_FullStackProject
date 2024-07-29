@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   List, 
@@ -13,7 +13,9 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { backendRoute } from './utils/BackendUrl';
@@ -23,12 +25,10 @@ export default function Profile() {
     const [profiles, setProfiles] = useState([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-    useEffect(() => {
-        fetchProfiles();
-    }, [donatorId]);
-
-    const fetchProfiles = async () => {
+    const fetchProfiles = useCallback(async () => {
+        console.log('Fetching profiles...');
         try {
             const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
                 method: 'POST',
@@ -40,54 +40,67 @@ export default function Profile() {
                 throw new Error('Failed to fetch profiles');
             }
             const data = await response.json();
+            console.log('Profiles fetched:', data);
             setProfiles(data);
         } catch (error) {
             console.error('Error fetching profiles:', error);
+            setSnackbar({ open: true, message: 'Failed to fetch profiles', severity: 'error' });
         }
-    };
+    }, [donatorId]);
 
-    const handleDeleteClick = (reviewId) => {
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
+
+    const handleDeleteClick = useCallback((reviewId) => {
+        console.log('Delete clicked for review:', reviewId);
         setReviewToDelete(reviewId);
         setDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = useCallback(async () => {
+        console.log('Delete confirmed for review:', reviewToDelete);
         if (reviewToDelete) {
             try {
-                const response = fetch(`${backendRoute}/reviews/${reviewToDelete}`, {
+                console.log('Sending delete request...');
+                const deleteResponse = await fetch(`${backendRoute}/reviews/${reviewToDelete}`, {
                     method: 'DELETE',
-                }).then((response) => {
-                    if (!response.ok) {
-                        throw new Error('Failed to delete review');
-                    }
-                })
-                const response2 = fetch(`${backendRoute}/reviews/${donatorId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                }).then((response2) => {
-                    if (!response2.ok) {
-                        throw new Error('Failed to fetch profiles');
-                    }
-                    response2.json().then((result) => {
-                        setProfiles(result);
-                        console.log(profiles)
-                    });
-                })
+                });
+                console.log('Delete response received:', deleteResponse);
+                
+                if (!deleteResponse.ok) {
+                    throw new Error(`Failed to delete review: ${deleteResponse.status} ${deleteResponse.statusText}`);
+                }
+                
+                console.log('Delete request successful');
+                setSnackbar({ open: true, message: 'Review deleted successfully', severity: 'success' });
+                
                 setDeleteDialogOpen(false);
+                setReviewToDelete(null);
+
+                console.log('Refreshing profiles...');
+                await fetchProfiles();
             } catch (error) {
                 console.error('Error deleting review:', error);
+                setSnackbar({ open: true, message: `Error deleting review: ${error.message}`, severity: 'error' });
             }
         }
+    }, [reviewToDelete, fetchProfiles]);
+
+    const handleDeleteCancel = useCallback(() => {
+        console.log('Delete cancelled');
         setDeleteDialogOpen(false);
         setReviewToDelete(null);
+    }, []);
+
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleDeleteCancel = () => {
-        setDeleteDialogOpen(false);
-        setReviewToDelete(null);
-    };
+    console.log('Rendering Profile component', { profiles, deleteDialogOpen, reviewToDelete });
 
     return (
         <Container maxWidth="md">
@@ -134,6 +147,12 @@ export default function Profile() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
+                <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 }
