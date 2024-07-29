@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import { UserNavbar } from "../components/Navbar";
 import "./UserLanding";
 import { backendRoute } from '../utils/BackendUrl';
+import { TokenContext } from '../utils/TokenContext';
 
 
-const Cart = ({ cartItems, userId }) => {
+
+const Cart = ({ cartItems }) => {
+  const [userId, setUserId] = useState(null);
   const [collectionDate, setCollectionDate] = useState('');
   const [collectionTimeStart, setCollectionTimeStart] = useState('');
   const [collectionTimeEnd, setCollectionTimeEnd] = useState('');
   const [remarks, setRemarks] = useState('');
   const [dateError, setDateError] = useState('');
   const [timeError, setTimeError] = useState('');
+
+
+  function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  }
+  const { token, updateToken } = useContext(TokenContext);
+
 
   // Validate inputs (time, date)
   useEffect(() => {
@@ -22,7 +37,7 @@ const Cart = ({ cartItems, userId }) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(date);
-    
+
     if (selectedDate < today) {  // Make sure that past date cannot be selected
       setDateError('Please select a date from today onwards');
       return false;
@@ -70,11 +85,9 @@ const Cart = ({ cartItems, userId }) => {
       return;
     }
 
-    const currentUserId = 1;  
-    // const selectedDonationId = 1;  // Replace w actual donation ID
 
     const payload = {
-      userId: currentUserId,
+      userId,
       // donationId: selectedDonationId,
       collectionDate,
       collectionTimeStart,
@@ -85,10 +98,12 @@ const Cart = ({ cartItems, userId }) => {
     console.log('Sending reservation payload:', payload);
 
     try {
-      const response = await fetch(`${backendRoute}/reservation`, {  // using fetch() to send POST req to backend
+      const id = parseJwt(token).id
+      const response = await fetch(`${backendRoute}/reservation/${id}`, {  // using fetch() to send POST req to backend
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });

@@ -481,16 +481,17 @@ interface ReservationInterface {
     donationId: number;
 }
 
-app.post('/reservation', async (req, res) => {
+app.post('/reservation/:id', async (req, res) => {
+    const id: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
         const user = await prisma.user.findUnique({
-            where: { id: formData.userId },
+            where: { id: id },
         });
         if (!user) {
-            return res.status(400).json({ error: `User with id ${formData.userId} not found` });
+            return res.status(400).json({ error: `User with id ${id} not found` });
         }
         // Remove donation-related for now, to test functionality of just the reservation part
 
@@ -506,7 +507,7 @@ app.post('/reservation', async (req, res) => {
 
         const newReservation = await prisma.reservation.create({
             data: {
-                userId: formData.userId,
+                userId: id,
                 collectionDate: new Date(formData.collectionDate),
                 collectionTimeStart: formData.collectionTimeStart,
                 collectionTimeEnd: formData.collectionTimeEnd,
