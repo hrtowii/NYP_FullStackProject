@@ -47,7 +47,10 @@ Table Admin {
 
 Table Donation {
   id Int [pk, increment]
+  food String [not null]
+  amount Float [not null]
   category String [not null]
+  expiryDate DateTime [not null]
   deliveryDate DateTime [not null]
   location String [not null]
   remarks String
