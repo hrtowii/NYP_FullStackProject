@@ -1,15 +1,9 @@
 // TODO:
-//  - change mock code to fetch actual data
-//  - add alert messages for confirm cancellation
-//  - add timing range with similar format 
-//  - change reschedule format to look like the existing material ui that im using
-//  - change reschedule date format from DD-MM-YY to Day, DD-Month-YYYY
 //  - make it such that for each reservation section, only 5 reservation boxes can be created.
-//    then put arrows to navigate to different pages of reservations 
-//    OR
-//  - create another webpage that stores every current/past reservation, create link in reservation.jsx
-//    to allow user to see all of his past/current reservations
+//    then put arrows to navigate to different pages of reservations
 //  - Add confirm button to confirm collected reservation (then will appear under past reservations section)
+//  - Soft delete, to store all those cancelled/completed on the "PAST RESERVATIONS" section
+
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';

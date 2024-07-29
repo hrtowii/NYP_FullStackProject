@@ -732,6 +732,21 @@ app.get('/events', async (req, res) => {
 });
 
 // MARK: review CRUD
+// app.post('/get_donator/', async (req,res) => {
+//     const {id} = req.body.id
+//     try {
+//         const newReview = await prisma.user.findUnique({
+//             where: {
+//                 id: parseInt(id, 10)
+//             }
+//         })
+//         console.log(newReview)
+//         res.status(200).json(newReview)
+//     } catch (e) {
+//         console.log(e)
+//         res.status(400).json({error: e})
+//     }
+// })
 app.post('/review_submit', async (req, res) => {
     try {
         const { rating, comment } = req.body;
@@ -748,16 +763,79 @@ app.post('/review_submit', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 })
+app.put('/reviews/:id', async (req, res) => {
+    const reviewId = parseInt(req.params.id, 10);
+    const { rating, comment } = req.body;
+    console.log(`Received update request for review ID: ${reviewId}`);
+    const startTime = Date.now();
+
+    // Set a timeout to force a response after 10 seconds
+    const timeoutId = setTimeout(() => {
+        console.log(`Update operation timed out after 10 seconds for review ID: ${reviewId}`);
+        res.status(504).json({ error: 'Update operation timed out' });
+    }, 10000);
+
+    try {
+        console.log('Attempting to update review...');
+        const updatedReview = await prisma.review.update({
+            where: {
+                id: reviewId
+            },
+            data: {
+                rating,
+                comment
+            }
+        });
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.log(`Review updated successfully in ${endTime - startTime}ms:`, updatedReview);
+        res.status(200).json({ message: 'Review updated successfully', updatedReview, timeTaken: endTime - startTime });
+    } catch (error) {
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.error(`Error updating review after ${endTime - startTime}ms:`, error);
+        if (error.code === 'P2025') {
+            res.status(404).json({ error: 'Review not found', timeTaken: endTime - startTime });
+        } else {
+            res.status(500).json({ error: 'Failed to update review', details: error.message, timeTaken: endTime - startTime });
+        }
+    }
+});
+
 
 app.delete('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
-    await prisma.review.delete({
-        where: {
-            id: reviewId
+    console.log(`Received delete request for review ID: ${reviewId}`);
+    const startTime = Date.now();
+
+    // Set a timeout to force a response after 10 seconds
+    const timeoutId = setTimeout(() => {
+        console.log(`Delete operation timed out after 10 seconds for review ID: ${reviewId}`);
+        res.status(504).json({ error: 'Delete operation timed out' });
+    }, 10000);
+
+    try {
+        console.log('Attempting to delete review...');
+        const deletedReview = await prisma.review.delete({
+            where: {
+                id: reviewId
+            }
+        });
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.log(`Review deleted successfully in ${endTime - startTime}ms:`, deletedReview);
+        res.status(200).json({ message: 'Review deleted successfully', deletedReview, timeTaken: endTime - startTime });
+    } catch (error) {
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.error(`Error deleting review after ${endTime - startTime}ms:`, error);
+        if (error.code === 'P2025') {
+            res.status(404).json({ error: 'Review not found', timeTaken: endTime - startTime });
+        } else {
+            res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
         }
-    })
-    res.status(200)
-})
+    }
+});
 
 app.post('/reviews/:id', async (req, res) => {
     try {
