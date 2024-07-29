@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
 import {
   Paper,
   Typography,
@@ -23,38 +22,63 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  CircularProgress,
+  Alert,
+  Box,
 } from '@mui/material';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
+import { TokenContext } from '../utils/TokenContext';
 
 export default function ManageDonations() {
   const [donations, setDonations] = useState([]);
-  const { donatorId } = useParams();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [editingDonation, setEditingDonation] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [sortBy, setSortBy] = useState('expiryDate');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { token, updateToken } = useContext(TokenContext);
 
   const fetchDonations = useCallback(async () => {
+    function parseJwt(token) {
+      var base64Url = token.split('.')[1];
+      var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    }
+    const donatorId = parseJwt(token).id
+    if (!donatorId) {
+      setError('No donator ID provided');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${backendRoute}/donations?page=1&limit=10&sortBy=${sortBy}&sortOrder=${sortOrder}`, {
+      setLoading(true);
+      const response = await fetch(`${backendRoute}/donations/${donatorId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch donations');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       setDonations(data.donations);
+      setError(null);
     } catch (error) {
       console.error('Error fetching donations:', error);
+      setError('Failed to fetch donations. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-  }, [sortBy, sortOrder]);
+  }, []);
 
   useEffect(() => {
     fetchDonations();
@@ -80,6 +104,7 @@ export default function ManageDonations() {
         }
       } catch (error) {
         console.error('Error during delete operation:', error);
+        setError('Failed to delete donation. Please try again.');
       } finally {
         setDeleteDialogOpen(false);
         setDonationToDelete(null);
@@ -140,6 +165,7 @@ export default function ManageDonations() {
         setEditDialogOpen(false);
       } catch (error) {
         console.error('Error updating donation:', error);
+        setError('Failed to update donation. Please try again.');
       }
     }
   };
@@ -151,6 +177,21 @@ export default function ManageDonations() {
   const handleSortChange = (event) => {
     setSortBy(event.target.value);
   };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <div className="container">
@@ -189,54 +230,60 @@ export default function ManageDonations() {
                 <MenuItem value="quantity">Quantity</MenuItem>
               </Select>
             </FormControl>
-            <TableContainer>
-              <Table aria-label="donations table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Food</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Quantity (kg)</TableCell>
-                    <TableCell>Category</TableCell>
-                    <TableCell>Expiry Date</TableCell>
-                    <TableCell>Remarks</TableCell>
-                    <TableCell>Location</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {donations.flatMap((donation) =>
-                    donation.foods.map((food) => (
-                      <TableRow key={`${donation.id}-${food.id}`}>
-                        <TableCell>
-                          {donation.imageUrl && (
-                            <img
-                              src={donation.imageUrl}
-                              alt={food.name}
-                              style={{ width: 50, height: 50, marginRight: 10, objectFit: 'cover' }}
-                            />
-                          )}
-                          {food.name || 'N/A'}
-                        </TableCell>
-                        <TableCell>{food.type || 'N/A'}</TableCell>
-                        <TableCell>{food.quantity || 'N/A'}</TableCell>
-                        <TableCell>{donation.category || 'N/A'}</TableCell>
-                        <TableCell>{new Date(food.expiryDate).toLocaleDateString() || 'N/A'}</TableCell>
-                        <TableCell>{donation.remarks || 'N/A'}</TableCell>
-                        <TableCell>{donation.location || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Button variant="outlined" color="primary" style={{ marginRight: '8px' }} onClick={() => handleEditClick(donation.id)}>
-                            Edit
-                          </Button>
-                          <Button variant="outlined" color="secondary" onClick={() => handleDeleteClick(donation.id)}>
-                            Delete
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            {donations.length === 0 ? (
+              <Typography align="center" variant="h6" style={{ marginTop: '20px' }}>
+                You have no donations at the moment. Click 'Donate New Item' to make a donation.
+              </Typography>
+            ) : (
+              <TableContainer>
+                <Table aria-label="donations table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Food</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Quantity (kg)</TableCell>
+                      <TableCell>Category</TableCell>
+                      <TableCell>Expiry Date</TableCell>
+                      <TableCell>Remarks</TableCell>
+                      <TableCell>Location</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {donations.flatMap((donation) =>
+                      donation.foods.map((food) => (
+                        <TableRow key={`${donation.id}-${food.id}`}>
+                          <TableCell>
+                            {donation.imageUrl && (
+                              <img
+                                src={donation.imageUrl}
+                                alt={food.name}
+                                style={{ width: 50, height: 50, marginRight: 10, objectFit: 'cover' }}
+                              />
+                            )}
+                            {food.name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{food.type || 'N/A'}</TableCell>
+                          <TableCell>{food.quantity || 'N/A'}</TableCell>
+                          <TableCell>{donation.category || 'N/A'}</TableCell>
+                          <TableCell>{new Date(food.expiryDate).toLocaleDateString() || 'N/A'}</TableCell>
+                          <TableCell>{donation.remarks || 'N/A'}</TableCell>
+                          <TableCell>{donation.location || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Button variant="outlined" color="primary" style={{ marginRight: '8px' }} onClick={() => handleEditClick(donation.id)}>
+                              Edit
+                            </Button>
+                            <Button variant="outlined" color="secondary" onClick={() => handleDeleteClick(donation.id)}>
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Paper>
         </Container>
 

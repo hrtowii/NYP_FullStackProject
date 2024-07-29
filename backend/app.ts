@@ -313,7 +313,7 @@ interface editUserDetails {
 });
 
 app.post('/reset-password/:id', isAdmin, async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.param;
     const { newPassword } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -337,13 +337,14 @@ interface donationInterface {
     location: string,
     remarks: string
 }
-app.post('/donation', async (req, res) => {
+app.post('/donation/:id', async (req, res) => {
+    const id: number = parseInt(req.params.id);
     let formData: donationInterface = req.body
     const result = await prisma.donation.create({
         data: {
             donator: {
                 connect: {
-                    id: 1,
+                    id: id,
                 },
             },
             category: formData.category,
@@ -366,7 +367,8 @@ app.post('/donation', async (req, res) => {
     res.status(200).json(result)
 })
 // View donations with pagination and sorting
-app.get('/donations', async (req, res) => {
+app.get('/donations/:id', async (req, res) => {
+    const donorId: number = parseInt(req.params.id);
     const { page = '1', limit = '10'} = req.query;
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
@@ -375,6 +377,7 @@ app.get('/donations', async (req, res) => {
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
+                where: { donatorId: donorId },
                 include: {
                     foods: true,
                     donator: true,
@@ -382,7 +385,9 @@ app.get('/donations', async (req, res) => {
                 skip,
                 take: limitNumber,
             }),
-            prisma.donation.count(),
+            prisma.donation.count({
+                where: { donatorId: donorId }
+            }),
         ]);
 
         res.status(200).json({
@@ -393,7 +398,7 @@ app.get('/donations', async (req, res) => {
     } catch (error) {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
-      }
+    }
 });
 
 // Delete donations

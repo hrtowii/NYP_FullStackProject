@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
+import { TokenContext } from '../utils/TokenContext';
 import {
     Button,
     TextField,
@@ -74,6 +75,16 @@ export default function DonateItem() {
         return Object.values(tempErrors).every(x => x === "");
     };
 
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      }
+    const { token, updateToken } = useContext(TokenContext);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'quantity') {
@@ -115,7 +126,8 @@ export default function DonateItem() {
     const handleConfirm = async () => {
         setShowConfirmDialog(false);
         try {
-            const response = await fetch(`${backendRoute}/donation`, {
+            const id = parseJwt(token).id
+            const response = await fetch(`${backendRoute}/donation/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
