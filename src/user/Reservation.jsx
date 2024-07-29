@@ -116,7 +116,7 @@ const Reservation = () => {
     };
 
     // RESCHEDULE RESERVATION
-
+    
     const handleReschedule = (reservation) => {
         setSelectedReservation(reservation);
         const newDate = new Date(reservation.collectionDate);

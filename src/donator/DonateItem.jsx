@@ -305,7 +305,7 @@ export default function DonateItem() {
                         <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
                             Manage Donations
                         </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/TrackDonations">
+                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
                             Track Donation Progress
                         </Button>
                         <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">

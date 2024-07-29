@@ -15,6 +15,7 @@ import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
+import DonateProgress from './donator/DonateProgress.jsx'
 import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
 import ManageDonations from './donator/ManageDonations.jsx'
@@ -128,6 +129,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonateItem />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/DonateProgress",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonateProgress />
       </ProtectedRoute>
     ),
   },
