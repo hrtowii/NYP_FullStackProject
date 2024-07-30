@@ -10,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Button,
   Dialog,
   DialogActions,
@@ -24,8 +25,8 @@ import {
   FormHelperText,
   CircularProgress,
   Alert,
-  Box,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
@@ -37,7 +38,8 @@ export default function ManageDonations() {
   const [editingDonation, setEditingDonation] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [errors, setErrors] = useState({});
-  const [sortBy, setSortBy] = useState('expiryDate');
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('name');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token, updateToken } = useContext(TokenContext);
@@ -174,9 +176,32 @@ export default function ManageDonations() {
     setEditingDonation(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleSortChange = (event) => {
-    setSortBy(event.target.value);
-  };
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  }
+
+  const sortedDonations = React.useMemo(() => {
+    const comparator = (a, b) => {
+      if (orderBy === 'name') {
+        return order === 'asc'
+          ? a.foods[0].name.localeCompare(b.foods[0].name)
+          : b.foods[0].name.localeCompare(a.foods[0].name);
+      } else if (orderBy === 'quantity') {
+        return order === 'asc'
+          ? a.foods[0].quantity - b.foods[0].quantity
+          : b.foods[0].quantity - a.foods[0].quantity;
+      } else if (orderBy === 'expiryDate') {
+        return order === 'asc'
+          ? new Date(a.foods[0].expiryDate) - new Date(b.foods[0].expiryDate)
+          : new Date(b.foods[0].expiryDate) - new Date(a.foods[0].expiryDate);
+      }
+      return 0;
+    };
+    return [...donations].sort(comparator);
+  }, [donations, order, orderBy]);
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -216,7 +241,6 @@ export default function ManageDonations() {
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
-            {/* ... (sort by dropdown remains unchanged) */}
             {donations.length === 0 ? (
               <Typography align="center" variant="h6" style={{ marginTop: '20px' }}>
                 You have no donations at the moment. Click 'Donate New Item' to make a donation.
@@ -227,18 +251,42 @@ export default function ManageDonations() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Image</TableCell>
-                      <TableCell>Food</TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={orderBy === 'name'}
+                          direction={orderBy === 'name' ? order : 'asc'}
+                          onClick={() => handleRequestSort('name')}
+                        >
+                          Food
+                        </TableSortLabel>
+                      </TableCell>
                       <TableCell>Type</TableCell>
-                      <TableCell>Quantity (kg)</TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={orderBy === 'quantity'}
+                          direction={orderBy === 'quantity' ? order : 'asc'}
+                          onClick={() => handleRequestSort('quantity')}
+                        >
+                          Quantity (kg)
+                        </TableSortLabel>
+                      </TableCell>
                       <TableCell>Category</TableCell>
-                      <TableCell>Expiry Date</TableCell>
+                      <TableCell>
+                        <TableSortLabel
+                          active={orderBy === 'expiryDate'}
+                          direction={orderBy === 'expiryDate' ? order : 'asc'}
+                          onClick={() => handleRequestSort('expiryDate')}
+                        >
+                          Expiry Date
+                        </TableSortLabel>
+                      </TableCell>
                       <TableCell>Remarks</TableCell>
                       <TableCell>Location</TableCell>
                       <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {donations.flatMap((donation) =>
+                    {sortedDonations.flatMap((donation) =>
                       donation.foods.map((food) => (
                         <TableRow key={`${donation.id}-${food.id}`}>
                           <TableCell>

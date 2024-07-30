@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
-  Box,
   Container,
   Modal,
   Typography,
@@ -10,6 +9,7 @@ import {
   Tab,
   Tabs,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 import { AdminNavbar } from '../components/Navbar';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
