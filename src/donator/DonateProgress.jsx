@@ -17,6 +17,7 @@ import {
     Rating,
     CircularProgress,
     Alert,
+    Container,
 
 } from '@mui/material';
 
@@ -166,12 +167,21 @@ export default function DonateItem() {
                                     <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: 'error.light' }}>
                                         <CardContent>
                                             <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                <Box>
-                                                    <Typography variant="h6">{food.name}</Typography>
-                                                    <Typography variant="body2">{'Unreserved'}</Typography>
-                                                    <Typography variant="body2">{'Unreserved'}</Typography>
-                                                    <Typography variant="body2">Status: {'Unreserved'}</Typography>
-                                                </Box>
+                                                    {donation.imageUrl && (
+                                                    <img
+                                                        src={donation.imageUrl}
+                                                        alt={food.name}
+                                                        style={{ width: 100, height: 100, objectFit: 'cover' }}
+                                                    />
+                                                    )}
+                                                    <Box>
+                                                        <Typography variant="h6">{food.name}</Typography>
+                                                        <Typography variant="body2">{'Unreserved'}</Typography>
+                                                        <Typography variant="body2">{'Unreserved'}</Typography>
+                                                        <Typography variant="body2">Status: {'Unreserved'}</Typography>
+                                                    </Box>
+                                                
+                                                
                                                 <Typography variant="h6">{food.quantity}</Typography>
                                             </Box>
                                         </CardContent>
@@ -205,7 +215,7 @@ export default function DonateItem() {
                     <Box width="35%">
                         <Typography variant="h6" gutterBottom>Your Reviews</Typography>
                         <Box bgcolor="grey.200" p={2} borderRadius={2}>
-                        {reviews.map((review) => (
+                            {reviews.map((review) => (
                                 <Card key={review.id} sx={{ mb: 2 }}>
                                     <CardContent>
                                         <Box display="flex" alignItems="center">
