@@ -353,7 +353,8 @@ interface donationInterface {
     type: string,
     category: string,
     location: string,
-    remarks: string
+    remarks: string,
+    imageURL: string,
 }
 app.post('/donation/:id', async (req, res) => {
     const id: number = parseInt(req.params.id);
@@ -369,6 +370,7 @@ app.post('/donation/:id', async (req, res) => {
             deliveryDate: new Date(formData.expiryDate),
             location: formData.location,
             remarks: formData.remarks,
+            imageUrl: formData.imageURL,
             foods: {
                 create: {
                     name: formData.foodName,
