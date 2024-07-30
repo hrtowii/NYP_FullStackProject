@@ -942,10 +942,34 @@ app.put('/reviews/:id', async (req, res) => {
                 comment
             }
         });
+        const donators = await prisma.donator.findMany({
+            include: {
+                person: true,
+                reviews: true,
+            },
+        });
+
+        const donatorsWithStats = donators.map(donator => {
+            const reviewCount = donator.reviews.length;
+            const averageRating = reviewCount > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+                : 0;
+
+            return {
+                id: donator.id,
+                name: donator.person.name,
+                averageRating: parseFloat(averageRating.toFixed(1)),
+                reviewCount,
+            };
+        });
+        console.log('Sending donators data to frontend:', JSON.stringify(donatorsWithStats, null, 2));
+
+        res.json(donatorsWithStats);
+
         clearTimeout(timeoutId);
         const endTime = Date.now();
         console.log(`Review updated successfully in ${endTime - startTime}ms:`, updatedReview);
-        res.status(200).json({ message: 'Review updated successfully', updatedReview, timeTaken: endTime - startTime });
+        // res.status(200).json({ message: 'Review updated successfully', updatedReview, timeTaken: endTime - startTime });
     } catch (error) {
         clearTimeout(timeoutId);
         const endTime = Date.now();
@@ -971,25 +995,59 @@ app.delete('/reviews/:id', async (req, res) => {
     }, 10000);
 
     try {
-        console.log('Attempting to delete review...');
-        const deletedReview = await prisma.review.delete({
-            where: {
-                id: reviewId
+        const result = await prisma.$transaction(async (prisma) => {
+            console.log('Attempting to delete review...');
+            const review = await prisma.review.findUnique({
+                where: { id: reviewId }
+            });
+
+            if (!review) {
+                throw new Error('Review not found');
             }
+
+            const donatorId = review.donatorId;
+
+            // Delete the review
+            await prisma.review.delete({ where: { id: reviewId } });
+
+            // Fetch the updated donator with reviews
+            const donator = await prisma.donator.findUnique({
+                where: { id: donatorId },
+                include: { reviews: true }
+            });
+
+            // Calculate new stats
+            const newAverageRating = donator.reviews.length > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length
+                : 0;
+            const newReviewCount = donator.reviews.length;
+
+            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
+
+            // Update the donator
+            await prisma.donator.update({
+                where: { id: donatorId },
+                data: { averageRating: newAverageRating, reviewCount: newReviewCount }
+            });
+
+            return { donatorId, newAverageRating, newReviewCount };
         });
+
         clearTimeout(timeoutId);
         const endTime = Date.now();
-        console.log(`Review deleted successfully in ${endTime - startTime}ms:`, deletedReview);
-        res.status(200).json({ message: 'Review deleted successfully', deletedReview, timeTaken: endTime - startTime });
+        console.log(`Review deleted successfully in ${endTime - startTime}ms:`, result);
+        res.status(200).json({
+            message: 'Review deleted successfully',
+            timeTaken: endTime - startTime,
+            donatorId: result.donatorId,
+            newAverageRating: result.newAverageRating,
+            newReviewCount: result.newReviewCount
+        });
     } catch (error) {
         clearTimeout(timeoutId);
         const endTime = Date.now();
         console.error(`Error deleting review after ${endTime - startTime}ms:`, error);
-        if (error.code === 'P2025') {
-            res.status(404).json({ error: 'Review not found', timeTaken: endTime - startTime });
-        } else {
-            res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
-        }
+        res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
     }
 });
 

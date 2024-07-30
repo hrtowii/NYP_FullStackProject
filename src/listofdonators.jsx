@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
-import { DonatorNavbar } from './components/Navbar';
+import Navbar from "./components/Navbar";
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import {
@@ -45,7 +45,21 @@ export default function ListOfDonators() {
         }).join(''));
         return JSON.parse(jsonPayload);
     }
+    const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
+
+    function stringToColor(string) {
+        let hash = 0;
+        for (let i = 0; i < string.length; i++) {
+            hash = string.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
 
     const fetchProfiles = useCallback(async () => {
         console.log('Fetching profiles...');
@@ -100,9 +114,9 @@ export default function ListOfDonators() {
             if (!comment.trim()) {
                 throw new Error('Please enter a comment');
             }
-    
+
             console.log('Submitting review:', { donatorId: selectedDonator.id, rating, comment, userId: currentUserId });
-    
+
             const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
                 method: 'POST',
                 headers: {
@@ -111,14 +125,14 @@ export default function ListOfDonators() {
                 },
                 body: JSON.stringify({ rating, comment, userId: currentUserId }),
             });
-    
+
             const responseData = await response.json();
             console.log('Review submission response:', responseData);
-    
+
             if (!response.ok) {
                 throw new Error(responseData.error || 'Failed to submit review');
             }
-    
+
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseModal();
             fetchProfiles(); // Refresh the profiles after submitting a review
@@ -139,9 +153,13 @@ export default function ListOfDonators() {
             if (orderBy === 'name') {
                 return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
             } else if (orderBy === 'averageRating') {
-                return order === 'asc' ? a.averageRating - b.averageRating : b.averageRating - a.averageRating;
+                const aRating = a.donator?.averageRating || 0;
+                const bRating = b.donator?.averageRating || 0;
+                return order === 'asc' ? aRating - bRating : bRating - aRating;
             } else if (orderBy === 'reviewCount') {
-                return order === 'asc' ? a.reviewCount - b.reviewCount : b.reviewCount - a.reviewCount;
+                const aCount = a.donator?.reviewCount || 0;
+                const bCount = b.donator?.reviewCount || 0;
+                return order === 'asc' ? aCount - bCount : bCount - aCount;
             }
             return 0;
         };
@@ -149,151 +167,161 @@ export default function ListOfDonators() {
     }, [profiles, order, orderBy]);
 
     return (
-        <div className="container">
-            <DonatorNavbar />
-            <Box sx={{ p: 3 }}>
-                <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
-                    List of Donators
-                </Typography>
-                {error ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
-                        <Alert severity="info">{error}</Alert>
-                    </Box>
-                ) : (
-                    <TableContainer component={Paper}>
-                        <Table sx={{ minWidth: 650 }} aria-label="donators table">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>#</TableCell>
-                                    <TableCell>
-                                        <TableSortLabel
-                                            active={orderBy === 'name'}
-                                            direction={orderBy === 'name' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('name')}
-                                        >
-                                            Name
-                                        </TableSortLabel>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <TableSortLabel
-                                            active={orderBy === 'averageRating'}
-                                            direction={orderBy === 'averageRating' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('averageRating')}
-                                        >
-                                            Average Rating
-                                        </TableSortLabel>
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <TableSortLabel
-                                            active={orderBy === 'reviewCount'}
-                                            direction={orderBy === 'reviewCount' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('reviewCount')}
-                                        >
-                                            Number of Reviews
-                                        </TableSortLabel>
-                                    </TableCell>
-                                    <TableCell align="right">Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {profiles.map((profile, index) => (
-                                    <TableRow
-                                        key={profile.id}
-                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                    >
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell component="th" scope="row">
-                                            <Box display="flex" alignItems="center">
-                                                <Avatar sx={{ mr: 2 }}>{profile.name[0]}</Avatar>
-                                                <Typography>{profile.name}</Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            <Rating value={profile.donator.averageRating?.toFixed(1) || 0} readOnly size="small"/>
-                                            <Typography variant="body2">({profile.donator.averageRating?.toFixed(1) || 'N/A'})</Typography>
-                                        </TableCell>
-                                        <TableCell align="right">{profile.donator.reviewCount || 0}</TableCell>
-                                        <TableCell align="right">
-                                            <Button 
-                                                variant="contained" 
-                                                color="primary" 
-                                                size="small" 
-                                                sx={{ mr: 1 }}
-                                                onClick={() => handleOpenModal(profile)}
-                                            >
-                                                Add Review
-                                            </Button>
-                                            <Button 
-                                                variant="outlined" 
-                                                color="primary" 
-                                                size="small"
-                                                onClick={() => handleViewReviews(profile.id)}
-                                            >
-                                                View Reviews
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )}
-            </Box>
-
-            <Modal
-                open={openModal}
-                onClose={handleCloseModal}
-                aria-labelledby="add-review-modal"
-                aria-describedby="modal-to-add-review-for-donator"
-            >
-                <Box sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: 400,
-                    bgcolor: 'background.paper',
-                    boxShadow: 24,
-                    p: 4,
-                }}>
-                    <Typography id="add-review-modal" variant="h6" component="h2">
-                        Add Review for {selectedDonator?.name}
+        <>
+            <Navbar />
+            <div className="container">
+                <Box sx={{ p: 3 }}>
+                    <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
+                        List of Donators
                     </Typography>
-                    <Box sx={{ mt: 2 }}>
-                        <Typography component="legend">Rating</Typography>
-                        <Rating
-                            name="rating"
-                            value={rating}
-                            onChange={(event, newValue) => {
-                                setRating(newValue);
-                            }}
-                        />
-                        <TextField
-                            fullWidth
-                            label="Comment"
-                            multiline
-                            rows={4}
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            sx={{ mt: 2 }}
-                        />
-                        <Button 
-                            variant="contained" 
-                            onClick={handleSubmitReview}
-                            sx={{ mt: 2 }}
-                        >
-                            Submit Review
-                        </Button>
-                    </Box>
+                    {error ? (
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
+                            <Alert severity="info">{error}</Alert>
+                        </Box>
+                    ) : (
+                        <TableContainer component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label="donators table">
+                                <TableHead>
+                                    <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                                        <TableCell>#</TableCell>
+                                        <TableCell>
+                                            <TableSortLabel
+                                                active={orderBy === 'name'}
+                                                direction={orderBy === 'name' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('name')}
+                                            >
+                                                Name
+                                            </TableSortLabel>
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <TableSortLabel
+                                                active={orderBy === 'averageRating'}
+                                                direction={orderBy === 'averageRating' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('averageRating')}
+                                            >
+                                                Average Rating
+                                            </TableSortLabel>
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <TableSortLabel
+                                                active={orderBy === 'reviewCount'}
+                                                direction={orderBy === 'reviewCount' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('reviewCount')}
+                                            >
+                                                Number of Reviews
+                                            </TableSortLabel>
+                                        </TableCell>
+                                        <TableCell align="right">Actions</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {sortedProfiles.map((profile, index) => (
+                                        <TableRow
+                                            key={profile.id}
+                                            sx={{
+                                                '&:last-child td, &:last-child th': { border: 0 },
+                                                backgroundColor: index % 2 === 0 ? 'inherit' : 'action.hover'
+                                            }}
+                                        >
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell component="th" scope="row">
+                                                <Box display="flex" alignItems="center">
+                                                    <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
+                                                    <Typography>{profile.name}</Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Box display="flex" alignItems="center" justifyContent="center">
+                                                    <Rating value={profile.donator.averageRating?.toFixed(1) || 0} readOnly size="small" />
+                                                    <Typography variant="body2" sx={{ ml: 1 }}>
+                                                        ({profile.donator.averageRating?.toFixed(1) || 'N/A'})
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell align="center">{profile.donator.reviewCount || 'N/A'}</TableCell>
+                                            <TableCell align="right">
+                                                {currentUserRole != "donator" &&
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        size="small"
+                                                        sx={{ mr: 1 }}
+                                                        onClick={() => handleOpenModal(profile)}
+                                                    >
+                                                        Add Review
+                                                    </Button>}
+                                                <Button
+                                                    variant="outlined"
+                                                    color="primary"
+                                                    size="small"
+                                                    onClick={() => handleViewReviews(profile.id)}
+                                                >
+                                                    View Reviews
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
                 </Box>
-            </Modal>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={6000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                message={snackbar.message}
-            />
-        </div>
+                <Modal
+                    open={openModal}
+                    onClose={handleCloseModal}
+                    aria-labelledby="add-review-modal"
+                    aria-describedby="modal-to-add-review-for-donator"
+                >
+                    <Box sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 400,
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        p: 4,
+                    }}>
+                        <Typography id="add-review-modal" variant="h6" component="h2">
+                            Add Review for {selectedDonator?.name}
+                        </Typography>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography component="legend">Rating</Typography>
+                            <Rating
+                                name="rating"
+                                value={rating}
+                                onChange={(event, newValue) => {
+                                    setRating(newValue);
+                                }}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Comment"
+                                multiline
+                                rows={4}
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                sx={{ mt: 2 }}
+                            />
+                            <Button
+                                variant="contained"
+                                onClick={handleSubmitReview}
+                                sx={{ mt: 2 }}
+                            >
+                                Submit Review
+                            </Button>
+                        </Box>
+                    </Box>
+                </Modal>
+
+                <Snackbar
+                    open={snackbar.open}
+                    autoHideDuration={6000}
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                    message={snackbar.message}
+                />
+            </div>
+        </>
     );
 }

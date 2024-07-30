@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
+import Navbar from "./components/Navbar";
 import { useParams } from 'react-router-dom';
 import {
     List,
@@ -21,8 +22,21 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import { backendRoute } from './utils/BackendUrl';
 import { EditIcon } from 'lucide-react';
+import { TokenContext } from './utils/TokenContext';
+
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  }
 
 export default function Profile() {
+    const {token} = useContext(TokenContext);
+    const userId = parseJwt(token).id
+    const userRole = parseJwt(token).role
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -188,6 +202,8 @@ export default function Profile() {
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 
     return (
+        <>
+        <Navbar/>
         <Container maxWidth="md">
             <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                 <Typography variant="h4" gutterBottom>
@@ -200,12 +216,22 @@ export default function Profile() {
                             primary={`${review.user?.person?.name || 'Unknown User'} - Rating: ${review.rating}`}
                             secondary={review.comment}
                         />
-                        <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                        {(review.userId === userId || userRole === "admin") && (
+                            <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                                <DeleteIcon />
+                            </IconButton>
+                        )}
+                        {review.userId === userId && (
+                            <IconButton onClick={() => handleEditClick(review)}>
+                                <EditIcon />
+                            </IconButton>
+                        )}
+                        {/* <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
                             <DeleteIcon />
                         </IconButton>
                         <IconButton onClick={() => handleEditClick(review)}>
                             <EditIcon/>
-                        </IconButton>
+                        </IconButton> */}
                     </ListItem>
                     ))}
                 </List>
@@ -270,5 +296,6 @@ export default function Profile() {
 
             </Dialog>
         </Container>
+        </>
     );
 }
