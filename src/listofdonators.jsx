@@ -182,7 +182,7 @@ export default function ListOfDonators() {
                         <TableContainer component={Paper}>
                             <Table sx={{ minWidth: 650 }} aria-label="donators table">
                                 <TableHead>
-                                    <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                                <TableRow sx={{ backgroundColor: 'action.hover' }}>
                                         <TableCell>#</TableCell>
                                         <TableCell>
                                             <TableSortLabel
