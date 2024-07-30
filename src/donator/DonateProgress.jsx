@@ -32,7 +32,7 @@ export default function DonateItem() {
     const [error, setError] = useState(null);
     const { token, updateToken } = useContext(TokenContext);
     const { donatorId } = useParams();
-    const [profiles, setProfiles] = useState([]);
+    const [reviews, setReviews] = useState([]);
 
 
     const fetchDonations = useCallback(async () => {
@@ -73,7 +73,7 @@ export default function DonateItem() {
         }
     }, []);
 
-    const fetchProfiles = useCallback(async () => {
+    const fetchReviews = useCallback(async () => {
         function parseJwt(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -83,30 +83,36 @@ export default function DonateItem() {
             return JSON.parse(jsonPayload);
         }
         const donatorId = parseJwt(token).id
-        console.log('Fetching profiles...');
+        if (!donatorId) {
+            setError('No donator ID provided');
+            setLoading(false);
+            return;
+        }
+        console.log('Fetching reviews...');
         try {
             const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
             });
             if (!response.ok) {
-                throw new Error('Failed to fetch profiles');
+                throw new Error('Failed to fetch reviews');
             }
             const data = await response.json();
-            console.log('Profiles fetched:', data);
-            setProfiles(data);
+            console.log('Reviews fetched:', data);
+            setReviews(data);
         } catch (error) {
-            console.error('Error fetching profiles:', error);
-            setSnackbar({ open: true, message: 'Failed to fetch profiles', severity: 'error' });
+            console.error('Error fetching reviews:', error);
+            // Handle error (e.g., show an error message to the user)
         }
     }, [donatorId]);
 
+
     useEffect(() => {
         fetchDonations();
-        fetchProfiles();
-    }, [fetchDonations, fetchProfiles]);
+        fetchReviews();
+    }, [fetchDonations, fetchReviews]);
 
     if (loading) {
         return (
@@ -131,14 +137,6 @@ export default function DonateItem() {
 
     const collectedItems = [
         { name: 'Chicken', date: 'Tuesday, 24 May 2023', time: '23:00 - 23:30', quantity: '100g', status: 'Collected' },
-    ];
-
-    const reviews = [
-        { name: 'Johnavon', rating: 5, comment: 'great food!', avatar: 'J' },
-        { name: 'Ron Joshua', rating: 4, comment: 'Thanks for the food! It really helped me make ends meet.', avatar: 'R' },
-        { name: 'Truss Eng', rating: 3, comment: 'Im the winner winner Im the Easter bunny', avatar: 'T' },
-        { name: 'Andric Lim', rating: 4, comment: 'This program has been a real lifesaver. Ive been having a hard time feeding my family as my parents are in critical condition running funds short. Real life saver', avatar: 'A' },
-        { name: 'Andric Lim', rating: 5, comment: 'I love this website', avatar: 'A' },
     ];
 
     return (
@@ -205,19 +203,19 @@ export default function DonateItem() {
                     </Box>
 
                     <Box width="35%">
-                        <Typography variant="h6" gutterBottom>Reviews</Typography>
+                        <Typography variant="h6" gutterBottom>Your Reviews</Typography>
                         <Box bgcolor="grey.200" p={2} borderRadius={2}>
-                            {profiles.map((profile, index) => (
-                                <Card key={index} sx={{ mb: 2 }}>
+                        {reviews.map((review) => (
+                                <Card key={review.id} sx={{ mb: 2 }}>
                                     <CardContent>
                                         <Box display="flex" alignItems="center">
                                             <Avatar sx={{ mr: 2 }}>{'J'}</Avatar>
                                             <Box>
-                                                <Typography variant="subtitle1">{'gay'}</Typography>
-                                                <Rating value={profile.rating} readOnly size="small" />
+                                                <Typography variant="subtitle1">{review.user?.person?.name || 'Unknown User'}</Typography>
+                                                <Rating value={review.rating} readOnly size="small" />
                                             </Box>
                                         </Box>
-                                        <Typography variant="body2" mt={1}>{profile.comment}</Typography>
+                                        <Typography variant="body2" mt={1}>{review.comment}</Typography>
                                     </CardContent>
                                 </Card>
                             ))}

@@ -1,27 +1,26 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  List, 
-  ListItem, 
-  ListItemText, 
-  Typography, 
-  Paper, 
-  Container,
-  IconButton,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  TextField,
-  Rating,
-  Snackbar
+import {
+    List,
+    ListItem,
+    ListItemText,
+    Typography,
+    Paper,
+    Container,
+    IconButton,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    TextField,
+    Rating,
+    Snackbar
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { backendRoute } from './utils/BackendUrl';
 import { EditIcon } from 'lucide-react';
-import Alert from '@mui/material/Alert';
 
 export default function Profile() {
     const { donatorId } = useParams();
@@ -32,21 +31,32 @@ export default function Profile() {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [reviewToEdit, setReviewToEdit] = useState(null);
     const [donatorName, setDonatorName] = useState("Loading...");
+
+    const fetchDonatorName = useCallback(async () => {
+        try {
+            const response = await fetch(`${backendRoute}/get_donator`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: donatorId })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch donator name');
+            }
+            const data = await response.json();
+            setDonatorName(data.name);
+        } catch (error) {
+            console.error('Error fetching donator name:', error);
+            setDonatorName("Unknown Donator");
+        }
+    }, [donatorId]);
+
     const fetchReviews = useCallback(async () => {
         console.log('Fetching reviews...');
         try {
-            // const username = await fetch(`${backendRoute}/get_donator/`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({id: donatorId})
-            // })
-            // if (username.ok) {
-            //     console.log(await username.json())
-            // }
             const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -65,7 +75,8 @@ export default function Profile() {
 
     useEffect(() => {
         fetchReviews();
-    }, []);
+        fetchDonatorName();
+    }, [fetchReviews, fetchDonatorName]);
 
     const handleDeleteClick = useCallback((reviewId) => {
         console.log('Delete clicked for review:', reviewId);
@@ -109,7 +120,7 @@ export default function Profile() {
 
     const handleEditClick = useCallback((review) => {
         console.log('Edit clicked for review:', review.id);
-        setReviewToEdit({...review});  // Create a copy of the review
+        setReviewToEdit({ ...review });  // Create a copy of the review
         setEditDialogOpen(true);
     }, []);
 
@@ -120,7 +131,7 @@ export default function Profile() {
                 console.log('Sending edit request...');
                 const editUrl = `${backendRoute}/reviews/${reviewToEdit.id}`;
                 console.log('Edit URL:', editUrl);
-                
+
                 const response = await fetch(editUrl, {
                     method: 'PUT',
                     headers: {
@@ -131,9 +142,9 @@ export default function Profile() {
                         comment: reviewToEdit.comment
                     }),
                 });
-    
+
                 console.log('Edit response received:', response.status);
-    
+
                 if (response.ok) {
                     const updatedReview = await response.json();
                     console.log('Review edited successfully:', updatedReview);
@@ -180,22 +191,22 @@ export default function Profile() {
         <Container maxWidth="md">
             <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                 <Typography variant="h4" gutterBottom>
-                    Reviews for {donatorId}
+                    Reviews for {donatorName}
                 </Typography>
                 <List>
                     {reviews.map((review) => (
                         <ListItem key={review.id} divider>
-                            <ListItemText
-                                primary={`Rating: ${review.rating}`}
-                                secondary={review.comment}
-                            />
-                            <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                                <DeleteIcon />
-                            </IconButton>
-                            <IconButton onClick={() => handleEditClick(review)}>
-                                <EditIcon/>
-                            </IconButton>
-                        </ListItem>
+                        <ListItemText
+                            primary={`${review.user?.person?.name || 'Unknown User'} - Rating: ${review.rating}`}
+                            secondary={review.comment}
+                        />
+                        <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                            <DeleteIcon />
+                        </IconButton>
+                        <IconButton onClick={() => handleEditClick(review)}>
+                            <EditIcon/>
+                        </IconButton>
+                    </ListItem>
                     ))}
                 </List>
             </Paper>
@@ -256,7 +267,7 @@ export default function Profile() {
                     Here is a gentle confirmation that your action was successful.
                     </Alert>
                 </DialogActions> */}
-                
+
             </Dialog>
         </Container>
     );

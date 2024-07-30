@@ -1,126 +1,126 @@
-    // This is your Prisma schema file,
-    // learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-    generator client {
-      provider = "prisma-client-js"
-    }
+generator client {
+  provider = "prisma-client-js"
+}
 
-    // generates a dbml file that can visualise the ERD
-    generator dbml {
-      provider = "prisma-dbml-generator"
-    }
+// generates a dbml file that can visualise the ERD
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
 
-    datasource db {
-      provider = "sqlite"
-      url      = env("DATABASE_URL")
-    }
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
 
-    model Person {
-      id             Int      @id @default(autoincrement())
-      email          String   @unique
-      name           String
-      hashedPassword String
-      createdAt      DateTime @default(now())
-      updatedAt      DateTime @updatedAt
+model Person {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  name           String
+  hashedPassword String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-      user    User?
-      donator Donator?
-      admin   Admin?
-    }
+  user    User?
+  donator Donator?
+  admin   Admin?
+}
 
-    model User {
-      id           Int           @unique
-      person       Person        @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-      reservations Reservation[]
-      // reviews      Review[]      @relation("UserReviews")
+model User {
+  id           Int           @unique
+  person       Person        @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reservations Reservation[]
+  reviews      Review[]      @relation("UserReviews")
 
-      @@id([id])
-    }
+  @@id([id])
+}
 
-    model Donator {
-      id        Int        @unique
-      person    Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-      donations Donation[]
-      reviews   Review[]   @relation("DonatorReviews")
-      events    Event[]    @relation("Events")
+model Review {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rating    Int
+  comment   String
+  userId    Int
+  user      User     @relation("UserReviews", fields: [userId], references: [id])
+  donatorId Int
+  donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
+}
 
-      @@id([id])
-    }
+model Donator {
+  id        Int        @unique
+  person    Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  donations Donation[]
+  reviews   Review[]   @relation("DonatorReviews")
+  events    Event[]    @relation("Events")
+
+  @@id([id])
+}
 
 model Admin {
   id     Int    @unique
   person Person @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-      @@id([id])
-    }
+  @@id([id])
+}
 
-    model Donation {
-      id           Int           @id @default(autoincrement())
-      category     String
-      deliveryDate DateTime
-      location     String
-      remarks      String?
-      imageUrl     String?
-      createdAt    DateTime      @default(now())
-      updatedAt    DateTime      @updatedAt
-      donatorId    Int
-      donator      Donator       @relation(fields: [donatorId], references: [id])
-      foods        Food[]
-      // reservations Reservation[]  // remove for now, to test reservation by itself first
-    }
+model Donation {
+  id           Int      @id @default(autoincrement())
+  category     String
+  deliveryDate DateTime
+  location     String
+  remarks      String?
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  donatorId    Int
+  donator      Donator  @relation(fields: [donatorId], references: [id])
+  foods        Food[]
+  // reservations Reservation[]  // remove for now, to test reservation by itself first
+}
 
-    model Food {
-      id         Int      @id @default(autoincrement())
-      name       String
-      quantity   Int
-      type       String
-      expiryDate DateTime
-      createdAt  DateTime @default(now())
-      donationId Int
-      donation   Donation @relation(fields: [donationId], references: [id])
-    }
+model Food {
+  id         Int      @id @default(autoincrement())
+  name       String
+  quantity   Int
+  type       String
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
+  donationId Int
+  donation   Donation @relation(fields: [donationId], references: [id])
+}
 
-    model Reservation {
-      id                  Int       @id @default(autoincrement())
-      userId              Int
-      user                User      @relation(fields: [userId], references: [id])
-      collectionDate      DateTime
-      collectionTimeStart String
-      collectionTimeEnd   String
-      collectionStatus    String
-      remarks             String?
-      createdAt           DateTime  @default(now())
-      updatedAt           DateTime  @updatedAt
-      
-      // removed donation-related parts first in order to test functionality of just the reservation components
+model Reservation {
+  id                  Int      @id @default(autoincrement())
+  userId              Int
+  user                User     @relation(fields: [userId], references: [id])
+  collectionDate      DateTime
+  collectionTimeStart String
+  collectionTimeEnd   String
+  collectionStatus    String
+  remarks             String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-      // donationId          Int? // make it optional to test prisma studio
-      // donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
+  // removed donation-related parts first in order to test functionality of just the reservation components
 
-      @@index([userId])
-    }
+  // donationId          Int? // make it optional to test prisma studio
+  // donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
 
-    model Review {
-      id        Int      @id @default(autoincrement())
-      createdAt DateTime @default(now())
-      updatedAt DateTime @updatedAt
-      rating    Int
-      comment   String
-      // userId    Int
-      // user      User     @relation("UserReviews", fields: [userId], references: [id])
-      donatorId Int
-      donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
-    }
+  @@index([userId])
+}
 
-    model Event {
-      id             Int      @id @default(autoincrement())
-      title          String
-      briefSummary   String
-      fullSummary    String
-      phoneNumber    String
-      emailAddress   String
-      startDate      DateTime
-      endDate        DateTime
-      donatorId      Int
-      eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
-    }
+model Event {
+  id             Int      @id @default(autoincrement())
+  title          String
+  briefSummary   String
+  fullSummary    String
+  phoneNumber    String
+  emailAddress   String
+  startDate      DateTime
+  endDate        DateTime
+  donatorId      Int
+  eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
+}

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import './index.css';
 import { DonatorNavbar } from './components/Navbar';
 import { backendRoute } from './utils/BackendUrl';
+import { TokenContext } from './utils/TokenContext';
 import {
     Button,
     Box,
@@ -26,6 +27,18 @@ export default function ListOfDonators() {
     const [comment, setComment] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const navigate = useNavigate();
+    const { token, updateToken } = useContext(TokenContext);
+
+    // Assume we have a way to get the current user's ID, e.g., from context or local storage
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      }
+    const currentUserId = parseJwt(token).id
 
     const fetchProfiles = useCallback(async () => {
         console.log('Fetching profiles...');
@@ -63,6 +76,7 @@ export default function ListOfDonators() {
         setRating(0);
         setComment('');
     };
+
     const handleViewReviews = (donatorId) => {
         navigate(`/profile/${donatorId}`);
     };
@@ -70,7 +84,7 @@ export default function ListOfDonators() {
     const handleSubmitReview = async () => {
         try {
             console.log('Submitting review for donator:', selectedDonator);
-            console.log('Review data:', { rating, comment });
+            console.log('Review data:', { rating, comment, userId: currentUserId });
     
             if (!rating || rating < 1 || rating > 5) {
                 throw new Error('Please select a rating between 1 and 5');
@@ -84,7 +98,7 @@ export default function ListOfDonators() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ rating, comment }),
+                body: JSON.stringify({ rating, comment, userId: currentUserId }),
             });
     
             console.log('Response status:', response.status);

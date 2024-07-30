@@ -188,7 +188,7 @@ app.post('/logout', async (req, res) => {
 //MARK: Admin functions
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
-app.post('/createAccounts', async(req, res) => {
+app.post('/createAccounts', async (req, res) => {
     const user: User = {
         name: "admin",
         email: "test@gmail.com",
@@ -271,14 +271,19 @@ app.post('/users', isAdmin, async (req, res) => {
 // View all donators
 app.post('/donators', async (req, res) => {
     try {
-        const users = await prisma.person.findMany({
+        const donators = await prisma.person.findMany({
+            where: {
+                donator: {
+                    isNot: null
+                }
+            },
             include: {
-                donator: true,
+                donator: true
             },
         });
-        res.status(200).json(users)
+        res.status(200).json(donators)
     } catch (error) {
-        res.status(500).json({ error: 'Error fetching users' });
+        res.status(500).json({ error: 'Error fetching donators' });
     }
 });
 
@@ -300,14 +305,14 @@ interface editUserDetails {
     name: string,
     email: string,
     role: "user" | "donator" | "admin",
-  }
+}
 
-  // remember that user roles are subclass models and not a simple attribute. 
-  // this complicates updating a role for us because we have to delete the existing role first
-  // so 1: find a user and check what roles it possesses
-  // 2. update the user to remove the roles it has. 
-  //    we cannot just remove every role because prisma errors if you try to remove a role that does not exist
-  app.put('/users/:id', isAdmin, async (req, res) => {
+// remember that user roles are subclass models and not a simple attribute. 
+// this complicates updating a role for us because we have to delete the existing role first
+// so 1: find a user and check what roles it possesses
+// 2. update the user to remove the roles it has. 
+//    we cannot just remove every role because prisma errors if you try to remove a role that does not exist
+app.put('/users/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, email }: editUserDetails = req.body;
     try {
@@ -382,7 +387,7 @@ app.post('/donation/:id', async (req, res) => {
 // View donations with pagination and sorting
 app.get('/donations/:id', async (req, res) => {
     const donorId: number = parseInt(req.params.id);
-    const { page = '1', limit = '10'} = req.query;
+    const { page = '1', limit = '10' } = req.query;
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
@@ -418,38 +423,38 @@ app.get('/donations/:id', async (req, res) => {
 app.delete('/donations/:id', async (req, res) => {
     const donationId = parseInt(req.params.id, 10);
     console.log(`Received delete request for donation ID: ${donationId}`);
-  
+
     try {
-      const result = await prisma.$transaction(async (prisma) => {
-        // Delete related foods
-        await prisma.food.deleteMany({
-          where: { donationId: donationId }
+        const result = await prisma.$transaction(async (prisma) => {
+            // Delete related foods
+            await prisma.food.deleteMany({
+                where: { donationId: donationId }
+            });
+
+            // Delete related reservations
+            await prisma.reservation.deleteMany({
+                where: { donationId: donationId }
+            });
+
+            // Now delete the donation
+            const deletedDonation = await prisma.donation.delete({
+                where: { id: donationId }
+            });
+
+            return deletedDonation;
         });
-  
-        // Delete related reservations
-        await prisma.reservation.deleteMany({
-          where: { donationId: donationId }
-        });
-  
-        // Now delete the donation
-        const deletedDonation = await prisma.donation.delete({
-          where: { id: donationId }
-        });
-  
-        return deletedDonation;
-      });
-  
-      console.log(`Donation deleted successfully:`, result);
-      res.status(200).json({ message: 'Donation deleted successfully', deletedDonation: result });
+
+        console.log(`Donation deleted successfully:`, result);
+        res.status(200).json({ message: 'Donation deleted successfully', deletedDonation: result });
     } catch (error) {
-      console.error(`Error deleting donation:`, error);
-      if (error.code === 'P2025') {
-        res.status(404).json({ error: 'Donation not found' });
-      } else {
-        res.status(500).json({ error: 'Failed to delete donation', details: error.message });
-      }
+        console.error(`Error deleting donation:`, error);
+        if (error.code === 'P2025') {
+            res.status(404).json({ error: 'Donation not found' });
+        } else {
+            res.status(500).json({ error: 'Failed to delete donation', details: error.message });
+        }
     }
-  });
+});
 
 // Update donations
 app.put('/donations/:id', async (req, res) => {
@@ -458,7 +463,7 @@ app.put('/donations/:id', async (req, res) => {
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
-            data: { 
+            data: {
                 category,
                 remarks,
                 imageUrl,
@@ -532,7 +537,7 @@ app.post('/reservation/:id', async (req, res) => {
                 collectionStatus: 'Uncollected',
                 remarks: formData.remarks,
                 // donationId: formData.donationId || null,  // will be null if no donationId provided
-                },
+            },
         });
         res.status(201).json(newReservation);
     } catch (error) {
@@ -762,15 +767,19 @@ app.get('/events', async (req, res) => {
 // })
 app.post('/review_submit/:id', async (req, res) => {
     try {
-        const { id } = req.params; // Get the id from the URL parameters
-        const { rating, comment } = req.body;
+        const { id } = req.params; // Get the donator's id from the URL parameters
+        const { rating, comment, userId } = req.body;
 
-        // Convert id to integer
+        // Convert ids to integers
         const donatorId = parseInt(id, 10);
+        const reviewerId = parseInt(userId, 10);
 
         // Validate input
         if (!donatorId || isNaN(donatorId)) {
             return res.status(400).json({ error: 'Invalid donator ID' });
+        }
+        if (!reviewerId || isNaN(reviewerId)) {
+            return res.status(400).json({ error: 'Invalid user ID' });
         }
         if (typeof rating !== 'number' || rating < 1 || rating > 5) {
             return res.status(400).json({ error: 'Invalid rating. Must be a number between 1 and 5' });
@@ -783,15 +792,81 @@ app.post('/review_submit/:id', async (req, res) => {
             data: {
                 rating,
                 comment,
-                donator: { connect: { id: donatorId } }
+                userId: reviewerId,
+                donatorId: donatorId
             },
+            include: {
+                user: {
+                    include: {
+                        person: true
+                    }
+                },
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
         });
-        res.status(201).json(newReview); // Use 201 for resource creation
+
+        res.status(201).json({ message: 'Review created successfully', review: newReview });
     } catch (error) {
         console.error('Error creating review:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.post('/get_donator', async (req, res) => {
+    const { id } = req.body;
+    try {
+        const donator = await prisma.donator.findUnique({
+            where: { id: parseInt(id) },
+            include: { person: true }
+        });
+        if (donator) {
+            res.json({ name: donator.person.name });
+        } else {
+            res.status(404).json({ error: 'Donator not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/reviews/:id', async (req, res) => {
+    try {
+        const { id } = req.params; // Get the donator's id from the URL parameters
+        const donatorId = parseInt(id, 10);
+
+        if (!donatorId || isNaN(donatorId)) {
+            return res.status(400).json({ error: 'Invalid donator ID' });
+        }
+
+        const reviews = await prisma.review.findMany({
+            where: {
+                donatorId: donatorId
+            },
+            include: {
+                user: {
+                    include: {
+                        person: true
+                    }
+                },
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.put('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
     const { rating, comment } = req.body;
@@ -863,21 +938,6 @@ app.delete('/reviews/:id', async (req, res) => {
         } else {
             res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
         }
-    }
-});
-
-app.post('/reviews/:id', async (req, res) => {
-    try {
-        const donatorId = parseInt(req.params.id);
-        const reviews = await prisma.review.findMany({
-            where: {
-                donatorId: donatorId
-            }
-        });
-        res.status(200).json(reviews);
-    } catch (error) {
-        console.log(error);
-        res.status(400).json({ error: error.message });
     }
 });
 
