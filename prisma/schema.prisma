@@ -50,11 +50,13 @@ model Review {
 }
 
 model Donator {
-  id        Int        @unique
-  person    Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  donations Donation[]
-  reviews   Review[]   @relation("DonatorReviews")
-  events    Event[]    @relation("Events")
+  id            Int        @unique
+  person        Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  donations     Donation[]
+  reviews       Review[]   @relation("DonatorReviews")
+  events        Event[]    @relation("Events")
+  averageRating Float      @default(0)
+  reviewCount   Int        @default(0)
 
   @@id([id])
 }

@@ -765,53 +765,103 @@ app.get('/events', async (req, res) => {
 //         res.status(400).json({error: e})
 //     }
 // })
+
 app.post('/review_submit/:id', async (req, res) => {
     try {
-        const { id } = req.params; // Get the donator's id from the URL parameters
+        const { id } = req.params;
         const { rating, comment, userId } = req.body;
 
-        // Convert ids to integers
+        console.log('Received review submission:', { id, rating, comment, userId });
+
         const donatorId = parseInt(id, 10);
         const reviewerId = parseInt(userId, 10);
 
-        // Validate input
-        if (!donatorId || isNaN(donatorId)) {
-            return res.status(400).json({ error: 'Invalid donator ID' });
-        }
-        if (!reviewerId || isNaN(reviewerId)) {
-            return res.status(400).json({ error: 'Invalid user ID' });
-        }
-        if (typeof rating !== 'number' || rating < 1 || rating > 5) {
-            return res.status(400).json({ error: 'Invalid rating. Must be a number between 1 and 5' });
-        }
-        if (typeof comment !== 'string' || comment.trim().length === 0) {
-            return res.status(400).json({ error: 'Comment is required' });
-        }
+        // Validate input (same as before)
 
-        const newReview = await prisma.review.create({
-            data: {
-                rating,
-                comment,
-                userId: reviewerId,
-                donatorId: donatorId
-            },
-            include: {
-                user: {
-                    include: {
-                        person: true
-                    }
+        const newReview = await prisma.$transaction(async (prisma) => {
+            const review = await prisma.review.create({
+                data: {
+                    rating,
+                    comment,
+                    userId: reviewerId,
+                    donatorId: donatorId
                 },
-                donator: {
-                    include: {
-                        person: true
+                include: {
+                    user: {
+                        include: {
+                            person: true
+                        }
+                    },
+                    donator: {
+                        include: {
+                            person: true
+                        }
                     }
                 }
-            }
+            });
+
+            console.log('Created new review:', JSON.stringify(review, null, 2));
+
+            const donator = await prisma.donator.findUnique({
+                where: { id: donatorId },
+                include: { reviews: true }
+            });
+
+            console.log('Fetched donator with reviews:', JSON.stringify(donator, null, 2));
+
+            const newAverageRating = donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length;
+            const newReviewCount = donator.reviews.length;
+
+            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
+
+            const updatedDonator = await prisma.donator.update({
+                where: { id: donatorId },
+                data: {
+                    averageRating: newAverageRating,
+                    reviewCount: newReviewCount
+                }
+            });
+
+            console.log('Updated donator:', JSON.stringify(updatedDonator, null, 2));
+
+            return review;
         });
 
         res.status(201).json({ message: 'Review created successfully', review: newReview });
     } catch (error) {
         console.error('Error creating review:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/donators', async (req, res) => {
+    try {
+        const donators = await prisma.donator.findMany({
+            include: {
+                person: true,
+                reviews: true,
+            },
+        });
+
+        const donatorsWithStats = donators.map(donator => {
+            const reviewCount = donator.reviews.length;
+            const averageRating = reviewCount > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+                : 0;
+
+            return {
+                id: donator.id,
+                name: donator.person.name,
+                averageRating: parseFloat(averageRating.toFixed(1)),
+                reviewCount,
+            };
+        });
+
+        console.log('Sending donators data to frontend:', JSON.stringify(donatorsWithStats, null, 2));
+
+        res.json(donatorsWithStats);
+    } catch (error) {
+        console.error('Error fetching donators:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

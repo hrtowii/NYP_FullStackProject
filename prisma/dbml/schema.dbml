@@ -43,6 +43,8 @@ Table Donator {
   donations Donation [not null]
   reviews Review [not null]
   events Event [not null]
+  averageRating Float [not null, default: 0]
+  reviewCount Int [not null, default: 0]
 
   indexes {
     (id) [pk]

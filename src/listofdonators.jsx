@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './index.css';
 import { DonatorNavbar } from './components/Navbar';
 import { backendRoute } from './utils/BackendUrl';
@@ -8,14 +8,20 @@ import {
     Button,
     Box,
     Typography,
-    Card,
-    CardContent,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
     Avatar,
     Rating,
     Alert,
     Modal,
     TextField,
     Snackbar,
+    TableSortLabel,
 } from '@mui/material';
 
 export default function ListOfDonators() {
@@ -26,18 +32,19 @@ export default function ListOfDonators() {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [order, setOrder] = useState('asc');
+    const [orderBy, setOrderBy] = useState('name');
     const navigate = useNavigate();
-    const { token, updateToken } = useContext(TokenContext);
+    const { token } = useContext(TokenContext);
 
-    // Assume we have a way to get the current user's ID, e.g., from context or local storage
     function parseJwt(token) {
         var base64Url = token.split('.')[1];
         var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         return JSON.parse(jsonPayload);
-      }
+    }
     const currentUserId = parseJwt(token).id
 
     const fetchProfiles = useCallback(async () => {
@@ -53,8 +60,12 @@ export default function ListOfDonators() {
                 throw new Error('Failed to fetch profiles');
             }
             const data = await response.json();
-            console.log('Profiles fetched:', data);
-            setProfiles(data);
+            console.log('Profiles received from backend:', JSON.stringify(data, null, 2));
+            if (data.length === 0) {
+                setError('No users found in the database');
+            } else {
+                setProfiles(data);
+            }
         } catch (error) {
             console.error('Error fetching profiles:', error);
             setError('Failed to fetch profiles');
@@ -83,9 +94,6 @@ export default function ListOfDonators() {
 
     const handleSubmitReview = async () => {
         try {
-            console.log('Submitting review for donator:', selectedDonator);
-            console.log('Review data:', { rating, comment, userId: currentUserId });
-    
             if (!rating || rating < 1 || rating > 5) {
                 throw new Error('Please select a rating between 1 and 5');
             }
@@ -93,80 +101,143 @@ export default function ListOfDonators() {
                 throw new Error('Please enter a comment');
             }
     
+            console.log('Submitting review:', { donatorId: selectedDonator.id, rating, comment, userId: currentUserId });
+    
             const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ rating, comment, userId: currentUserId }),
             });
     
-            console.log('Response status:', response.status);
             const responseData = await response.json();
-            console.log('Response data:', responseData);
+            console.log('Review submission response:', responseData);
     
             if (!response.ok) {
                 throw new Error(responseData.error || 'Failed to submit review');
             }
     
-            console.log('Review submitted successfully:', responseData);
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseModal();
+            fetchProfiles(); // Refresh the profiles after submitting a review
         } catch (error) {
             console.error('Error submitting review:', error);
             setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
         }
     };
 
-    if (error) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-                <Alert severity="error">{error}</Alert>
-            </Box>
-        );
-    }
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
+
+    const sortedProfiles = React.useMemo(() => {
+        const comparator = (a, b) => {
+            if (orderBy === 'name') {
+                return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+            } else if (orderBy === 'averageRating') {
+                return order === 'asc' ? a.averageRating - b.averageRating : b.averageRating - a.averageRating;
+            } else if (orderBy === 'reviewCount') {
+                return order === 'asc' ? a.reviewCount - b.reviewCount : b.reviewCount - a.reviewCount;
+            }
+            return 0;
+        };
+        return [...profiles].sort(comparator);
+    }, [profiles, order, orderBy]);
 
     return (
         <div className="container">
             <DonatorNavbar />
-            <Box width="100%" maxWidth="600px" margin="auto">
-                <Typography variant="h4" gutterBottom align="center">List of Donators</Typography>
-                <Box>
-                    {profiles.map((profile, index) => (
-                        <Card key={index} sx={{ mb: 2 }}>
-                            <CardContent>
-                                <Box display="flex" alignItems="center" justifyContent="space-between">
-                                    <Box display="flex" alignItems="center">
-                                        <Avatar sx={{ mr: 2 }}>{profile.name[0]}</Avatar>
-                                        <Box>
-                                            <Typography variant="subtitle1">{profile.name}</Typography> 
-                                            <Rating value={1} readOnly size="small" />
-                                        </Box>
-                                    </Box>
-                                    <Box>
-                                        <Button 
-                                            variant="contained" 
-                                            color="primary" 
-                                            size="small" 
-                                            sx={{ mr: 1 }}
-                                            onClick={() => handleOpenModal(profile)}
+            <Box sx={{ p: 3 }}>
+                <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
+                    List of Donators
+                </Typography>
+                {error ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
+                        <Alert severity="info">{error}</Alert>
+                    </Box>
+                ) : (
+                    <TableContainer component={Paper}>
+                        <Table sx={{ minWidth: 650 }} aria-label="donators table">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>#</TableCell>
+                                    <TableCell>
+                                        <TableSortLabel
+                                            active={orderBy === 'name'}
+                                            direction={orderBy === 'name' ? order : 'asc'}
+                                            onClick={() => handleRequestSort('name')}
                                         >
-                                            Add Review
-                                        </Button>
-                                        <Button 
-                                            variant="outlined" 
-                                            color="primary" 
-                                            size="small"
-                                            onClick={() => handleViewReviews(profile.id)}
+                                            Name
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <TableSortLabel
+                                            active={orderBy === 'averageRating'}
+                                            direction={orderBy === 'averageRating' ? order : 'asc'}
+                                            onClick={() => handleRequestSort('averageRating')}
                                         >
-                                            View Reviews
-                                        </Button>
-                                    </Box>
-                                </Box>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </Box>
+                                            Average Rating
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <TableSortLabel
+                                            active={orderBy === 'reviewCount'}
+                                            direction={orderBy === 'reviewCount' ? order : 'asc'}
+                                            onClick={() => handleRequestSort('reviewCount')}
+                                        >
+                                            Number of Reviews
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell align="right">Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {profiles.map((profile, index) => (
+                                    <TableRow
+                                        key={profile.id}
+                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                    >
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell component="th" scope="row">
+                                            <Box display="flex" alignItems="center">
+                                                <Avatar sx={{ mr: 2 }}>{profile.name[0]}</Avatar>
+                                                <Typography>{profile.name}</Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <Rating value={profile.donator.averageRating?.toFixed(1) || 0} readOnly size="small"/>
+                                            <Typography variant="body2">({profile.donator.averageRating?.toFixed(1) || 'N/A'})</Typography>
+                                        </TableCell>
+                                        <TableCell align="right">{profile.donator.reviewCount || 0}</TableCell>
+                                        <TableCell align="right">
+                                            <Button 
+                                                variant="contained" 
+                                                color="primary" 
+                                                size="small" 
+                                                sx={{ mr: 1 }}
+                                                onClick={() => handleOpenModal(profile)}
+                                            >
+                                                Add Review
+                                            </Button>
+                                            <Button 
+                                                variant="outlined" 
+                                                color="primary" 
+                                                size="small"
+                                                onClick={() => handleViewReviews(profile.id)}
+                                            >
+                                                View Reviews
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
             </Box>
 
             <Modal
