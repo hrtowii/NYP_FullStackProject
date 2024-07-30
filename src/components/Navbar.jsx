@@ -11,7 +11,7 @@ export default function Navbar() {
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
       <NavLink to={"/listofdonators"}>Donators</NavLink>
-      <NavLink to={"/events"}>Manage Events</NavLink>
+      <NavLink to={"/donator/events"}>Manage Events</NavLink>
 
     </div>
   )
@@ -24,8 +24,6 @@ export function DonatorNavbar() {
       <NavLink to={"/donator/inventory"}>Inventory</NavLink>
       <NavLink to={"/donator/ManageDonations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
-      {/* <NavLink to={"/donator/events"}>Manage Events</NavLink> */}
-      {/* Commented this out ^ will change to put in donator */}
     </div>
   )
 }

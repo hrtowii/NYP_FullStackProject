@@ -21,6 +21,7 @@ import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
 import ManageDonations from './donator/ManageDonations.jsx'
 import DonateItem from './donator/DonateItem.jsx'
+import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
 
 import './index.css'
 import {
@@ -52,10 +53,10 @@ const router = createBrowserRouter([
     path: "/review",
     element: <Review />
   },
-  {
-    path: "/events",
-    element: <DonatorEvents />
-  },
+  // {
+  //   path: "/events",
+  //   element: <DonatorEvents />
+  // },
   {
     path: "/listofdonators",
     element: <ListOfDonators />
@@ -64,13 +65,17 @@ const router = createBrowserRouter([
     path: "/profile/:donatorId",
     element: <Profile />
   },
-  {
-    path: "/eventsadd",
-    element: <DonatorEventsAdd />
-  },
+  // {
+  //   path: "/eventsadd",
+  //   element: <DonatorEventsAdd />
+  // },
+  // {
+  //   path: "/eventsupdate/:eventId",
+  //   element: <DonatorEventsUpdate />
+  // },
   {
     path: "/file",
-    element: <fileRoute/>
+    element: <fileRoute />
   },
   {
     path: "/forbidden",
@@ -125,8 +130,8 @@ const router = createBrowserRouter([
     path: "donator/ManageDonations",
     element: (
       <ProtectedRoute allowedRoles={['donator']}>
-        
-        <ManageDonations/>
+
+        <ManageDonations />
       </ProtectedRoute>
     )
   },
@@ -146,12 +151,37 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "donator/events",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEvents />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/addEvent",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEventsAdd />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/updateEvent/:eventId",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEventsUpdate />
+      </ProtectedRoute>
+    ),
+  },
+
   // MARK: Admin protected routes
   {
     path: "/admin",
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminLanding/>
+        <AdminLanding />
       </ProtectedRoute>
     )
   },

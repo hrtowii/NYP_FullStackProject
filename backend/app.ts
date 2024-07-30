@@ -647,12 +647,13 @@ interface EventBody {
     emailAddress: string,
     startDate: Date,
     endDate: Date,
+    imageFile: string,
     donatorId: number,
 }
 
 
-app.post('/event', async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId }: EventBody = req.body;
+app.post('/events', async (req, res) => {
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId }: EventBody = req.body;
     console.log(req.body);
 
 
@@ -674,9 +675,10 @@ app.post('/event', async (req, res) => {
                 fullSummary,
                 phoneNumber,
                 emailAddress,
-                startDate: new Date(),
-                endDate: new Date(),
-                donatorId: 2, // Ensure donatorId is an integer
+                startDate: new Date(startDate), // Convert ISO string to Date object
+                endDate: new Date(endDate),     // Convert ISO string to Date object
+                imageFile: imageFile || '',     // Use empty string if imageFile is null/undefined
+                donatorId: Number(donatorId),
             },
         });
 
@@ -697,30 +699,51 @@ interface updateEventBody {
     emailAddress: string,
     startDate: Date,
     endDate: Date,
+    imageFile: null,
     donatorId: number,
 }
-app.put('/event', async (req, res) => {
-    // const { eventId, title, summary, date, donatorId } = req.body
-    const { eventId, title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId } = req.body
-    const updatedEvent = await prisma.event.update({
-        where: {
-            id: eventId
-        },
-        data: {
-            title: title,
-            summary: summary,
-            dates: date ? new Date() : undefined,
-            donatorId: donatorId,
-            briefSummary: briefSummary,
-            fullSummary: fullSummary,
-            phoneNumber: phoneNumber,
-            emailAddress: emailAddress,
-            startDate: startDate ? new Date() : undefined,
-            endDate: startDate ? new Date() : undefined,
+app.put('/events/update/:eventId', async (req, res) => {
+    const { eventId } = req.params;  // Get eventId from params, not body
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId } = req.body;
+
+    try {
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                title,
+                briefSummary,
+                fullSummary,
+                phoneNumber,
+                emailAddress,
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                imageFile: "a",
+                // hardcoded^
+                donatorId: Number(donatorId),
+            }
+        });
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error updating event:', error);
+        res.status(500).json({ error: 'Failed to update event' });
+    }
+});
+app.get('/events/:eventId', async (req, res) => {
+    const { eventId } = req.params;
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+        });
+        if (event) {
+            res.json(event);
+        } else {
+            res.status(404).json({ error: 'Event not found' });
         }
-    })
-    res.status(200).json(updatedEvent)
-})
+    } catch (error) {
+        console.error('Error fetching event:', error);
+        res.status(500).json({ error: 'Failed to fetch event' });
+    }
+});
 
 app.post('/findeventsfromdonator', async (req, res) => {
     const { donatorId } = req.body
@@ -734,14 +757,21 @@ app.post('/findeventsfromdonator', async (req, res) => {
 
 app.delete('/event/:id', async (req, res) => {
     const eventId = parseInt(req.params.id, 10);
-    await prisma.event.delete({
-        where: {
-            id: eventId
-        }
-    })
-    res.status(200)
-})
-app.get('/events', async (req, res) => {
+    try {
+        console.log(`Attempting to delete event with ID: ${eventId}`);
+        const deletedEvent = await prisma.event.delete({
+            where: {
+                id: eventId
+            }
+        });
+        console.log(`Successfully deleted event:`, deletedEvent);
+        res.status(200).json({ message: 'Event deleted successfully', deletedEvent });
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        res.status(500).json({ error: 'Failed to delete event', details: error.message });
+    }
+});
+app.get('/donator/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany();
         res.status(200).json(events);
@@ -1098,6 +1128,20 @@ function isAdmin(req, res, next) {
         next()
     })
 }
+import { upload } from '../src/components/upload.jsx'
+app.post('/upload', (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            res.status(400).json(err);
+        }
+        else if (req.body == undefined) {
+            res.status(400).json({ message: "No file uploaded" });
+        }
+        else {
+            res.json({ filename: req.body.filename });
+        }
+    })
+});
 
 app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')

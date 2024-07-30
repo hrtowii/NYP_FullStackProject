@@ -123,6 +123,7 @@ model Event {
   emailAddress   String
   startDate      DateTime
   endDate        DateTime
+  imageFile      String
   donatorId      Int
   eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
 }

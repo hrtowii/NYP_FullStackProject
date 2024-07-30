@@ -107,6 +107,7 @@ Table Event {
   emailAddress String [not null]
   startDate DateTime [not null]
   endDate DateTime [not null]
+  imageFile String [not null]
   donatorId Int [not null]
   eventOrganiser Donator [not null]
 }
