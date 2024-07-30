@@ -268,6 +268,19 @@ app.post('/users', isAdmin, async (req, res) => {
         res.status(500).json({ error: 'Error fetching users' });
     }
 });
+// View all donators
+app.post('/donators', async (req, res) => {
+    try {
+        const users = await prisma.person.findMany({
+            include: {
+                donator: true,
+            },
+        });
+        res.status(200).json(users)
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching users' });
+    }
+});
 
 // Delete a user
 app.delete('/users/:id', isAdmin, async (req, res) => {
@@ -747,22 +760,38 @@ app.get('/events', async (req, res) => {
 //         res.status(400).json({error: e})
 //     }
 // })
-app.post('/review_submit', async (req, res) => {
+app.post('/review_submit/:id', async (req, res) => {
     try {
+        const { id } = req.params; // Get the id from the URL parameters
         const { rating, comment } = req.body;
+
+        // Convert id to integer
+        const donatorId = parseInt(id, 10);
+
+        // Validate input
+        if (!donatorId || isNaN(donatorId)) {
+            return res.status(400).json({ error: 'Invalid donator ID' });
+        }
+        if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Invalid rating. Must be a number between 1 and 5' });
+        }
+        if (typeof comment !== 'string' || comment.trim().length === 0) {
+            return res.status(400).json({ error: 'Comment is required' });
+        }
+
         const newReview = await prisma.review.create({
             data: {
                 rating,
                 comment,
-                donator: { connect: { id: 1 } }
+                donator: { connect: { id: donatorId } }
             },
         });
-        res.status(200).json(newReview);
+        res.status(201).json(newReview); // Use 201 for resource creation
     } catch (error) {
-        console.log(error)
-        res.status(400).json({ error: error.message });
+        console.error('Error creating review:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 app.put('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
     const { rating, comment } = req.body;
@@ -851,6 +880,7 @@ app.post('/reviews/:id', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+
 
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route

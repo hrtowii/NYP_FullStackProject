@@ -15,6 +15,7 @@ import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
+import ListOfDonators from './listofdonators.jsx'
 import DonateProgress from './donator/DonateProgress.jsx'
 import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
   {
     path: "/events",
     element: <DonatorEvents />
+  },
+  {
+    path: "/listofdonators",
+    element: <ListOfDonators />
   },
   {
     path: "/profile/:donatorId",

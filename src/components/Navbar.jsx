@@ -10,7 +10,7 @@ export default function Navbar() {
       <NavLink to={"/about"}>About Us</NavLink>
       <NavLink to={"/signup"}>Sign Up</NavLink>
       <NavLink to={"/login"}>Log In</NavLink>
-      <NavLink to={"/review"}>Review</NavLink>
+      <NavLink to={"/listofdonators"}>Donators</NavLink>
       <NavLink to={"/events"}>Manage Events</NavLink>
 
     </div>
