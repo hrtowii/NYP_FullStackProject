@@ -8,7 +8,6 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import {
     Button,
-    Box,
     Typography,
     Card,
     CardContent,
@@ -20,7 +19,7 @@ import {
     Container,
 
 } from '@mui/material';
-
+import Box from '@mui/material/Box';
 export default function DonateItem() {
     const [donations, setDonations] = useState([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

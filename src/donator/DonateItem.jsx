@@ -15,8 +15,8 @@ import {
     InputLabel,
     Typography,
     FormHelperText,
-    Box,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 

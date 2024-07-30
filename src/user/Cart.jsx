@@ -3,7 +3,8 @@
 
 
 import React, { useState, useEffect, useContext } from 'react';
-import { TextField, Button, Box, Typography, Alert, Grid } from '@mui/material';
+import { TextField, Button, Typography, Alert, Grid } from '@mui/material';
+import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import "./UserLanding";
 import { backendRoute } from '../utils/BackendUrl';

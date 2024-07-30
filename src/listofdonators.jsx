@@ -6,7 +6,6 @@ import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import {
     Button,
-    Box,
     Typography,
     Table,
     TableBody,
@@ -23,7 +22,7 @@ import {
     Snackbar,
     TableSortLabel,
 } from '@mui/material';
-
+import Box from '@mui/material/Box';
 export default function ListOfDonators() {
     const [error, setError] = useState(null);
     const [profiles, setProfiles] = useState([]);

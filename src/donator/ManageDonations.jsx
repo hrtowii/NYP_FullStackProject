@@ -25,8 +25,8 @@ import {
   FormHelperText,
   CircularProgress,
   Alert,
-  Box,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';

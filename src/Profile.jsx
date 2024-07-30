@@ -18,9 +18,9 @@ import {
     TextField,
     Rating,
     Snackbar,
-    Box,
     Alert
 } from '@mui/material';
+import Box from '@mui/material/Box';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ReplyIcon from '@mui/icons-material/Reply';
