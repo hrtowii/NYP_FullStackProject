@@ -267,7 +267,7 @@ export default function ManageDonations() {
                           direction={orderBy === 'quantity' ? order : 'asc'}
                           onClick={() => handleRequestSort('quantity')}
                         >
-                          Quantity (kg)
+                          Quantity (g)
                         </TableSortLabel>
                       </TableCell>
                       <TableCell>Category</TableCell>

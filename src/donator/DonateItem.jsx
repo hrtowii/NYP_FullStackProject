@@ -166,7 +166,7 @@ export default function DonateItem() {
                         />
                         <TextField
                             fullWidth
-                            label="Quantity (integer value)"
+                            label="Quantity in g (integer value)"
                             name="quantity"
                             value={formData.quantity}
                             onChange={handleInputChange}

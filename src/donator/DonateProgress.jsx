@@ -181,7 +181,7 @@ export default function DonateItem() {
                                                     </Box>
                                                 
                                                 
-                                                <Typography variant="h6">{food.quantity}</Typography>
+                                                <Typography variant="h6">{food.quantity + " g"}</Typography>
                                             </Box>
                                         </CardContent>
                                     </Card>
