@@ -1,83 +1,112 @@
-import React, { useContext, useEffect, useState } from 'react'
-import Box from '@mui/material/Box';
+import React, { useContext, useEffect, useState } from 'react';
 import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
+  Box,
   Modal,
   Typography,
   TextField,
   Button,
-  IconButton,
-  Snackbar
-} from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
+  Snackbar,
+  Tab,
+  Tabs,
+} from '@mui/material';
 import { AdminNavbar } from '../components/Navbar';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
-import { EditIcon } from 'lucide-react';
-// admin page. Admins can:
-// view all users
-// delete any user
-// update any user details
+import DataTable from '../components/DataTable.tsx';
+
 const getUserRole = (user) => {
   if (user.admin) return 'Admin';
   if (user.donator) return 'Donator';
   if (user.user) return 'User';
   return 'Unknown';
 };
+
 export default function AdminLanding() {
-  // https://mui.com/material-ui/react-table/ for reference
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openModal, setOpenModal] = useState(false);
   const [editData, setEditData] = useState({ id: '', name: '', email: '' });
+  const { token } = useContext(TokenContext);
+  const [users, setUsers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
-  const { token, setToken } = useContext(TokenContext)
-  const [users, updateUsers] = useState<any>([])
-  let [updated, setUpdated] = useState<number>(0)
-  const [columns, setColumns] = useState<any>([{ id: 'id', label: 'ID', minWidth: 50 },
+  const userColumns = [
+    { id: 'id', label: 'ID', minWidth: 50 },
     { id: 'name', label: 'Name', minWidth: 100 },
     { id: 'email', label: 'Email', minWidth: 170 },
     { id: 'role', label: 'Role', minWidth: 100 },
-    { id: 'actions', label: 'Actions', minWith: 100}]);
-  const [rows, setRows] = useState<any>([]);
-  useEffect(() => {
-    fetch(`${backendRoute}/users`, {
-      method: 'POST', // this should be a GET request since it's GETting data but nvm
-      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
-    }).then(async (result) => {
-      const users: any[] = await result.json()
-      updateUsers(users)
-    })
-  }, [token, updated]);
+    { id: 'actions', label: 'Actions', minWidth: 100 },
+  ];
+
+  const eventColumns = [
+    { id: 'id', label: 'ID', minWidth: 50 },
+    { id: 'name', label: 'Name', minWidth: 150 },
+    { id: 'date', label: 'Date', minWidth: 100 },
+    { id: 'location', label: 'Location', minWidth: 150 },
+    { id: 'actions', label: 'Actions', minWidth: 100 },
+  ];
+
+  const reviewColumns = [
+    { id: 'id', label: 'ID', minWidth: 50 },
+    { id: 'rating', label: 'Rating', minWidth: 50 },
+    { id: 'userId', label: 'User ID', minWidth: 100 },
+    { id: 'comment', label: 'Comment', minWidth: 200 },
+    { id: 'createdAt', label: 'Created At', minWidth: 150 },
+    { id: 'updatedAt', label: 'Updated At', minWidth: 150 },
+    { id: 'actions', label: 'Actions', minWidth: 100 },
+  ];
 
   useEffect(() => {
-    const dynamicRows = users.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: getUserRole(user)
-    }));
-    setRows(dynamicRows);
-    console.log(dynamicRows);
-  }, [users]); // this is done because useState is asynchronous. so it will remain empty for a while until users is set properly
-  
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+    fetchUsers();
+    fetchEvents();
+    fetchReviews();
+  }, [token]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${backendRoute}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      const formattedUsers = data.map(user => ({
+        ...user,
+        role: getUserRole(user)
+      }));
+      setUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch(`${backendRoute}/events`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      console.log(data)
+      setEvents(data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
   };
 
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`${backendRoute}/reviews`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      console.log(data)
+      setReviews(data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  }
   const handleOpenModal = (row) => {
     setEditData(row);
     setOpenModal(true);
@@ -91,120 +120,76 @@ export default function AdminLanding() {
     setEditData({ ...editData, [event.target.name]: event.target.value });
   };
 
-  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
-
-
-  const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
-    // if (reason === 'clickaway') {
-    //   return;
-    // }
-    setSnackbarOpen(false);
-  };
-
-  const snackbarAction = (
-    <React.Fragment>
-      <Button color="secondary" size="small" onClick={handleClose}>
-        Close
-      </Button>
-      <IconButton
-        size="small"
-        aria-label="close"
-        color="inherit"
-        onClick={handleClose}
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    </React.Fragment>
-  );
-
-  const handleSave = () => {
-    fetch(`${backendRoute}/users/${editData.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify(editData)
-    }).then(async (result) => {
-      if (result.ok) {
-        setUpdated(updated += 1)
+  const handleSave = async () => {
+    try {
+      const endpoint = activeTab === 0 ? `users/${editData.id}` : `events/${editData.id}`;
+      const response = await fetch(`${backendRoute}/${endpoint}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(editData)
+      });
+      if (response.ok) {
+        activeTab === 0 ? fetchUsers() : fetchEvents();
         setSnackbarOpen(true);
       }
-    })
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
     handleCloseModal();
   };
 
-  const handleDelete = (id: number) => {
-    fetch(`${backendRoute}/users/${id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*", "Authorization": `Bearer ${token}` },
-    }).then(async (result) => {
-      if (result.ok) {
-        updateUsers(users.filter(user => user.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      const endpoint = activeTab === 0 ? `users/${id}` : `events/${id}`;
+      const response = await fetch(`${backendRoute}/${endpoint}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        activeTab === 0 ? fetchUsers() : activeTab === 1 ? fetchEvents() : fetchReviews();
       } else {
-        console.error('Failed to delete user');
+        console.error('Failed to delete item');
       }
-    });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
   };
 
   return (
     <>
-    <AdminNavbar/>
-    <Paper sx={{ width: '100%' }}>
-      <TableContainer>
-        <Table stickyHeader aria-label="sticky table">
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  style={{ minWidth: column.minWidth }}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id}>
-                            {column.id === 'actions' ? (
-                              <>
-                              <IconButton onClick={() => handleDelete(row.id)}>
-                                <DeleteIcon />
-                              </IconButton>
-                              <IconButton onClick={() => handleOpenModal(row)}>
-                                <EditIcon/>
-                              </IconButton>
-                              </>
-                            ) : (
-                              <div>
-                                {value}
-                              </div>
-                            )}
-                          </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-      {/* MARK: edit user modal */}
+      <AdminNavbar />
+      <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
+        <Tabs value={activeTab} onChange={handleTabChange} centered>
+          <Tab label="Users" />
+          <Tab label="Events" />
+          <Tab label="Reviews" />
+        </Tabs>
+      </Box>
+      {activeTab === 0 ? (
+        <DataTable
+          columns={userColumns}
+          rows={users}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+        />
+      ) : activeTab === 1 ? <DataTable
+          columns={eventColumns}
+          rows={events}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+        />
+      : (
+        <DataTable
+          columns={reviewColumns}
+          rows={reviews}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+        />
+      )}
       <Modal
         open={openModal}
         onClose={handleCloseModal}
@@ -218,54 +203,80 @@ export default function AdminLanding() {
           transform: 'translate(-50%, -50%)',
           width: 400,
           bgcolor: 'background.paper',
-          // border: '2px solid #000',
           borderRadius: '8px',
           boxShadow: 16,
           p: 4,
         }}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Edit User
+            Edit {activeTab === 0 ? 'User' : 'Event'}
           </Typography>
-          <TextField
-            margin="normal"
-            fullWidth
-            id="name"
-            label="Name"
-            name="name"
-            value={editData.name}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="normal"
-            fullWidth
-            id="email"
-            label="Email"
-            name="email"
-            value={editData.email}
-            onChange={handleInputChange}
-          />
-          {/* <TextField
-            margin="normal"
-            fullWidth
-            id="role"
-            label="Role"
-            name="role"
-            value={editData.role}
-            onChange={handleInputChange}
-          /> */}
+          {activeTab === 0 ? (
+            <>
+              <TextField
+                margin="normal"
+                fullWidth
+                id="name"
+                label="Name"
+                name="name"
+                value={editData.name}
+                onChange={handleInputChange}
+              />
+              <TextField
+                margin="normal"
+                fullWidth
+                id="email"
+                label="Email"
+                name="email"
+                value={editData.email}
+                onChange={handleInputChange}
+              />
+            </>
+          ) : (
+            <>
+              <TextField
+                margin="normal"
+                fullWidth
+                id="name"
+                label="Name"
+                name="name"
+                value={editData.name}
+                onChange={handleInputChange}
+              />
+              <TextField
+                margin="normal"
+                fullWidth
+                id="date"
+                label="Date"
+                name="date"
+                type="date"
+                value={editData.date}
+                onChange={handleInputChange}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                margin="normal"
+                fullWidth
+                id="location"
+                label="Location"
+                name="location"
+                value={editData.location}
+                onChange={handleInputChange}
+              />
+            </>
+          )}
           <Button onClick={handleSave} variant="contained" sx={{ mt: 2 }}>
             Save
           </Button>
         </Box>
       </Modal>
-    </Paper>
-    <Snackbar
+      <Snackbar
         open={snackbarOpen}
-        autoHideDuration={1000}
-        onClose={handleClose}
+        autoHideDuration={5000}
+        onClose={() => setSnackbarOpen(false)}
         message="Saved changes!"
-        action={snackbarAction}
       />
     </>
-  )
+  );
 }

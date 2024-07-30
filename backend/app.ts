@@ -159,14 +159,14 @@ app.post('/sendEmail', async (req, res) => {
     if (exists) {
         return res.status(409).json({ error: "User already exists" })
     }
-    const ourOtp: number = crypto.randomInt(0, 999999);
+    const ourOtp: number = crypto.randomInt(100000, 999999);
     // redis set otp code
     await redisClient.set(emailDetails.email, ourOtp);
 
     const { data, error } = await resend.emails.send({
         from: "ecosanct@hrtowii.dev",
         to: [emailDetails.email],
-        subject: "Test email for fullstack",
+        subject: "Your CommuniFridge Verification Code",
         html: `Email verification code: ${ourOtp}`,
     });
 
@@ -882,6 +882,16 @@ app.post('/get_donator', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/reviews', async (req, res) => {
+    try {
+        const events = await prisma.review.findMany();
+        res.status(200).json(events);
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
 
