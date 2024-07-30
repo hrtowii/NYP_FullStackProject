@@ -230,10 +230,12 @@ export default function ListOfDonators() {
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
+                                                {/* profile.donator.averageRating?.toFixed(1) || 0 */}
+                                                {/* profile.donator.averageRating?.toFixed(1) || 'N/A' */}
                                                 <Box display="flex" alignItems="center" justifyContent="center">
-                                                    <Rating value={profile.donator.averageRating?.toFixed(1) || 0} readOnly size="small" />
+                                                    <Rating value={3} readOnly size="small" />
                                                     <Typography variant="body2" sx={{ ml: 1 }}>
-                                                        ({profile.donator.averageRating?.toFixed(1) || 'N/A'})
+                                                        ({3})
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
