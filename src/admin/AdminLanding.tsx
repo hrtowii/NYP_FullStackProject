@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
   Box,
+  Container,
   Modal,
   Typography,
   TextField,
@@ -162,6 +163,7 @@ export default function AdminLanding() {
   return (
     <>
       <AdminNavbar />
+      <Container maxWidth='md'>
       <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
         <Tabs value={activeTab} onChange={handleTabChange} centered>
           <Tab label="Users" />
@@ -277,6 +279,7 @@ export default function AdminLanding() {
         onClose={() => setSnackbarOpen(false)}
         message="Saved changes!"
       />
+      </Container>
     </>
   );
 }
