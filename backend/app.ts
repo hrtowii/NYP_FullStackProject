@@ -769,6 +769,7 @@ app.get('/events', async (req, res) => {
 // })
 
 app.post('/review_submit/:id', async (req, res) => {
+    console.log('Received reply request:', req.params, req.body);
     try {
         const { id } = req.params;
         const { rating, comment, userId } = req.body;
@@ -895,9 +896,67 @@ app.get('/reviews', async (req, res) => {
     }
 });
 
+app.post('/reviews/:id/reply', async (req, res) => {
+    try {
+        const reviewId = parseInt(req.params.id, 10);
+        const { reply, donatorId } = req.body;
+
+        console.log(`Received reply request for review ${reviewId} from donator ${donatorId}`);
+
+        const updatedReview = await prisma.$transaction(async (prisma) => {
+            const review = await prisma.review.findUnique({
+                where: { id: reviewId },
+                include: { 
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    }
+                }
+            });
+
+            if (!review) {
+                console.log(`Review ${reviewId} not found`);
+                throw new Error('Review not found');
+            }
+
+            console.log(`Found review:`, JSON.stringify(review, null, 2));
+            console.log(`Comparing donator IDs: ${review.donator.id} (review) vs ${donatorId} (request)`);
+
+            // Check if the donator is the one replying
+            if (review.donator.id !== donatorId) {
+                console.log(`Donator ID mismatch: ${review.donator.id} (review) !== ${donatorId} (request)`);
+                throw new Error('Only the donator can reply to this review');
+            }
+
+            // Update the review with the reply
+            const updatedReview = await prisma.review.update({
+                where: { id: reviewId },
+                data: { reply }
+            });
+
+            console.log(`Updated review:`, JSON.stringify(updatedReview, null, 2));
+
+            return updatedReview;
+        });
+
+        res.status(200).json({ message: 'Reply added successfully', review: updatedReview });
+    } catch (error) {
+        console.error('Error adding reply:', error);
+        if (error.message === 'Review not found') {
+            res.status(404).json({ error: 'Review not found' });
+        } else if (error.message === 'Only the donator can reply to this review') {
+            res.status(403).json({ error: 'Only the donator can reply to this review' });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+});
+
+
 app.get('/reviews/:id', async (req, res) => {
     try {
-        const { id } = req.params; // Get the donator's id from the URL parameters
+        const { id } = req.params;
         const donatorId = parseInt(id, 10);
 
         if (!donatorId || isNaN(donatorId)) {
@@ -1060,6 +1119,8 @@ app.delete('/reviews/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
     }
 });
+
+
 
 
 
