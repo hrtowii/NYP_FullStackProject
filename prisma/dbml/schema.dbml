@@ -31,6 +31,7 @@ Table Review {
   updatedAt DateTime [not null]
   rating Int [not null]
   comment String [not null]
+  reply String
   userId Int [not null]
   user User [not null]
   donatorId Int [not null]
