@@ -6,6 +6,7 @@ import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import {
     Button,
+    Box,
     Typography,
     Table,
     TableBody,
@@ -22,7 +23,7 @@ import {
     Snackbar,
     TableSortLabel,
 } from '@mui/material';
-import Box from '@mui/material/Box';
+
 export default function ListOfDonators() {
     const [error, setError] = useState(null);
     const [profiles, setProfiles] = useState([]);
@@ -181,7 +182,7 @@ export default function ListOfDonators() {
                         <TableContainer component={Paper}>
                             <Table sx={{ minWidth: 650 }} aria-label="donators table">
                                 <TableHead>
-                                <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                                    <TableRow sx={{ backgroundColor: 'action.hover' }}>
                                         <TableCell>#</TableCell>
                                         <TableCell>
                                             <TableSortLabel

@@ -17,13 +17,9 @@ import {
     DialogTitle,
     TextField,
     Rating,
-    Snackbar,
-    Alert
+    Snackbar
 } from '@mui/material';
-import Box from '@mui/material/Box';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import ReplyIcon from '@mui/icons-material/Reply';
 import { backendRoute } from './utils/BackendUrl';
 import { EditIcon } from 'lucide-react';
 import { TokenContext } from './utils/TokenContext';
@@ -31,14 +27,14 @@ import { TokenContext } from './utils/TokenContext';
 function parseJwt(token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
-}
+  }
 
 export default function Profile() {
-    const { token } = useContext(TokenContext);
+    const {token} = useContext(TokenContext);
     const userId = parseJwt(token).id
     const userRole = parseJwt(token).role
     const { donatorId } = useParams();
@@ -49,9 +45,6 @@ export default function Profile() {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [reviewToEdit, setReviewToEdit] = useState(null);
     const [donatorName, setDonatorName] = useState("Loading...");
-    const [replyDialogOpen, setReplyDialogOpen] = useState(false);
-    const [reviewToReply, setReviewToReply] = useState(null);
-    const [replyText, setReplyText] = useState('');
 
     const fetchDonatorName = useCallback(async () => {
         try {
@@ -199,7 +192,6 @@ export default function Profile() {
         setReviewToEdit(prev => ({ ...prev, [field]: value }));
     }, []);
 
-
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -207,204 +199,103 @@ export default function Profile() {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleReplyClick = useCallback((review) => {
-        if (userId === parseInt(donatorId)) {
-            setReviewToReply(review);
-            setReplyDialogOpen(true);
-        } else {
-            setSnackbar({ open: true, message: 'Only the donator can reply to reviews', severity: 'warning' });
-        }
-    }, [userId, donatorId]);
-
-    const handleReplyCancel = useCallback(() => {
-        setReplyDialogOpen(false);
-        setReviewToReply(null);
-        setReplyText('');
-    }, []);
-    
-    const handleReplyConfirm = useCallback(async () => {
-        if (reviewToReply && replyText) {
-            try {
-                const response = await fetch(`${backendRoute}/reviews/${reviewToReply.id}/reply`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ reply: replyText, userId }),
-                });
-
-                if (response.ok) {
-                    setSnackbar({ open: true, message: 'Reply posted successfully', severity: 'success' });
-                    fetchReviews(); // Refresh the reviews to show the new reply
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to post reply');
-                }
-            } catch (error) {
-                console.error('Error posting reply:', error);
-                setSnackbar({ open: true, message: error.message, severity: 'error' });
-            } finally {
-                setReplyDialogOpen(false);
-                setReviewToReply(null);
-                setReplyText('');
-            }
-        }
-    }, [reviewToReply, replyText, token, fetchReviews, userId]);
-
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
-    console.log('Sending userId:', userId);
-    console.log('Received userId:', userId);
 
     return (
         <>
-            <Navbar />
-            <Container maxWidth="md">
-                <Paper elevation={3} style={{ padding: '20px', marginTop: '20px', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="h4" gutterBottom>
-                        Reviews for {donatorName}
-                    </Typography>
-                    {reviews.length > 0 ? (
-                        <List>
-                            {reviews.map((review) => (
-                                <ListItem key={review.id} divider>
-                                    <ListItemText
-                                        primary={`${review.user?.person?.name || 'Unknown User'} - Rating: ${review.rating}`}
-                                        secondary={
-                                            <>
-                                                <Typography component="span" variant="body2" color="textPrimary">
-                                                    {review.comment}
-                                                </Typography>
-                                                {review.reply && (
-                                                    <Typography component="p" variant="body2" style={{ marginTop: '8px', color: 'gray' }}>
-                                                        Reply: {review.reply}
-                                                    </Typography>
-                                                )}
-                                            </>
-                                        }
-                                    />
-                                    {(review.userId === userId || userRole === "admin") && (
-                                        <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    )}
-                                    {review.userId === userId && (
-                                        <IconButton onClick={() => handleEditClick(review)}>
-                                            <EditIcon />
-                                        </IconButton>
-                                    )}
-                                    {userId === parseInt(donatorId) && !review.reply && (
-                                        <IconButton onClick={() => handleReplyClick(review)}>
-                                            <ReplyIcon />
-                                        </IconButton>
-                                    )}
-                                </ListItem>
-                            ))}
-                        </List>
-                    ) : (
-                        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" flexGrow={1}>
-                            <ErrorOutlineIcon style={{ fontSize: 60, marginBottom: '20px', color: '#f44336' }} />
-                            <Typography variant="h6" align="center">
-                                There are currently no reviews for this donator.
-                            </Typography>
-                        </Box>
-                    )}
-                </Paper>
-
-                <Dialog
-                    open={deleteDialogOpen}
-                    onClose={handleDeleteCancel}
-                    aria-labelledby="delete-dialog-title"
-                    aria-describedby="delete-dialog-description"
-                >
-                    <DialogTitle id="delete-dialog-title">{"Confirm Delete"}</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText id="delete-dialog-description">
-                            Are you sure you want to delete this review?
-                        </DialogContentText>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleDeleteCancel}>Cancel</Button>
-                        <Button onClick={handleDeleteConfirm} autoFocus>
-                            Delete
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                <Dialog
-                    open={editDialogOpen}
-                    onClose={handleEditCancel}
-                    aria-labelledby="edit-dialog-title"
-                    aria-describedby="edit-dialog-description"
-                >
-                    <DialogTitle id="edit-dialog-title">{"Edit Review"}</DialogTitle>
-                    <DialogContent>
-                        <Rating
-                            name="rating"
-                            value={reviewToEdit ? reviewToEdit.rating : 0}
-                            onChange={(event, newValue) => handleEditChange('rating', newValue)}
+        <Navbar/>
+        <Container maxWidth="md">
+            <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+                <Typography variant="h4" gutterBottom>
+                    Reviews for {donatorName}
+                </Typography>
+                <List>
+                    {reviews.map((review) => (
+                        <ListItem key={review.id} divider>
+                        <ListItemText
+                            primary={`${review.user?.person?.name || 'Unknown User'} - Rating: ${review.rating}`}
+                            secondary={review.comment}
                         />
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            id="comment"
-                            label="Comment"
-                            type="text"
-                            fullWidth
-                            variant="standard"
-                            value={reviewToEdit ? reviewToEdit.comment : ''}
-                            onChange={(e) => handleEditChange('comment', e.target.value)}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleEditCancel}>Cancel</Button>
-                        <Button onClick={handleEditConfirm} autoFocus>
-                            Save
-                        </Button>
-                    </DialogActions>
-                    {/* <DialogActions>
+                        {(review.userId === userId || userRole === "admin") && (
+                            <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                                <DeleteIcon />
+                            </IconButton>
+                        )}
+                        {review.userId === userId && (
+                            <IconButton onClick={() => handleEditClick(review)}>
+                                <EditIcon />
+                            </IconButton>
+                        )}
+                        {/* <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                            <DeleteIcon />
+                        </IconButton>
+                        <IconButton onClick={() => handleEditClick(review)}>
+                            <EditIcon/>
+                        </IconButton> */}
+                    </ListItem>
+                    ))}
+                </List>
+            </Paper>
+
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={handleDeleteCancel}
+                aria-labelledby="delete-dialog-title"
+                aria-describedby="delete-dialog-description"
+            >
+                <DialogTitle id="delete-dialog-title">{"Confirm Delete"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-dialog-description">
+                        Are you sure you want to delete this review?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel}>Cancel</Button>
+                    <Button onClick={handleDeleteConfirm} autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={editDialogOpen}
+                onClose={handleEditCancel}
+                aria-labelledby="edit-dialog-title"
+                aria-describedby="edit-dialog-description"
+            >
+                <DialogTitle id="edit-dialog-title">{"Edit Review"}</DialogTitle>
+                <DialogContent>
+                    <Rating
+                        name="rating"
+                        value={reviewToEdit ? reviewToEdit.rating : 0}
+                        onChange={(event, newValue) => handleEditChange('rating', newValue)}
+                    />
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="comment"
+                        label="Comment"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                        value={reviewToEdit ? reviewToEdit.comment : ''}
+                        onChange={(e) => handleEditChange('comment', e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleEditCancel}>Cancel</Button>
+                    <Button onClick={handleEditConfirm} autoFocus>
+                        Save
+                    </Button>
+                </DialogActions>
+                {/* <DialogActions>
                     <Alert icon={<CheckIcon fontSize="inherit" />} severity="success">
                     Here is a gentle confirmation that your action was successful.
                     </Alert>
                 </DialogActions> */}
 
-                </Dialog>
-
-                <Dialog open={replyDialogOpen} onClose={handleReplyCancel}>
-                    <DialogTitle>Reply to Review</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            id="reply"
-                            label="Your Reply"
-                            type="text"
-                            fullWidth
-                            multiline
-                            rows={4}
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleReplyCancel}>Cancel</Button>
-                        <Button onClick={handleReplyConfirm} color="primary">
-                            Post Reply
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                <Snackbar
-                    open={snackbar.open}
-                    autoHideDuration={6000}
-                    onClose={handleSnackbarClose}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                >
-                    <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-                        {snackbar.message}
-                    </Alert>
-                </Snackbar>
-            </Container>
+            </Dialog>
+        </Container>
         </>
     );
 }
