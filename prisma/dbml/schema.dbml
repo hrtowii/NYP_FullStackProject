@@ -110,16 +110,6 @@ Table ReservationItem {
   quantity Int [not null]
 }
 
-Table Review {
-  id Int [pk, increment]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
-  rating Int [not null]
-  comment String [not null]
-  donatorId Int [not null]
-  donator Donator [not null]
-}
-
 Table Event {
   id Int [pk, increment]
   title String [not null]
@@ -153,7 +143,5 @@ Ref: Reservation.userId > User.id
 Ref: ReservationItem.reservationId > Reservation.id
 
 Ref: ReservationItem.foodId > Food.id
-
-Ref: Review.donatorId > Donator.id
 
 Ref: Event.donatorId > Donator.id
