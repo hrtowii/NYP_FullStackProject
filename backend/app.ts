@@ -127,7 +127,7 @@ app.post('/login', async (req, res) => {
     }
     const ourRole = person.user ? 'user' : person.donator ? 'donator' : person.admin ? "admin" : null;
     const token = jwt.sign(
-        { id: person.id, role: ourRole },
+        { id: person.id, role: ourRole, name: person.name },
         process.env.JWT_SECRET as Secret,
         {
             algorithm: 'HS256',
@@ -163,28 +163,28 @@ app.post('/sendEmail', async (req, res) => {
     const ourOtp: number = crypto.randomInt(100000, 999999);
     // redis set otp code
     await redisClient.set(emailDetails.email, ourOtp);
-
     const { data, error } = await resend.emails.send({
         from: "ecosanct@hrtowii.dev",
         to: [emailDetails.email],
         subject: "Your CommuniFridge Verification Code",
         html: `Email verification code: ${ourOtp}`,
     });
-
-
     if (error) {
         console.log(error)
         return res.status(400).json({ error });
     }
-
-
     return res.status(200).json({ data });
 })
 
 app.post('/logout', async (req, res) => {
-    return res.status(200).json({ success: true })
-        .setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; SameSite=Strict; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
-})
+    res.status(200)
+       .clearCookie('token', { 
+           path: '/', 
+           httpOnly: true, 
+           secure: true 
+       })
+       .json({ success: true });
+});
 
 //MARK: Admin functions
 

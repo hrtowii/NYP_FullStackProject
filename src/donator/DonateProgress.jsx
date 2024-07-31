@@ -20,6 +20,8 @@ import {
 
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import parseJwt from '../utils/parseJwt.jsx'
+
 export default function DonateItem() {
     const [donations, setDonations] = useState([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,14 +38,6 @@ export default function DonateItem() {
 
 
     const fetchDonations = useCallback(async () => {
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
         const donatorId = parseJwt(token).id
         if (!donatorId) {
             setError('No donator ID provided');
@@ -75,14 +69,6 @@ export default function DonateItem() {
     }, []);
 
     const fetchReviews = useCallback(async () => {
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
         const donatorId = parseJwt(token).id
         if (!donatorId) {
             setError('No donator ID provided');
