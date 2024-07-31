@@ -128,18 +128,6 @@ model ReservationItem {
   @@index([foodId])
 }
 
-model Review {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  rating    Int
-  comment   String
-  // userId    Int
-  // user      User     @relation("UserReviews", fields: [userId], references: [id])
-  donatorId Int
-  donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
-}
-
 model Event {
   id             Int      @id @default(autoincrement())
   title          String
