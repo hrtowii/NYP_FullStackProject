@@ -1212,7 +1212,6 @@ function isAdmin(req, res, next) {
         next()
     })
 }
-import { upload } from '../src/components/upload.jsx'
 app.post('/upload', (req, res) => {
     upload(req, res, (err) => {
         if (err) {
@@ -1234,4 +1233,4 @@ app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`server is running at port number ${port}`)
-});
+});     
