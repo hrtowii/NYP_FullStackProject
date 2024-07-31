@@ -40,13 +40,6 @@ Table Review {
   images Image [not null]
 }
 
-Table Image {
-  id Int [pk, increment]
-  url String [not null]
-  reviewId Int [not null]
-  review Review [not null]
-}
-
 Table Reply {
   id Int [pk, increment]
   createdAt DateTime [default: `now()`, not null]
@@ -56,6 +49,13 @@ Table Reply {
   review Review [not null]
   donatorId Int [not null]
   donator Donator [not null]
+}
+
+Table Image {
+  id Int [pk, increment]
+  url String [not null]
+  reviewId Int [not null]
+  review Review [not null]
 }
 
 Table Donator {
@@ -156,11 +156,11 @@ Ref: Review.userId > User.id
 
 Ref: Review.donatorId > Donator.id
 
-Ref: Image.reviewId > Review.id
-
-Ref: Reply.reviewId - Review.id
+Ref: Reply.reviewId - Review.id [delete: Cascade]
 
 Ref: Reply.donatorId > Donator.id
+
+Ref: Image.reviewId > Review.id [delete: Cascade]
 
 Ref: Donator.id - Person.id [delete: Cascade]
 

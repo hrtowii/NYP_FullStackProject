@@ -51,6 +51,8 @@ export default function Profile() {
     const [replyToEdit, setReplyToEdit] = useState(null);
     const [editedReplyContent, setEditedReplyContent] = useState('');
     const [enlargedImage, setEnlargedImage] = useState(null);
+    const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
+    const [replyToDelete, setReplyToDelete] = useState(null);
 
     const handleThumbsUp = useCallback((reviewId) => {
         setLikedReviews(prev => ({
@@ -125,29 +127,33 @@ export default function Profile() {
                 console.log('Sending delete request...');
                 const response = await fetch(`${backendRoute}/reviews/${reviewToDelete}`, {
                     method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId })
                 });
-
+    
                 console.log('Delete response received:', response.status);
-
+    
                 if (response.ok) {
                     console.log('Review deleted successfully');
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
                     setSnackbar({ open: true, message: 'Review deleted successfully', severity: 'success' });
                 } else {
-                    console.error('Server responded with an error:', response.status);
-                    throw new Error(`Failed to delete review: ${response.status}`);
+                    const errorData = await response.json();
+                    console.error('Server error details:', errorData);
+                    throw new Error(errorData.error || `Failed to delete review: ${response.status}`);
                 }
             } catch (error) {
                 console.error('Error during delete operation:', error);
-                setSnackbar({ open: true, message: 'Failed to delete review. Please try again.', severity: 'error' });
+                setSnackbar({ open: true, message: `Failed to delete review: ${error.message}`, severity: 'error' });
             } finally {
                 setDeleteDialogOpen(false);
                 setReviewToDelete(null);
                 fetchReviews();
             }
         }
-    }, [reviewToDelete, fetchReviews]);
-
+    }, [reviewToDelete, fetchReviews, userId, backendRoute]);
     const handleDeleteCancel = useCallback(() => {
         console.log('Delete cancelled');
         setDeleteDialogOpen(false);
@@ -275,10 +281,18 @@ export default function Profile() {
         }
     }, [replyToEdit, editedReplyContent, fetchReviews]);
 
-    const handleDeleteReply = useCallback(async (replyId) => {
+    const handleDeleteReply = useCallback((reply) => {
         if (userRole === "donator" && parseInt(donatorId) === userId) {
+            setReplyToDelete(reply);
+            setDeleteReplyDialogOpen(true);
+        } else {
+            setSnackbar({ open: true, message: 'You are not authorized to delete this reply.', severity: 'error' });
+        }
+    }, [userRole, donatorId, userId]);
+    const confirmDeleteReply = useCallback(async () => {
+        if (replyToDelete) {
             try {
-                const response = await fetch(`${backendRoute}/replies/${replyId}`, {
+                const response = await fetch(`${backendRoute}/replies/${replyToDelete.id}`, {
                     method: 'DELETE',
                 });
 
@@ -291,11 +305,12 @@ export default function Profile() {
             } catch (error) {
                 console.error('Error deleting reply:', error);
                 setSnackbar({ open: true, message: 'Failed to delete reply. Please try again.', severity: 'error' });
+            } finally {
+                setDeleteReplyDialogOpen(false);
+                setReplyToDelete(null);
             }
-        } else {
-            setSnackbar({ open: true, message: 'You are not authorized to delete this reply.', severity: 'error' });
         }
-    }, [userRole, donatorId, userId, fetchReviews]);
+    }, [replyToDelete, fetchReviews, backendRoute]);
 
     const handleReplyClick = useCallback((review) => {
         if (userRole === "donator" && parseInt(donatorId) === userId) {
@@ -391,7 +406,7 @@ export default function Profile() {
                                                 ))}
                                             </Box>
                                         )}
-                                        {userRole === "donator" && parseInt(donatorId) === review.donatorId && !review.reply && (
+                                        {userRole === "donator" && parseInt(donatorId) === userId && !review.reply && (
                                             <Button sx={{ mt: 1 }} onClick={() => handleReplyClick(review)}>Reply</Button>
                                         )}
                                         {review.reply && (
@@ -403,7 +418,7 @@ export default function Profile() {
                                                         <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
-                                                        <IconButton onClick={() => handleDeleteReply(review.reply.id)} size="small">
+                                                        <IconButton onClick={() => handleDeleteReply(review.reply)} size="small">
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </Box>
@@ -559,6 +574,25 @@ export default function Profile() {
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                    </DialogActions>
+                </Dialog>
+                <Dialog
+                    open={deleteReplyDialogOpen}
+                    onClose={() => setDeleteReplyDialogOpen(false)}
+                    aria-labelledby="delete-reply-dialog-title"
+                    aria-describedby="delete-reply-dialog-description"
+                >
+                    <DialogTitle id="delete-reply-dialog-title">{"Confirm Delete Reply"}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="delete-reply-dialog-description">
+                            Are you sure you want to delete this reply? This action cannot be undone.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteReplyDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={confirmDeleteReply} color="error" autoFocus>
+                            Delete
+                        </Button>
                     </DialogActions>
                 </Dialog>
 

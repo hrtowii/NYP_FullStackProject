@@ -4,6 +4,7 @@ import './index.css';
 import { UserNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
+import { useParams } from 'react-router-dom';
 import parseJwt from './utils/parseJwt.jsx'
 import {
     Button,
@@ -49,6 +50,7 @@ export default function ListOfDonators() {
     const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
     const currentUserName = parseJwt(token).name;
+    const userId = parseJwt(token).id;
 
     const handleImageSelect = (event) => {
         const files = Array.from(event.target.files);
@@ -127,7 +129,7 @@ export default function ListOfDonators() {
                 setRatingError(true);
                 throw new Error('Please select a rating between 1 and 5');
             }
-    
+
             const formData = new FormData();
             formData.append('rating', rating);
             formData.append('comment', comment);
@@ -136,7 +138,7 @@ export default function ListOfDonators() {
             selectedImages.forEach((image, index) => {
                 formData.append('images', image);
             });
-    
+
             const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
                 method: 'POST',
                 headers: {
@@ -144,15 +146,15 @@ export default function ListOfDonators() {
                 },
                 body: formData,
             });
-    
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to submit review');
             }
-    
+
             const responseData = await response.json();
             console.log('Review submission response:', responseData);
-    
+
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseModal();
             fetchProfiles();
@@ -257,7 +259,8 @@ export default function ListOfDonators() {
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                    <Typography>{profile.name}</Typography>
+                                                    {profile.name}
+                                                    {profile.id === userId && " (Myself)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
