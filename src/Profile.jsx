@@ -29,7 +29,7 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import EditIcon from '@mui/icons-material/Edit';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
-
+import {backendRoute} from './utils/BackendUrl.jsx'
 export default function Profile() {
     const { token } = useContext(TokenContext);
     const userId = parseJwt(token).id
