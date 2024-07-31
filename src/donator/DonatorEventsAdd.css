@@ -1,5 +1,5 @@
 /* DonatorEventsAdd.css */
-.form-container {
+.donator-events-add-page .form-container {
   width: 80vw;
   margin-inline: 10vw;
   padding: 20px;
@@ -7,42 +7,41 @@
   border: none;
 }
 
-h2 {
+.donator-events-add-page h2 {
   text-align: left;
   margin-bottom: 20px;
   padding-left: 10px;
 }
 
-form {
+.donator-events-add-page form {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-.form-content {
+.donator-events-add-page .form-content {
   display: flex;
   justify-content: space-between;
 }
 
-.left-half,
-.right-half {
+.donator-events-add-page .left-half,
+.donator-events-add-page .right-half {
   width: 48%;
 }
 
-.right-half {
+.donator-events-add-page .right-half {
   margin-left: 10%;
 }
 
-form div {
+.donator-events-add-page form div {
   margin-bottom: 15px;
   position: relative;
 }
 
-.left-half label,
-#datelabel {
+.donator-events-add-page .left-half label,
+.donator-events-add-page #datelabel {
   position: absolute;
   top: -12px;
-  /* left: 10px; */
   background: none;
   padding: 0 5px;
   font-weight: bold;
@@ -50,12 +49,13 @@ form div {
   color: #333;
 }
 
-#datelabel {
+.donator-events-add-page #datelabel {
   top: -30px;
   left: 0px;
 }
 
-.form-container input, .form-container textarea {
+.donator-events-add-page .form-container input,
+.donator-events-add-page .form-container textarea {
   width: 100%;
   padding: 15px;
   border-radius: 6px;
@@ -66,45 +66,24 @@ form div {
   margin-top: 10px;
 }
 
-
-.form-container textarea {
+.donator-events-add-page .form-container textarea {
   resize: none;
   overflow-y: auto;
   min-height: 60px;
   max-height: 300px;
 }
 
-input:focus,
-textarea:focus {
+.donator-events-add-page input:focus,
+.donator-events-add-page textarea:focus {
   outline: none;
   box-shadow: 0px 0px 6px rgba(100, 100, 255, 0.6);
 }
 
-.file-upload-button {
-  /* display: block; */
-  /* margin: 10px 0; */
-}
-
-.add-event-button {
-  /* align-self: flex-start; */
-  /* background-color: #4caf50;
-    color: white; */
-  /* margin-top: 20px; */
-}
-
-.add-event-button:hover {
-  background-color: #45a049;
-}
-
-.toast-container {
-  margin-top: 20px;
-}
-
-.titleInfo {
+.donator-events-add-page .titleInfo {
   color: rgba(0, 0, 0, 0.3);
 }
 
-.detailsInfo {
+.donator-events-add-page .detailsInfo {
   margin-top: 5px;
   font-size: 14px;
   color: #555;
@@ -114,21 +93,21 @@ textarea:focus {
   margin-bottom: 5px;
 }
 
-.flexybuttons {
+.donator-events-add-page .flexybuttons {
   display: flex;
 }
 
-.flexybuttons * {
+.donator-events-add-page .flexybuttons * {
   top: 0 !important;
   margin: 0px !important;
 }
 
-.flexybuttons>* {
+.donator-events-add-page .flexybuttons > * {
   width: 50% !important;
 }
 
-/* Stepper */
-.stepper-wrapper {
+/* Stepper styles */
+.donator-events-add-page .stepper-wrapper {
   font-family: Arial;
   display: flex;
   justify-content: space-between;
@@ -136,39 +115,39 @@ textarea:focus {
   width: 10%;
 }
 
-.stepper-item {
+.donator-events-add-page .stepper-item {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
+}
 
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
+  .donator-events-add-page .stepper-item {
     font-size: 12px;
   }
 }
 
-.stepper-item::before {
+.donator-events-add-page .stepper-item::before,
+.donator-events-add-page .stepper-item::after {
   position: absolute;
   content: "";
   border-bottom: 2px solid #ccc;
   width: 100%;
   top: 20px;
+  z-index: 2;
+}
+
+.donator-events-add-page .stepper-item::before {
   left: -50%;
-  z-index: 2;
 }
 
-.stepper-item::after {
-  position: absolute;
-  content: "";
-  border-bottom: 2px solid #ccc;
-  width: 100%;
-  top: 20px;
+.donator-events-add-page .stepper-item::after {
   left: 50%;
-  z-index: 2;
 }
 
-.stepper-item .step-counter {
+.donator-events-add-page .stepper-item .step-counter {
   position: relative;
   z-index: 5;
   display: flex;
@@ -182,32 +161,23 @@ textarea:focus {
   color: white;
 }
 
-.stepper-item.active {
+.donator-events-add-page .stepper-item.active {
   font-weight: bold;
 }
 
-.stepper-item.completed .step-counter {
+.donator-events-add-page .stepper-item.completed .step-counter {
   background-color: #4bb543;
 }
 
-.stepper-item.completed::after {
-  position: absolute;
-  content: "";
+.donator-events-add-page .stepper-item.completed::after {
   border-bottom: 2px solid #4bb543;
-  width: 100%;
-  top: 20px;
-  left: 50%;
-  z-index: 3;
 }
 
-.stepper-item:first-child::before {
+.donator-events-add-page .stepper-item:first-child::before,
+.donator-events-add-page .stepper-item:last-child::after {
   content: none;
 }
 
-.stepper-item:last-child::after {
-  content: none;
-}
-
-.checkcircleicon {
+.donator-events-add-page .checkcircleicon {
   color: #4bb543;
 }
