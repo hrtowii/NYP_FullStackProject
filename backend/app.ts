@@ -962,44 +962,49 @@ app.put('/reviews/:id', async (req, res) => {
     }, 10000);
 
     try {
-        console.log('Attempting to update review...');
-        const updatedReview = await prisma.review.update({
-            where: {
-                id: reviewId
-            },
-            data: {
-                rating,
-                comment
-            }
-        });
-        const donators = await prisma.donator.findMany({
-            include: {
-                person: true,
-                reviews: true,
-            },
-        });
+        const result = await prisma.$transaction(async (prisma) => {
+            console.log('Attempting to update review...');
+            const updatedReview = await prisma.review.update({
+                where: { id: reviewId },
+                data: { rating, comment }
+            });
 
-        const donatorsWithStats = donators.map(donator => {
-            const reviewCount = donator.reviews.length;
-            const averageRating = reviewCount > 0
-                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+            // Fetch the updated donator with reviews
+            const donator = await prisma.donator.findUnique({
+                where: { id: updatedReview.donatorId },
+                include: { reviews: true, person: true }
+            });
+
+            // Calculate new stats
+            const newAverageRating = donator.reviews.length > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length
                 : 0;
+            const newReviewCount = donator.reviews.length;
+
+            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
+
+            // Update the donator
+            await prisma.donator.update({
+                where: { id: updatedReview.donatorId },
+                data: { averageRating: newAverageRating, reviewCount: newReviewCount }
+            });
 
             return {
                 id: donator.id,
                 name: donator.person.name,
-                averageRating: parseFloat(averageRating.toFixed(1)),
-                reviewCount,
+                averageRating: parseFloat(newAverageRating.toFixed(1)),
+                reviewCount: newReviewCount,
             };
         });
-        console.log('Sending donators data to frontend:', JSON.stringify(donatorsWithStats, null, 2));
-
-        res.json(donatorsWithStats);
 
         clearTimeout(timeoutId);
         const endTime = Date.now();
-        console.log(`Review updated successfully in ${endTime - startTime}ms:`, updatedReview);
-        // res.status(200).json({ message: 'Review updated successfully', updatedReview, timeTaken: endTime - startTime });
+        console.log(`Review updated successfully in ${endTime - startTime}ms:`, result);
+        res.status(200).json({
+            message: 'Review updated successfully',
+            updatedDonator: result,
+            timeTaken: endTime - startTime
+        });
     } catch (error) {
         clearTimeout(timeoutId);
         const endTime = Date.now();
