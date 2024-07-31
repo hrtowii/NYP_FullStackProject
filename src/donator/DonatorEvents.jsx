@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import '../index.css';
 import './DonatorEvents.css';
 import { DonatorNavbar } from '../components/Navbar';
@@ -11,10 +11,22 @@ import Typography from '@mui/material/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CardActions from '@mui/material/CardActions';
-
+import {TokenContext} from "../utils/TokenContext";
 const API_BASE_URL = 'http://localhost:3000';
 
+
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
 export default function DonatorEvents() {
+    const {token} = useContext(TokenContext);
+    const userId = parseJwt(token).id;
     const [events, setEvents] = useState([]);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
@@ -22,6 +34,7 @@ export default function DonatorEvents() {
 
     useEffect(() => {
         fetchEvents();
+        console.log(userId)
     }, []);
 
     const fetchEvents = async () => {
@@ -130,6 +143,8 @@ export default function DonatorEvents() {
                                 {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
                             </Typography>
                         </CardContent>
+                        {event.donatorId == userId ? 
+                        <>
                         <CardActions>
                             <Button 
                                 size="small" 
@@ -150,6 +165,9 @@ export default function DonatorEvents() {
                                 Delete
                             </Button>
                         </CardActions>
+                        </>
+                        : <div></div>
+                    }
                     </Card>
                 ))}
             </div>

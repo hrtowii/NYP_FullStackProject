@@ -734,26 +734,18 @@ interface EventBody {
     startDate: Date,
     endDate: Date,
     imageFile: string,
+    maxSlots: number,
+    attire: string,
     donatorId: number,
 }
 
 
 app.post('/events', async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId }: EventBody = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId }: EventBody = req.body;
     console.log(req.body);
 
 
     try {
-        // const newEvent = await prisma.event.create({
-        //     data: {
-        //         title,
-        //         summary,
-        //         dates: new Date(), // Assuming 'date' is a string in a valid date format
-        //         donatorId: 1, // Ensure donatorId is an integer
-        //     },
-        // });
-
-        // res.status(200).json(newEvent);
         const newEvent = await prisma.event.create({
             data: {
                 title,
@@ -764,6 +756,8 @@ app.post('/events', async (req, res) => {
                 startDate: new Date(startDate), // Convert ISO string to Date object
                 endDate: new Date(endDate),     // Convert ISO string to Date object
                 imageFile: imageFile || '',     // Use empty string if imageFile is null/undefined
+                maxSlots,
+                attire,
                 donatorId: Number(donatorId),
             },
         });
@@ -786,11 +780,13 @@ interface updateEventBody {
     startDate: Date,
     endDate: Date,
     imageFile: null,
+    maxSlots: number,
+    attire: string,
     donatorId: number,
 }
 app.put('/events/update/:eventId', async (req, res) => {
     const { eventId } = req.params;  // Get eventId from params, not body
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId } = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId } = req.body;
 
     try {
         const updatedEvent = await prisma.event.update({
@@ -805,6 +801,8 @@ app.put('/events/update/:eventId', async (req, res) => {
                 endDate: new Date(endDate),
                 imageFile: "a",
                 // hardcoded^
+                maxSlots,
+                attire,
                 donatorId: Number(donatorId),
             }
         });
@@ -860,6 +858,7 @@ app.delete('/event/:id', async (req, res) => {
 app.get('/donator/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany();
+        console.log(events)
         res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching events:', error);

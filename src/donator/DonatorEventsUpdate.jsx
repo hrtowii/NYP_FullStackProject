@@ -182,122 +182,125 @@ const UpdateEventForm = () => {
 
   return (
     <>
-      <DonatorNavbar />
+      <div className="donator-events-add-page">
 
-      <div className="form-container">
-        <h2>Update Event</h2>
-        <div class="stepper-wrapper">
-          <div class="stepper-item completed">
-            <div class="step-counter"><CheckIcon></CheckIcon></div>
+        <DonatorNavbar />
+
+        <div className="form-container">
+          <h2>Update Event</h2>
+          <div class="stepper-wrapper">
+            <div class="stepper-item completed">
+              <div class="step-counter"><CheckIcon></CheckIcon></div>
+            </div>
+            <div class="stepper-item active">
+              <div class="step-counter"></div>
+            </div>
           </div>
-          <div class="stepper-item active">
-            <div class="step-counter"></div>
-          </div>
+          {error && <div style={{ color: 'red' }}>{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-content">
+              <div className="left-half">
+                <div>
+                  <label htmlFor="title">Title*<span className="titleInfo">(3-32 Characters)</span></label>
+                  <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="briefSummary">Brief Summary*<span className="titleInfo">(3-300 Characters)</span></label>
+                  <textarea
+                    id="briefSummary"
+                    name="briefSummary"
+                    value={formData.briefSummary}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="fullSummary">Full Summary*<span className="titleInfo">(300-600 Characters)</span></label>
+                  <textarea
+                    id="fullSummary"
+                    name="fullSummary"
+                    value={formData.fullSummary}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <p className="detailsInfo">Provide details such as: Attire</p>
+
+                </div>
+
+                <div>
+                  <label htmlFor="phoneNumber">Phone Number*<span className="titleInfo">(8 Digits)</span></label>
+                  <input
+                    type="tel"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    required
+                    pattern="\d{8}"
+                    title="Phone number must be exactly 8 digits"
+                  />
+                  <p className="detailsInfo">Will be used to contact you.</p>
+
+                </div>
+
+                <div>
+                  <label htmlFor="emailAddress">Email Address*</label>
+                  <input
+                    type="email"
+                    id="emailAddress"
+                    name="emailAddress"
+                    value={formData.emailAddress}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <p className="detailsInfo">Will be used as an alternative  to contact you.</p>
+
+                </div>
+              </div>
+              <div className="right-half">
+                <div>
+                  <p id='datelabel'>Date/Period*</p>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DemoContainer components={['DateRangePicker']}>
+                      <DateRangePicker
+                        value={formData.dateRange}
+                        onChange={handleDateRangeChange}
+                        minDate={dayjs()} // Set minimum date to today
+                      />
+                    </DemoContainer>
+                  </LocalizationProvider>
+                </div>
+
+                <div className='flexybuttons'>
+                  <div>
+                    <Button variant="contained" component="label" className="file-upload-button">
+                      Upload New Image
+                      <input hidden accept="image/*" multiple type="file" onChange={onFileChange} />
+                    </Button>
+                    {formData.imageFile && <span>Current image: {formData.imageFile}</span>}
+                  </div>
+
+                  <div>
+                    <Button variant="contained" type="submit" disabled={isLoading} className="update-event-button" color="primary">
+                      {isLoading ? 'Updating event...' : 'Update event'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-content">
-            <div className="left-half">
-              <div>
-                <label htmlFor="title">Title*<span className="titleInfo">(3-32 Characters)</span></label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="briefSummary">Brief Summary*<span className="titleInfo">(3-300 Characters)</span></label>
-                <textarea
-                  id="briefSummary"
-                  name="briefSummary"
-                  value={formData.briefSummary}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="fullSummary">Full Summary*<span className="titleInfo">(300-600 Characters)</span></label>
-                <textarea
-                  id="fullSummary"
-                  name="fullSummary"
-                  value={formData.fullSummary}
-                  onChange={handleInputChange}
-                  required
-                />
-                <p className="detailsInfo">Provide details such as: Attire</p>
-
-              </div>
-
-              <div>
-                <label htmlFor="phoneNumber">Phone Number*<span className="titleInfo">(8 Digits)</span></label>
-                <input
-                  type="tel"
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  required
-                  pattern="\d{8}"
-                  title="Phone number must be exactly 8 digits"
-                />
-                <p className="detailsInfo">Will be used to contact you.</p>
-
-              </div>
-
-              <div>
-                <label htmlFor="emailAddress">Email Address*</label>
-                <input
-                  type="email"
-                  id="emailAddress"
-                  name="emailAddress"
-                  value={formData.emailAddress}
-                  onChange={handleInputChange}
-                  required
-                />
-                <p className="detailsInfo">Will be used as an alternative  to contact you.</p>
-
-              </div>
-            </div>
-            <div className="right-half">
-              <div>
-                <label htmlFor="datePicker">Date/Period*</label>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DemoContainer components={['DateRangePicker']}>
-                    <DateRangePicker
-                      value={formData.dateRange}
-                      onChange={handleDateRangeChange}
-                      minDate={dayjs()} // Set minimum date to today
-                    />
-                  </DemoContainer>
-                </LocalizationProvider>
-              </div>
-
-              <div className='flexybuttons'>
-                <div>
-                  <Button variant="contained" component="label" className="file-upload-button">
-                    Upload New Image
-                    <input hidden accept="image/*" multiple type="file" onChange={onFileChange} />
-                  </Button>
-                  {formData.imageFile && <span>Current image: {formData.imageFile}</span>}
-                </div>
-
-                <div>
-                  <Button variant="contained" type="submit" disabled={isLoading} className="update-event-button" color="primary">
-                    {isLoading ? 'Updating event...' : 'Update event'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
+        <ToastContainer />
       </div>
-      <ToastContainer />
     </>
   );
 };

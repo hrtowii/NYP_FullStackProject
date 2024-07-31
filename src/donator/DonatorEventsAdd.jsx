@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { DonatorNavbar } from '../components/Navbar';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { LocalizationProvider } from '@mui/x-date-pickers-pro/LocalizationProvider';
@@ -10,11 +10,18 @@ import { ToastContainer, toast } from 'react-toastify';
 import CheckIcon from '@mui/icons-material/Check';
 import 'react-toastify/dist/ReactToastify.css';
 import './DonatorEventsAdd.css'
-
-
 import dayjs from 'dayjs';
+import { TokenContext } from '../utils/TokenContext';
 
 const API_BASE_URL = 'http://localhost:3000';
+function parseJwt(token) {
+  var base64Url = token.split('.')[1];
+  var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
 
 const AddEventForm = () => {
 
@@ -118,7 +125,7 @@ const AddEventForm = () => {
         ...formData,
         startDate: formData.dateRange[0].toISOString(),
         endDate: formData.dateRange[1].toISOString(),
-        donatorId: 1,
+        donatorId: userId,
       };
 
       console.log('Submitting form data:', eventData);
@@ -169,7 +176,8 @@ const AddEventForm = () => {
     }
   };
 
-
+  const {token} = useContext(TokenContext);
+  const userId = parseJwt(token).id;
   return (
     <>
         <div className="donator-events-add-page">
