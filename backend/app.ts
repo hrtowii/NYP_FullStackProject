@@ -884,6 +884,34 @@ app.get('/donator/events', async (req, res) => {
 //     }
 // })
 
+// Add a new reply
+app.post('/reviews/:reviewId/reply', async (req, res) => {
+    const { reviewId } = req.params;
+    const { content, donatorId } = req.body;
+
+    try {
+        const reply = await prisma.reply.create({
+            data: {
+                content,
+                reviewId: parseInt(reviewId),
+                donatorId: parseInt(donatorId)
+            },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
+        });
+
+        res.status(201).json(reply);
+    } catch (error) {
+        console.error('Error creating reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.post('/review_submit/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1004,12 +1032,8 @@ app.post('/get_donator', async (req, res) => {
 
 app.get('/reviews/:id', async (req, res) => {
     try {
-        const { id } = req.params; // Get the donator's id from the URL parameters
+        const { id } = req.params;
         const donatorId = parseInt(id, 10);
-
-        if (!donatorId || isNaN(donatorId)) {
-            return res.status(400).json({ error: 'Invalid donator ID' });
-        }
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1025,7 +1049,8 @@ app.get('/reviews/:id', async (req, res) => {
                     include: {
                         person: true
                     }
-                }
+                },
+                reply: true
             }
         });
 
@@ -1183,7 +1208,47 @@ app.delete('/reviews/:id', async (req, res) => {
     }
 });
 
+// Edit a reply
+app.put('/replies/:replyId', async (req, res) => {
+    
+    const { replyId } = req.params;
+    const { content } = req.body;
 
+    try {
+        const updatedReply = await prisma.reply.update({
+            where: { id: parseInt(replyId) },
+            data: { content },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json(updatedReply);
+    } catch (error) {
+        console.error('Error updating reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete a reply
+app.delete('/replies/:replyId', async (req, res) => {
+    const { replyId } = req.params;
+
+    try {
+        await prisma.reply.delete({
+            where: { id: parseInt(replyId) }
+        });
+
+        res.status(204).send();
+    } catch (error) {
+        console.error('Error deleting reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 
 

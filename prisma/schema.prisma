@@ -38,16 +38,28 @@ model User {
 }
 
 model Review {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rating      Int
+  comment     String
+  isAnonymous Boolean  @default(false)
+  userId      Int
+  user        User     @relation("UserReviews", fields: [userId], references: [id])
+  donatorId   Int
+  donator     Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
+  reply       Reply?
+}
+
+model Reply {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  rating    Int
-  comment   String
-  isAnonymous Boolean @default(false)
-  userId    Int
-  user      User     @relation("UserReviews", fields: [userId], references: [id])
+  content   String
+  reviewId  Int      @unique
+  review    Review   @relation(fields: [reviewId], references: [id])
   donatorId Int
-  donator   Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
+  donator   Donator  @relation(fields: [donatorId], references: [id])
 }
 
 model Donator {
@@ -58,7 +70,7 @@ model Donator {
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
   reviewCount   Int        @default(0)
-
+  replies Reply[]
   @@id([id])
 }
 
