@@ -55,6 +55,7 @@ export function UserNavbar() {
       <NavLink to={"/user/reservation"}>Reservations</NavLink>
       <NavLink to={"/user/fridge"}>Fridge</NavLink>
       <NavLink to={"/user/cart"}>Cart</NavLink>
+      <NavLink to={"/listofdonators"}>Donators</NavLink>
       {/* Navlink to "Reviews" Page */}
       {/* Navlink to "Events" Page */}
 

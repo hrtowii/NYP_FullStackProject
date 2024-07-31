@@ -1034,7 +1034,7 @@ app.get('/reviews/:id', async (req, res) => {
             const reviewData = { ...review };
             if (reviewData.isAnonymous) {
                 const name = reviewData.user?.person?.name || 'Anonymous';
-                reviewData.user.person.name = `${name[0]}${'*'.repeat(name.length - 1)}`;
+                reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
             return reviewData;
         });

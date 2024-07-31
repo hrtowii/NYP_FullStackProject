@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
-import Navbar from "./components/Navbar";
+import { UserNavbar } from './components/Navbar'
 import { useParams } from 'react-router-dom';
 import {
     List,
     ListItem,
     ListItemText,
+    ListItemAvatar,
     Typography,
     Paper,
     Container,
@@ -17,7 +18,11 @@ import {
     DialogTitle,
     TextField,
     Rating,
-    Snackbar
+    Snackbar,
+    Box,
+    Avatar,
+    AppBar,
+    Toolbar
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { backendRoute } from './utils/BackendUrl';
@@ -201,7 +206,11 @@ export default function Profile() {
     const getDisplayName = (review) => {
         if (review.isAnonymous) {
             const name = review.user?.person?.name || 'Unknown User';
-            return `${name[0]}${'*'.repeat(name.length - 1)}`;
+            if (name.length > 1) {
+                return `${name[0]}${'*'.repeat(6)}`;
+            } else {
+                return `${name[0]}${'*'.repeat(6)}`;
+            }
         }
         return review.user?.person?.name || 'Unknown User';
     };
@@ -210,7 +219,7 @@ export default function Profile() {
 
     return (
         <>
-        <Navbar/>
+        <UserNavbar/>
         <Container maxWidth="md">
             <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                 <Typography variant="h4" gutterBottom>
@@ -218,22 +227,45 @@ export default function Profile() {
                 </Typography>
                 <List>
                     {reviews.map((review) => (
-                        <ListItem key={review.id} divider>
-                        <ListItemText
-                            primary={`${getDisplayName(review)} - Rating: ${review.rating}`}
-                            secondary={review.comment}
-                        />
-                        {(review.userId === userId || userRole === "admin") && (
-                            <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                                <DeleteIcon />
-                            </IconButton>
-                        )}
-                        {review.userId === userId && (
-                            <IconButton onClick={() => handleEditClick(review)}>
-                                <EditIcon />
-                            </IconButton>
-                        )}
-                    </ListItem>
+                        <ListItem key={review.id} 
+                                  alignItems="flex-start" 
+                                  divider 
+                                  sx={{ flexDirection: 'column' }}>
+                            <Box sx={{ display: 'flex', width: '100%', mb: 1 }}>
+                                <ListItemAvatar>
+                                    <Avatar>{getDisplayName(review)[0]}</Avatar>
+                                </ListItemAvatar>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                                    <Typography variant="subtitle1">
+                                        {getDisplayName(review)}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Rating 
+                                            value={review.rating} 
+                                            readOnly 
+                                            size="small" 
+                                            sx={{ mr: 1 }}
+                                        />
+                                        <Typography variant="body2" color="text.secondary">
+                                            ({review.rating})
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                <Box>
+                                    {(review.userId === userId || userRole === "admin") && (
+                                        <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    )}
+                                    {review.userId === userId && (
+                                        <IconButton onClick={() => handleEditClick(review)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            </Box>
+                            <Typography variant="body2" sx={{ pl: 7 }}>{review.comment}</Typography>
+                        </ListItem>
                     ))}
                 </List>
             </Paper>
