@@ -39,7 +39,9 @@
 }
 
 .donator-events-add-page .left-half label,
-.donator-events-add-page #datelabel {
+.donator-events-add-page #datelabel,
+.donator-events-add-page .maxSlots label,
+.donator-events-add-page .attire label{
   position: absolute;
   top: -12px;
   background: none;
@@ -65,6 +67,13 @@
   line-height: 1.5;
   margin-top: 10px;
 }
+
+.donator-events-add-page .form-container .datepickercss input,
+.donator-events-add-page .form-container .datepickercss textarea{
+  border: none ;
+  box-shadow: none ;
+}
+
 
 .donator-events-add-page .form-container textarea {
   resize: none;
@@ -102,7 +111,7 @@
   margin: 0px !important;
 }
 
-.donator-events-add-page .flexybuttons > * {
+.donator-events-add-page .flexybuttons>* {
   width: 50% !important;
 }
 
@@ -180,4 +189,100 @@
 
 .donator-events-add-page .checkcircleicon {
   color: #4bb543;
+  font-size: 100px;
+}
+
+.donator-events-add-page .form-response {
+  display: inline-block;
+  text-align: center;
+}
+
+.donator-events-add-page .form-response {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.donator-events-add-page .form-response h3 {
+  color: #4bb543;
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.donator-events-add-page .form-response-additional-info p {
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.donator-events-add-page .form-response-email {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.donator-events-add-page .form-response-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.donator-events-add-page .form-response-buttons button {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.donator-events-add-page .form-response-buttons .edit-button,
+.donator-events-add-page .form-response-buttons .download-button {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.donator-events-add-page .form-response-buttons .back-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.donator-events-add-page .form-response-buttons button:hover {
+  opacity: 0.8;
+}
+
+.donator-events-add-page .form-response-buttons .MuiSvgIcon-root {
+  margin-right: 5px;
+}
+
+
+.donator-events-add-page .thank-you-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.donator-events-add-page .icon-wrapper {
+  color: #4bb543;
+  font-size: 100px;
+  display: flex;
+  align-items: center;
+}
+
+.donator-events-add-page .thank-you-text {
+  font-size: 50px;
+  font-weight: bold;
+  margin: 0;
+  color: #4bb543;
+
+}
+
+.donator-events-add-page .checkcircleicon {
+  color: #4bb543;
+  font-size: 100px;
 }

@@ -780,26 +780,18 @@ interface EventBody {
     startDate: Date,
     endDate: Date,
     imageFile: string,
+    maxSlots: number,
+    attire: string,
     donatorId: number,
 }
 
 
 app.post('/events', async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId }: EventBody = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId }: EventBody = req.body;
     console.log(req.body);
 
 
     try {
-        // const newEvent = await prisma.event.create({
-        //     data: {
-        //         title,
-        //         summary,
-        //         dates: new Date(), // Assuming 'date' is a string in a valid date format
-        //         donatorId: 1, // Ensure donatorId is an integer
-        //     },
-        // });
-
-        // res.status(200).json(newEvent);
         const newEvent = await prisma.event.create({
             data: {
                 title,
@@ -810,6 +802,8 @@ app.post('/events', async (req, res) => {
                 startDate: new Date(startDate), // Convert ISO string to Date object
                 endDate: new Date(endDate),     // Convert ISO string to Date object
                 imageFile: imageFile || '',     // Use empty string if imageFile is null/undefined
+                maxSlots,
+                attire,
                 donatorId: Number(donatorId),
             },
         });
@@ -832,11 +826,13 @@ interface updateEventBody {
     startDate: Date,
     endDate: Date,
     imageFile: null,
+    maxSlots: number,
+    attire: string,
     donatorId: number,
 }
 app.put('/events/update/:eventId', async (req, res) => {
     const { eventId } = req.params;  // Get eventId from params, not body
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId } = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId } = req.body;
 
     try {
         const updatedEvent = await prisma.event.update({
@@ -851,6 +847,8 @@ app.put('/events/update/:eventId', async (req, res) => {
                 endDate: new Date(endDate),
                 imageFile: "a",
                 // hardcoded^
+                maxSlots,
+                attire,
                 donatorId: Number(donatorId),
             }
         });
@@ -906,6 +904,7 @@ app.delete('/event/:id', async (req, res) => {
 app.get('/donator/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany();
+        console.log(events)
         res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching events:', error);
@@ -929,6 +928,34 @@ app.get('/donator/events', async (req, res) => {
 //         res.status(400).json({error: e})
 //     }
 // })
+
+// Add a new reply
+app.post('/reviews/:reviewId/reply', async (req, res) => {
+    const { reviewId } = req.params;
+    const { content, donatorId } = req.body;
+
+    try {
+        const reply = await prisma.reply.create({
+            data: {
+                content,
+                reviewId: parseInt(reviewId),
+                donatorId: parseInt(donatorId)
+            },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
+        });
+
+        res.status(201).json(reply);
+    } catch (error) {
+        console.error('Error creating reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 app.post('/review_submit/:id', async (req, res) => {
     try {
@@ -1050,12 +1077,8 @@ app.post('/get_donator', async (req, res) => {
 
 app.get('/reviews/:id', async (req, res) => {
     try {
-        const { id } = req.params; // Get the donator's id from the URL parameters
+        const { id } = req.params;
         const donatorId = parseInt(id, 10);
-
-        if (!donatorId || isNaN(donatorId)) {
-            return res.status(400).json({ error: 'Invalid donator ID' });
-        }
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1071,7 +1094,8 @@ app.get('/reviews/:id', async (req, res) => {
                     include: {
                         person: true
                     }
-                }
+                },
+                reply: true
             }
         });
 
@@ -1080,7 +1104,7 @@ app.get('/reviews/:id', async (req, res) => {
             const reviewData = { ...review };
             if (reviewData.isAnonymous) {
                 const name = reviewData.user?.person?.name || 'Anonymous';
-                reviewData.user.person.name = `${name[0]}${'*'.repeat(name.length - 1)}`;
+                reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
             return reviewData;
         });
@@ -1229,7 +1253,47 @@ app.delete('/reviews/:id', async (req, res) => {
     }
 });
 
+// Edit a reply
+app.put('/replies/:replyId', async (req, res) => {
+    
+    const { replyId } = req.params;
+    const { content } = req.body;
 
+    try {
+        const updatedReply = await prisma.reply.update({
+            where: { id: parseInt(replyId) },
+            data: { content },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json(updatedReply);
+    } catch (error) {
+        console.error('Error updating reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete a reply
+app.delete('/replies/:replyId', async (req, res) => {
+    const { replyId } = req.params;
+
+    try {
+        await prisma.reply.delete({
+            where: { id: parseInt(replyId) }
+        });
+
+        res.status(204).send();
+    } catch (error) {
+        console.error('Error deleting reply:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 
 
