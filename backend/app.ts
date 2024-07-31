@@ -190,7 +190,6 @@ app.post('/logout', async (req, res) => {
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
 app.post('/createAccounts', async (req, res) => {
-app.post('/createAccounts', async (req, res) => {
     const user: User = {
         name: "admin",
         email: "test@gmail.com",
