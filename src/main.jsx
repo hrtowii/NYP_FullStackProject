@@ -22,6 +22,7 @@ import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
 import ManageDonations from './donator/ManageDonations.jsx'
 import DonateItem from './donator/DonateItem.jsx'
 import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
+import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
 
 import './index.css'
 import {
@@ -164,6 +165,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonatorEventsAdd />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/eventAdded",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEventsAddThanks />
       </ProtectedRoute>
     ),
   },
