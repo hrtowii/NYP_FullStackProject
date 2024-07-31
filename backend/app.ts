@@ -402,6 +402,7 @@ app.get('/donations/:id', async (req, res) => {
                 include: {
                     foods: true,
                     donator: true,
+                    reservations: true,
                 },
                 skip,
                 take: limitNumber,
@@ -523,6 +524,41 @@ app.put('/donations/:id', async (req, res) => {
     }
 });
 
+app.get('/reservation/:donerId', async (req, res) => {
+    const donerId = parseInt(req.params.donerId);
+    console.log('Received userId:', donerId);
+    if (isNaN(donerId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    try {
+        const currentReservations = await prisma.reservation.findMany({
+            where: {
+                // donatorId: donerId,
+                collectionStatus: 'Uncollected',
+            },
+            include: {
+                reservationItems: {
+                    include: {
+                        food: {
+                            include: {
+                                donation: {
+                                    include: {
+                                        donator: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        console.log('Current reservations:', currentReservations);
+        res.json(currentReservations);
+    } catch (error) {
+        console.error('Error fetching current reservations:', error);
+        res.status(500).json({ error: 'Unable to fetch current reservations', details: error.message });
+    }
+});
 
 
 //MARK: Reservation CRUD
@@ -547,6 +583,7 @@ interface ReservationInterface {
 app.post('/reservation/:id', async (req, res) => {
     const id: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
+    let donationId = req.body.cartItems[0].donatorId;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
@@ -556,6 +593,9 @@ app.post('/reservation/:id', async (req, res) => {
         if (!user) {
             return res.status(400).json({ error: `User with id ${id} not found` });
         }
+
+        donationId = parseInt(donationId, 10);
+
         // Remove donation-related for now, to test functionality of just the reservation part
         // let donation;
         // if (formData.donationId) {  // check if donation exists
@@ -574,6 +614,7 @@ app.post('/reservation/:id', async (req, res) => {
                 collectionTimeEnd: formData.collectionTimeEnd,
                 collectionStatus: 'Uncollected',
                 remarks: formData.remarks,
+                donationId: donationId,
                 reservationItems: {
                     create: formData.cartItems.flatMap(item =>
                         item.foods.map(food => ({
@@ -586,7 +627,12 @@ app.post('/reservation/:id', async (req, res) => {
             include: {
                 reservationItems: {
                     include: {
-                        food: true
+                        food: true          
+                    }
+                },
+                donation: {
+                    include: {
+                        foods: true
                     }
                 }
             },

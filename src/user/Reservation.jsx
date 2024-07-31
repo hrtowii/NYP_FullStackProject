@@ -47,6 +47,8 @@ const Reservation = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [dateError, setDateError] = useState('');  // Validation state variables
     const [timeError, setTimeError] = useState('');
+    const [selectedDonation, setSelectedDonation] = useState(null);
+
     useEffect(() => {
         if (token) {
             const decodedToken = parseJwt(token);
@@ -99,8 +101,9 @@ const Reservation = () => {
     };
     // RESCHEDULE RESERVATION
     
-    const handleReschedule = (reservation) => {
+    const handleReschedule = (reservation,donation) => {
         setSelectedReservation(reservation);
+        setSelectedDonation(donation);
         const newDate = new Date(reservation.collectionDate);
         const newTimeStart = new Date(`2000-01-01T${reservation.collectionTimeStart}`);
         const newTimeEnd = new Date(`2000-01-01T${reservation.collectionTimeEnd}`);
@@ -185,6 +188,7 @@ const Reservation = () => {
                     collectionDate: newDate.toISOString().split('T')[0],
                     collectionTimeStart: newTimeStart.toTimeString().slice(0, 5),
                     collectionTimeEnd: newTimeEnd.toTimeString().slice(0, 5),
+                    donationId : selectedDonation.id
                 }),
             });
             if (res.ok) {
@@ -256,7 +260,7 @@ const Reservation = () => {
                     {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
                     {!isPast && (
                         <span
-                            className="reschedule-link" onClick={() => handleReschedule(reservation)}>Reschedule
+                            className="reschedule-link" onClick={() => handleReschedule(reservation,donation)}>Reschedule
                         </span>
                     )}
                 </p>
