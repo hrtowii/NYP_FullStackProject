@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import Navbar from "./components/Navbar";
-import { TextField, Button, FormControlLabel, Switch, Rating } from '@mui/material';
+import { TextField, Button, FormControlLabel, Switch, Rating, Alert } from '@mui/material';
 import "./index.css";
 import './About.css';
 import './review.css';
 import './assets/odometer.css';
+import CheckIcon from '@mui/icons-material/Check';
 import { useNavigate } from 'react-router-dom';
 
 const backendRoute = 'http://localhost:3000';
 
 export default function Review() {
+
+    // review
     const [formData, setFormData] = useState({
         rating: 0,
         comment: '',
         showUsername: false
     });
+    const [showAlert, setShowAlert] = useState(false);
 
     const handleChange = (event) => {
         const { name, value, checked } = event.target;
@@ -32,9 +36,15 @@ export default function Review() {
     };
 
     const handleSubmit = async (event) => {
-        // const navigate = useNavigate();
-
         event.preventDefault();
+        
+        if (formData.rating < 1 || formData.rating > 5) {
+            setShowAlert(true);
+            return;
+        }
+        
+        setShowAlert(false);
+
         try {
             const response = await fetch(`${backendRoute}/review_submit`, {
                 method: 'POST',
@@ -58,6 +68,10 @@ export default function Review() {
     return (
         <>
             <Navbar />
+            <div className="Donator profiles:">
+                <h2>Donator profiles</h2>
+                
+            </div>
             <div className="centered">
                 <div className='Profile'>
                     {/* Profile content */}
@@ -66,12 +80,16 @@ export default function Review() {
                 <div className='form-container'>
                     <form onSubmit={handleSubmit}>
                         <h2>Review Form</h2>
+                        {showAlert && (
+                            <Alert severity="error">Please provide a star rating between 1 and 5.</Alert>
+                        )}
                         <div>
                             <label>Product Quality</label>
                             <Rating
                                 name="star"
                                 value={formData.rating}
                                 onChange={handleRatingChange}
+                                required
                             />
                         </div>
                         <TextField

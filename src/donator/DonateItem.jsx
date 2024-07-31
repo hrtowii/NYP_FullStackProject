@@ -16,6 +16,7 @@ import {
     Typography,
     FormHelperText,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
 
@@ -29,8 +30,8 @@ export default function DonateItem() {
         location: '',
         type: '',
         category: '',
-        image: null,
         remarks: '',
+        imageURL: '',
     });
     const [errors, setErrors] = useState({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -64,6 +65,7 @@ export default function DonateItem() {
         tempErrors.expiryDate = formData.expiryDate ? "" : "Expiry date is required";
         tempErrors.deliveryDate = formData.deliveryDate ? "" : "Delivery date is required";
         tempErrors.location = formData.location ? "" : "Location is required";
+        tempErrors.imageURL = formData.imageURL ? "" : "Image is required";
 
         if (formData.expiryDate && formData.deliveryDate) {
             if (new Date(formData.expiryDate) <= new Date(formData.deliveryDate)) {
@@ -78,11 +80,11 @@ export default function DonateItem() {
     function parseJwt(token) {
         var base64Url = token.split('.')[1];
         var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         return JSON.parse(jsonPayload);
-      }
+    }
     const { token, updateToken } = useContext(TokenContext);
 
     const handleInputChange = (e) => {
@@ -99,7 +101,7 @@ export default function DonateItem() {
             setFormData({ ...formData, [name]: value });
         }
         if (errors[name]) {
-            setErrors({...errors, [name]: ""});
+            setErrors({ ...errors, [name]: "" });
         }
     };
 
@@ -164,7 +166,7 @@ export default function DonateItem() {
                         />
                         <TextField
                             fullWidth
-                            label="Quantity (integer value)"
+                            label="Quantity in g (integer value)"
                             name="quantity"
                             value={formData.quantity}
                             onChange={handleInputChange}
@@ -212,7 +214,7 @@ export default function DonateItem() {
                             </Select>
                             <FormHelperText>{errors.category}</FormHelperText>
                         </FormControl>
-                        
+
                         <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Dates</Typography>
                         <TextField
                             fullWidth
@@ -243,7 +245,7 @@ export default function DonateItem() {
                         <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
                             Please make sure the food is delivered by the end of the day
                         </Typography>
-                        
+
                         <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Location</Typography>
                         <FormControl fullWidth margin="normal" required error={!!errors.location}>
                             <InputLabel>Location</InputLabel>
@@ -258,21 +260,32 @@ export default function DonateItem() {
                             </Select>
                             <FormHelperText>{errors.location}</FormHelperText>
                         </FormControl>
-                        
-                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Image Upload</Typography>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            style={{ marginTop: '10px' }}
+                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Image URL</Typography>
+                        <TextField
+                            fullWidth
+                            label="ImageURL"
+                            name="imageURL"
+                            value={formData.imageURL}
+                            onChange={handleInputChange}
+                            margin="normal"
                         />
-                        {formData.image && <Typography variant="body2" style={{ marginTop: '5px' }}>{formData.image.name}</Typography>}
                     </form>
                 );
             case 1:
                 return (
                     <div className="donation-summary">
                         <Typography variant="h6" gutterBottom>Donation Summary</Typography>
+                        <Box
+                            component="img"
+                            sx={{
+                                height: 233,
+                                width: 350,
+                                maxHeight: { xs: 233, md: 167 },
+                                maxWidth: { xs: 350, md: 250 },
+                            }}
+                            alt="image."
+                            src={formData.imageURL}
+                        />
                         <Typography>Food Name: {formData.foodName}</Typography>
                         <Typography>Quantity: {formData.quantity}</Typography>
                         <Typography>Type: {formData.type}</Typography>
@@ -281,7 +294,6 @@ export default function DonateItem() {
                         <Typography>Delivery Date: {formData.deliveryDate}</Typography>
                         <Typography>Location: {formData.location}</Typography>
                         {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
-                        {formData.image && <Typography>Image: {formData.image.name}</Typography>}
                     </div>
                 );
             case 2:
@@ -305,7 +317,7 @@ export default function DonateItem() {
                         <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
                             Manage Donations
                         </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/TrackDonations">
+                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
                             Track Donation Progress
                         </Button>
                         <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">

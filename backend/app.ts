@@ -160,14 +160,14 @@ app.post('/sendEmail', async (req, res) => {
     if (exists) {
         return res.status(409).json({ error: "User already exists" })
     }
-    const ourOtp: number = crypto.randomInt(0, 999999);
+    const ourOtp: number = crypto.randomInt(100000, 999999);
     // redis set otp code
     await redisClient.set(emailDetails.email, ourOtp);
 
     const { data, error } = await resend.emails.send({
         from: "ecosanct@hrtowii.dev",
         to: [emailDetails.email],
-        subject: "Test email for fullstack",
+        subject: "Your CommuniFridge Verification Code",
         html: `Email verification code: ${ourOtp}`,
     });
 
@@ -189,6 +189,7 @@ app.post('/logout', async (req, res) => {
 //MARK: Admin functions
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
+app.post('/createAccounts', async (req, res) => {
 app.post('/createAccounts', async (req, res) => {
     const user: User = {
         name: "admin",
@@ -269,6 +270,24 @@ app.post('/users', isAdmin, async (req, res) => {
         res.status(500).json({ error: 'Error fetching users' });
     }
 });
+// View all donators
+app.post('/donators', async (req, res) => {
+    try {
+        const donators = await prisma.person.findMany({
+            where: {
+                donator: {
+                    isNot: null
+                }
+            },
+            include: {
+                donator: true
+            },
+        });
+        res.status(200).json(donators)
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching donators' });
+    }
+});
 
 // Delete a user
 app.delete('/users/:id', isAdmin, async (req, res) => {
@@ -336,7 +355,8 @@ interface donationInterface {
     type: string,
     category: string,
     location: string,
-    remarks: string
+    remarks: string,
+    imageURL: string,
 }
 app.post('/donation/:id', async (req, res) => {
     const id: number = parseInt(req.params.id);
@@ -352,6 +372,7 @@ app.post('/donation/:id', async (req, res) => {
             deliveryDate: new Date(formData.expiryDate),
             location: formData.location,
             remarks: formData.remarks,
+            imageUrl: formData.imageURL,
             foods: {
                 create: {
                     name: formData.foodName,
@@ -703,8 +724,22 @@ app.delete('/reservation/:id', async (req, res) => {
 });
 
 
-app.post('/event', async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId }: EventBody = req.body;
+// MARK: event CRUD
+interface EventBody {
+    title: string,
+    briefSummary: string,
+    fullSummary: string,
+    phoneNumber: string,
+    emailAddress: string,
+    startDate: Date,
+    endDate: Date,
+    imageFile: string,
+    donatorId: number,
+}
+
+
+app.post('/events', async (req, res) => {
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId }: EventBody = req.body;
     console.log(req.body);
 
 
@@ -726,9 +761,10 @@ app.post('/event', async (req, res) => {
                 fullSummary,
                 phoneNumber,
                 emailAddress,
-                startDate: new Date(),
-                endDate: new Date(),
-                donatorId: 2, // Ensure donatorId is an integer
+                startDate: new Date(startDate), // Convert ISO string to Date object
+                endDate: new Date(endDate),     // Convert ISO string to Date object
+                imageFile: imageFile || '',     // Use empty string if imageFile is null/undefined
+                donatorId: Number(donatorId),
             },
         });
 
@@ -749,30 +785,51 @@ interface updateEventBody {
     emailAddress: string,
     startDate: Date,
     endDate: Date,
+    imageFile: null,
     donatorId: number,
 }
-app.put('/event', async (req, res) => {
-    // const { eventId, title, summary, date, donatorId } = req.body
-    const { eventId, title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, donatorId } = req.body
-    const updatedEvent = await prisma.event.update({
-        where: {
-            id: eventId
-        },
-        data: {
-            title: title,
-            summary: summary,
-            dates: date ? new Date() : undefined,
-            donatorId: donatorId,
-            briefSummary: briefSummary,
-            fullSummary: fullSummary,
-            phoneNumber: phoneNumber,
-            emailAddress: emailAddress,
-            startDate: startDate ? new Date() : undefined,
-            endDate: startDate ? new Date() : undefined,
+app.put('/events/update/:eventId', async (req, res) => {
+    const { eventId } = req.params;  // Get eventId from params, not body
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, donatorId } = req.body;
+
+    try {
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                title,
+                briefSummary,
+                fullSummary,
+                phoneNumber,
+                emailAddress,
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                imageFile: "a",
+                // hardcoded^
+                donatorId: Number(donatorId),
+            }
+        });
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error updating event:', error);
+        res.status(500).json({ error: 'Failed to update event' });
+    }
+});
+app.get('/events/:eventId', async (req, res) => {
+    const { eventId } = req.params;
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+        });
+        if (event) {
+            res.json(event);
+        } else {
+            res.status(404).json({ error: 'Event not found' });
         }
-    })
-    res.status(200).json(updatedEvent)
-})
+    } catch (error) {
+        console.error('Error fetching event:', error);
+        res.status(500).json({ error: 'Failed to fetch event' });
+    }
+});
 
 app.post('/findeventsfromdonator', async (req, res) => {
     const { donatorId } = req.body
@@ -786,14 +843,21 @@ app.post('/findeventsfromdonator', async (req, res) => {
 
 app.delete('/event/:id', async (req, res) => {
     const eventId = parseInt(req.params.id, 10);
-    await prisma.event.delete({
-        where: {
-            id: eventId
-        }
-    })
-    res.status(200)
-})
-app.get('/events', async (req, res) => {
+    try {
+        console.log(`Attempting to delete event with ID: ${eventId}`);
+        const deletedEvent = await prisma.event.delete({
+            where: {
+                id: eventId
+            }
+        });
+        console.log(`Successfully deleted event:`, deletedEvent);
+        res.status(200).json({ message: 'Event deleted successfully', deletedEvent });
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        res.status(500).json({ error: 'Failed to delete event', details: error.message });
+    }
+});
+app.get('/donator/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany();
         res.status(200).json(events);
@@ -804,47 +868,308 @@ app.get('/events', async (req, res) => {
 });
 
 // MARK: review CRUD
-app.post('/review_submit', async (req, res) => {
+// app.post('/get_donator/', async (req,res) => {
+//     const {id} = req.body.id
+//     try {
+//         const newReview = await prisma.user.findUnique({
+//             where: {
+//                 id: parseInt(id, 10)
+//             }
+//         })
+//         console.log(newReview)
+//         res.status(200).json(newReview)
+//     } catch (e) {
+//         console.log(e)
+//         res.status(400).json({error: e})
+//     }
+// })
+
+app.post('/review_submit/:id', async (req, res) => {
     try {
-        const { rating, comment } = req.body;
-        const newReview = await prisma.review.create({
-            data: {
-                rating,
-                comment,
-                donator: { connect: { id: 1 } }
+        const { id } = req.params;
+        const { rating, comment, userId } = req.body;
+
+        console.log('Received review submission:', { id, rating, comment, userId });
+
+        const donatorId = parseInt(id, 10);
+        const reviewerId = parseInt(userId, 10);
+
+        // Validate input (same as before)
+
+        const newReview = await prisma.$transaction(async (prisma) => {
+            const review = await prisma.review.create({
+                data: {
+                    rating,
+                    comment,
+                    userId: reviewerId,
+                    donatorId: donatorId
+                },
+                include: {
+                    user: {
+                        include: {
+                            person: true
+                        }
+                    },
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    }
+                }
+            });
+
+            console.log('Created new review:', JSON.stringify(review, null, 2));
+
+            const donator = await prisma.donator.findUnique({
+                where: { id: donatorId },
+                include: { reviews: true }
+            });
+
+            console.log('Fetched donator with reviews:', JSON.stringify(donator, null, 2));
+
+            const newAverageRating = donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length;
+            const newReviewCount = donator.reviews.length;
+
+            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
+
+            const updatedDonator = await prisma.donator.update({
+                where: { id: donatorId },
+                data: {
+                    averageRating: newAverageRating,
+                    reviewCount: newReviewCount
+                }
+            });
+
+            console.log('Updated donator:', JSON.stringify(updatedDonator, null, 2));
+
+            return review;
+        });
+
+        res.status(201).json({ message: 'Review created successfully', review: newReview });
+    } catch (error) {
+        console.error('Error creating review:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/donators', async (req, res) => {
+    try {
+        const donators = await prisma.donator.findMany({
+            include: {
+                person: true,
+                reviews: true,
             },
         });
-        res.status(200).json(newReview);
+
+        const donatorsWithStats = donators.map(donator => {
+            const reviewCount = donator.reviews.length;
+            const averageRating = reviewCount > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+                : 0;
+
+            return {
+                id: donator.id,
+                name: donator.person.name,
+                averageRating: parseFloat(averageRating.toFixed(1)),
+                reviewCount,
+            };
+        });
+
+        console.log('Sending donators data to frontend:', JSON.stringify(donatorsWithStats, null, 2));
+
+        res.json(donatorsWithStats);
     } catch (error) {
-        console.log(error)
-        res.status(400).json({ error: error.message });
+        console.error('Error fetching donators:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-})
+});
 
-app.delete('/reviews/:id', async (req, res) => {
-    const reviewId = parseInt(req.params.id, 10);
-    await prisma.review.delete({
-        where: {
-            id: reviewId
-        }
-    })
-    res.status(200)
-})
-
-app.post('/reviews/:id', async (req, res) => {
+app.post('/get_donator', async (req, res) => {
+    const { id } = req.body;
     try {
-        const donatorId = parseInt(req.params.id);
+        const donator = await prisma.donator.findUnique({
+            where: { id: parseInt(id) },
+            include: { person: true }
+        });
+        if (donator) {
+            res.json({ name: donator.person.name });
+        } else {
+            res.status(404).json({ error: 'Donator not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/reviews/:id', async (req, res) => {
+    try {
+        const { id } = req.params; // Get the donator's id from the URL parameters
+        const donatorId = parseInt(id, 10);
+
+        if (!donatorId || isNaN(donatorId)) {
+            return res.status(400).json({ error: 'Invalid donator ID' });
+        }
+
         const reviews = await prisma.review.findMany({
             where: {
                 donatorId: donatorId
+            },
+            include: {
+                user: {
+                    include: {
+                        person: true
+                    }
+                },
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
             }
         });
+
         res.status(200).json(reviews);
     } catch (error) {
-        console.log(error);
-        res.status(400).json({ error: error.message });
+        console.error('Error fetching reviews:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.put('/reviews/:id', async (req, res) => {
+    const reviewId = parseInt(req.params.id, 10);
+    const { rating, comment } = req.body;
+    console.log(`Received update request for review ID: ${reviewId}`);
+    const startTime = Date.now();
+
+    // Set a timeout to force a response after 10 seconds
+    const timeoutId = setTimeout(() => {
+        console.log(`Update operation timed out after 10 seconds for review ID: ${reviewId}`);
+        res.status(504).json({ error: 'Update operation timed out' });
+    }, 10000);
+
+    try {
+        console.log('Attempting to update review...');
+        const updatedReview = await prisma.review.update({
+            where: {
+                id: reviewId
+            },
+            data: {
+                rating,
+                comment
+            }
+        });
+        const donators = await prisma.donator.findMany({
+            include: {
+                person: true,
+                reviews: true,
+            },
+        });
+
+        const donatorsWithStats = donators.map(donator => {
+            const reviewCount = donator.reviews.length;
+            const averageRating = reviewCount > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+                : 0;
+
+            return {
+                id: donator.id,
+                name: donator.person.name,
+                averageRating: parseFloat(averageRating.toFixed(1)),
+                reviewCount,
+            };
+        });
+        console.log('Sending donators data to frontend:', JSON.stringify(donatorsWithStats, null, 2));
+
+        res.json(donatorsWithStats);
+
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.log(`Review updated successfully in ${endTime - startTime}ms:`, updatedReview);
+        // res.status(200).json({ message: 'Review updated successfully', updatedReview, timeTaken: endTime - startTime });
+    } catch (error) {
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.error(`Error updating review after ${endTime - startTime}ms:`, error);
+        if (error.code === 'P2025') {
+            res.status(404).json({ error: 'Review not found', timeTaken: endTime - startTime });
+        } else {
+            res.status(500).json({ error: 'Failed to update review', details: error.message, timeTaken: endTime - startTime });
+        }
+    }
+});
+
+
+app.delete('/reviews/:id', async (req, res) => {
+    const reviewId = parseInt(req.params.id, 10);
+    console.log(`Received delete request for review ID: ${reviewId}`);
+    const startTime = Date.now();
+
+    // Set a timeout to force a response after 10 seconds
+    const timeoutId = setTimeout(() => {
+        console.log(`Delete operation timed out after 10 seconds for review ID: ${reviewId}`);
+        res.status(504).json({ error: 'Delete operation timed out' });
+    }, 10000);
+
+    try {
+        const result = await prisma.$transaction(async (prisma) => {
+            console.log('Attempting to delete review...');
+            const review = await prisma.review.findUnique({
+                where: { id: reviewId }
+            });
+
+            if (!review) {
+                throw new Error('Review not found');
+            }
+
+            const donatorId = review.donatorId;
+
+            // Delete the review
+            await prisma.review.delete({ where: { id: reviewId } });
+
+            // Fetch the updated donator with reviews
+            const donator = await prisma.donator.findUnique({
+                where: { id: donatorId },
+                include: { reviews: true }
+            });
+
+            // Calculate new stats
+            const newAverageRating = donator.reviews.length > 0
+                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length
+                : 0;
+            const newReviewCount = donator.reviews.length;
+
+            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
+
+            // Update the donator
+            await prisma.donator.update({
+                where: { id: donatorId },
+                data: { averageRating: newAverageRating, reviewCount: newReviewCount }
+            });
+
+            return { donatorId, newAverageRating, newReviewCount };
+        });
+
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.log(`Review deleted successfully in ${endTime - startTime}ms:`, result);
+        res.status(200).json({
+            message: 'Review deleted successfully',
+            timeTaken: endTime - startTime,
+            donatorId: result.donatorId,
+            newAverageRating: result.newAverageRating,
+            newReviewCount: result.newReviewCount
+        });
+    } catch (error) {
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        console.error(`Error deleting review after ${endTime - startTime}ms:`, error);
+        res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
+    }
+});
+
+
+
+
 
 
 // Middleware function in expressjs so that routes that want authentication will have to go through this route
@@ -882,6 +1207,20 @@ function isAdmin(req, res, next) {
         next()
     })
 }
+import { upload } from '../src/components/upload.jsx'
+app.post('/upload', (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            res.status(400).json(err);
+        }
+        else if (req.body == undefined) {
+            res.status(400).json({ message: "No file uploaded" });
+        }
+        else {
+            res.json({ filename: req.body.filename });
+        }
+    })
+});
 
 app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')

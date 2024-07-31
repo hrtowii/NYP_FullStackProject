@@ -6,7 +6,8 @@
 
 
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -97,6 +98,7 @@ const Reservation = () => {
         }
     };
     // RESCHEDULE RESERVATION
+    
     const handleReschedule = (reservation) => {
         setSelectedReservation(reservation);
         const newDate = new Date(reservation.collectionDate);

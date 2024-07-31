@@ -15,10 +15,13 @@ import Fridge from './user/Fridge.jsx'  // gon change to ./user/Fridge.jsx
 import DonatorEvents from './donator/DonatorEvents.jsx'
 import Cart from './user/Cart.jsx'
 import Profile from './Profile.jsx'
+import ListOfDonators from './listofdonators.jsx'
+import DonateProgress from './donator/DonateProgress.jsx'
 import ReservationForm from './user/Cart.jsx'
 import DonatorEventsAdd from './donator/DonatorEventsAdd.jsx'
 import ManageDonations from './donator/ManageDonations.jsx'
 import DonateItem from './donator/DonateItem.jsx'
+import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
 
 import './index.css'
 import {
@@ -50,21 +53,29 @@ const router = createBrowserRouter([
     path: "/review",
     element: <Review />
   },
+  // {
+  //   path: "/events",
+  //   element: <DonatorEvents />
+  // },
   {
-    path: "/events",
-    element: <DonatorEvents />
+    path: "/listofdonators",
+    element: <ListOfDonators />
   },
   {
     path: "/profile/:donatorId",
     element: <Profile />
   },
-  {
-    path: "/eventsadd",
-    element: <DonatorEventsAdd />
-  },
+  // {
+  //   path: "/eventsadd",
+  //   element: <DonatorEventsAdd />
+  // },
+  // {
+  //   path: "/eventsupdate/:eventId",
+  //   element: <DonatorEventsUpdate />
+  // },
   {
     path: "/file",
-    element: <fileRoute/>
+    element: <fileRoute />
   },
   {
     path: "/forbidden",
@@ -118,25 +129,59 @@ const router = createBrowserRouter([
   {
     path: "donator/ManageDonations",
     element: (
-      <ProtectedRoute allowedRoles={['donator', 'admin']}>
-        <ManageDonations/>
+      <ProtectedRoute allowedRoles={['donator']}>
+
+        <ManageDonations />
       </ProtectedRoute>
     )
   },
   {
     path: "donator/DonateItem",
     element: (
-      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+      <ProtectedRoute allowedRoles={['donator']}>
         <DonateItem />
       </ProtectedRoute>
     ),
   },
+  {
+    path: "donator/DonateProgress",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonateProgress />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/events",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEvents />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/addEvent",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEventsAdd />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "donator/updateEvent/:eventId",
+    element: (
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
+        <DonatorEventsUpdate />
+      </ProtectedRoute>
+    ),
+  },
+
   // MARK: Admin protected routes
   {
     path: "/admin",
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminLanding/>
+        <AdminLanding />
       </ProtectedRoute>
     )
   },
