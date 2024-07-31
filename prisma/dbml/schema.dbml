@@ -37,6 +37,14 @@ Table Review {
   donatorId Int [not null]
   donator Donator [not null]
   reply Reply
+  images Image [not null]
+}
+
+Table Image {
+  id Int [pk, increment]
+  url String [not null]
+  reviewId Int [not null]
+  review Review [not null]
 }
 
 Table Reply {
@@ -147,6 +155,8 @@ Ref: User.id - Person.id [delete: Cascade]
 Ref: Review.userId > User.id
 
 Ref: Review.donatorId > Donator.id
+
+Ref: Image.reviewId > Review.id
 
 Ref: Reply.reviewId - Review.id
 

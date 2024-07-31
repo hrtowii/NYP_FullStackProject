@@ -12,6 +12,10 @@ import { createClient } from 'redis';
 import { Dayjs } from "dayjs";
 import { configDotenv } from 'dotenv';
 import { FontDownload, TurnedIn } from "@mui/icons-material"
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 configDotenv()
 const redisClient = createClient({
@@ -39,7 +43,10 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:8000', // Replace with your frontend URL
+    credentials: true
+  }));
 
 app.get('/', (req, res) => {
     res.send('this is homepage')
@@ -178,12 +185,12 @@ app.post('/sendEmail', async (req, res) => {
 
 app.post('/logout', async (req, res) => {
     res.status(200)
-       .clearCookie('token', { 
-           path: '/', 
-           httpOnly: true, 
-           secure: true 
-       })
-       .json({ success: true });
+        .clearCookie('token', {
+            path: '/',
+            httpOnly: true,
+            secure: true
+        })
+        .json({ success: true });
 });
 
 //MARK: Admin functions
@@ -627,7 +634,7 @@ app.post('/reservation/:id', async (req, res) => {
             include: {
                 reservationItems: {
                     include: {
-                        food: true          
+                        food: true
                     }
                 },
                 donation: {
@@ -929,6 +936,39 @@ app.get('/donator/events', async (req, res) => {
 //     }
 // })
 
+
+// john's image review code
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsDir = path.join(__dirname, 'uploads');
+await fs.mkdir(uploadsDir, { recursive: true });
+
+// Update multer configuration
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir)
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname))
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Not an image! Please upload an image.') as any, false);
+        }
+    }
+})
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ends here
+
 // Add a new reply
 app.post('/reviews/:reviewId/reply', async (req, res) => {
     const { reviewId } = req.params;
@@ -957,26 +997,36 @@ app.post('/reviews/:reviewId/reply', async (req, res) => {
     }
 });
 
-app.post('/review_submit/:id', async (req, res) => {
+app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
     try {
         const { id } = req.params;
         const { rating, comment, userId, isAnonymous } = req.body;
 
-        console.log('Received review submission:', { id, rating, comment, userId, isAnonymous });
-
         const donatorId = parseInt(id, 10);
         const reviewerId = parseInt(userId, 10);
 
-        // Validate input (same as before)
+        // Validate input
+        if (!rating || isNaN(parseInt(rating)) || parseInt(rating) < 1 || parseInt(rating) > 5) {
+            return res.status(400).json({ error: 'Invalid rating' });
+        }
+
+        if (!comment || comment.trim() === '') {
+            return res.status(400).json({ error: 'Comment is required' });
+        }
 
         const newReview = await prisma.$transaction(async (prisma) => {
             const review = await prisma.review.create({
                 data: {
-                    rating,
+                    rating: parseInt(rating),
                     comment,
                     userId: reviewerId,
                     donatorId: donatorId,
-                    isAnonymous: isAnonymous || false
+                    isAnonymous: isAnonymous === 'true',
+                    images: {
+                        create: req.files ? req.files.map(file => ({ 
+                            url: path.relative(uploadsDir, file.path).replace(/\\/g, '/') 
+                        })) : []
+                    }
                 },
                 include: {
                     user: {
@@ -988,25 +1038,20 @@ app.post('/review_submit/:id', async (req, res) => {
                         include: {
                             person: true
                         }
-                    }
+                    },
+                    images: true
                 }
             });
-
-            console.log('Created new review:', JSON.stringify(review, null, 2));
 
             const donator = await prisma.donator.findUnique({
                 where: { id: donatorId },
                 include: { reviews: true }
             });
 
-            console.log('Fetched donator with reviews:', JSON.stringify(donator, null, 2));
-
             const newAverageRating = donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length;
             const newReviewCount = donator.reviews.length;
 
-            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
-
-            const updatedDonator = await prisma.donator.update({
+            await prisma.donator.update({
                 where: { id: donatorId },
                 data: {
                     averageRating: newAverageRating,
@@ -1014,15 +1059,13 @@ app.post('/review_submit/:id', async (req, res) => {
                 }
             });
 
-            console.log('Updated donator:', JSON.stringify(updatedDonator, null, 2));
-
             return review;
         });
 
         res.status(201).json({ message: 'Review created successfully', review: newReview });
     } catch (error) {
         console.error('Error creating review:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -1095,7 +1138,8 @@ app.get('/reviews/:id', async (req, res) => {
                         person: true
                     }
                 },
-                reply: true
+                reply: true,
+                images: true
             }
         });
 
@@ -1109,7 +1153,7 @@ app.get('/reviews/:id', async (req, res) => {
             return reviewData;
         });
 
-        res.status(200).json(reviews);
+        res.status(200).json(mappedReviews);
     } catch (error) {
         console.error('Error fetching reviews:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -1255,7 +1299,7 @@ app.delete('/reviews/:id', async (req, res) => {
 
 // Edit a reply
 app.put('/replies/:replyId', async (req, res) => {
-    
+
     const { replyId } = req.params;
     const { content } = req.body;
 
@@ -1346,7 +1390,6 @@ app.post('/upload', (req, res) => {
         }
     })
 });
-
 app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')
 })
