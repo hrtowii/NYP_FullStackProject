@@ -744,16 +744,6 @@ app.post('/events', async (req, res) => {
 
 
     try {
-        // const newEvent = await prisma.event.create({
-        //     data: {
-        //         title,
-        //         summary,
-        //         dates: new Date(), // Assuming 'date' is a string in a valid date format
-        //         donatorId: 1, // Ensure donatorId is an integer
-        //     },
-        // });
-
-        // res.status(200).json(newEvent);
         const newEvent = await prisma.event.create({
             data: {
                 title,
@@ -860,6 +850,7 @@ app.delete('/event/:id', async (req, res) => {
 app.get('/donator/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany();
+        console.log(events)
         res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching events:', error);
