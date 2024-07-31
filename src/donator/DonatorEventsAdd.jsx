@@ -172,6 +172,8 @@ const AddEventForm = () => {
 
   return (
     <>
+        <div className="donator-events-add-page">
+
       <DonatorNavbar />
 
       <div className="form-container">
@@ -294,6 +296,7 @@ const AddEventForm = () => {
             </div>
           </div>
         </form>
+      </div>
       </div>
     </>
   );
