@@ -190,7 +190,6 @@ app.post('/logout', async (req, res) => {
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
 app.post('/createAccounts', async (req, res) => {
-app.post('/createAccounts', async (req, res) => {
     const user: User = {
         name: "admin",
         email: "test@gmail.com",
@@ -1212,7 +1211,6 @@ function isAdmin(req, res, next) {
         next()
     })
 }
-import { upload } from '../src/components/upload.jsx'
 app.post('/upload', (req, res) => {
     upload(req, res, (err) => {
         if (err) {
@@ -1234,4 +1232,4 @@ app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`server is running at port number ${port}`)
-});
+});     
