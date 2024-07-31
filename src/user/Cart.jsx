@@ -3,15 +3,20 @@
 
 
 import React, { useState, useEffect, useContext } from 'react';
-import { TextField, Button, Box, Typography, Alert, Grid } from '@mui/material';
+import {
+  TextField, Button, Box, Typography, Alert, Grid, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox
+} from '@mui/material';
 import { UserNavbar } from "../components/Navbar";
 import "./UserLanding";
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 
 
-const Cart = ({ cartItems }) => {
+const Cart = () => {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [collectionDate, setCollectionDate] = useState('');
   const [collectionTimeStart, setCollectionTimeStart] = useState('');
@@ -21,8 +26,22 @@ const Cart = ({ cartItems }) => {
   const [timeError, setTimeError] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [selectedDonations, setSelectedDonations] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
 
-  const { token, updateToken } = useContext(TokenContext);
+  const { token } = useContext(TokenContext);
+
+  useEffect(() => {   // Load selected items from localStorage
+    const storedCartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+    setCartItems(storedCartItems);
+  }, []);
+
+
+  const handleItemSelect = (donation) => {
+    const updatedCartItems = cartItems.filter(item => item.id !== donation.id);
+    setCartItems(updatedCartItems);
+    localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
+  };
 
 
   function parseJwt(token) {
@@ -46,10 +65,10 @@ const Cart = ({ cartItems }) => {
 
   useEffect(() => {
     validateForm();
-  }, [collectionDate, collectionTimeStart, collectionTimeEnd, dateError, timeError]);
+  }, [collectionDate, collectionTimeStart, collectionTimeEnd, dateError, timeError, cartItems]);
 
   const validateForm = () => {
-    const isValid = collectionDate && collectionTimeStart && collectionTimeEnd && !dateError && !timeError;
+    const isValid = collectionDate && collectionTimeStart && collectionTimeEnd && !dateError && !timeError && cartItems.length > 0;
     setIsFormValid(isValid);
   }
 
@@ -107,10 +126,9 @@ const Cart = ({ cartItems }) => {
   };
 
   const handleReserve = async () => {
-    if (!isFormValid || !validateDate(collectionDate) || !validateTimes()) {
+    if (!isFormValid || !validateDate(collectionDate) || !validateTimes() || cartItems.length === 0) {
       return;
     }
-
 
     const payload = {
       userId,
@@ -118,13 +136,12 @@ const Cart = ({ cartItems }) => {
       collectionTimeStart,
       collectionTimeEnd,
       remarks,
+      cartItems: cartItems
     };
 
-    console.log('Sending reservation payload:', payload);
-
     try {
-      const id = parseJwt(token).id
-      const response = await fetch(`${backendRoute}/reservation/${id}`, {  // using fetch() to send POST req to backend
+      const id = parseJwt(token).id;
+      const response = await fetch(`${backendRoute}/reservation/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,12 +159,19 @@ const Cart = ({ cartItems }) => {
       console.log('Reservation created:', data);
       setShowAlert(true);
       clearForm();
-      // Handle successful reservation (e.g., clear cart, show success message)
+      setCartItems([]);
+      localStorage.removeItem('cartItems');
+      
+      // Go to Reservation page after successful reservation
+      setTimeout(() => {
+        console.log('Navigating to:', '/user/reservation');
+        navigate('/user/reservation');
+      }, 3000);
     } catch (error) {
       console.error('Error creating reservation:', error.message);
-      // Handle error (e.g., show error message to user)
     }
   };
+
 
   useEffect(() => {
     if (showAlert) {
@@ -182,8 +206,72 @@ const Cart = ({ cartItems }) => {
           </Alert>
         )}
 
+        <TableContainer component={Paper} sx={{ mb: 4 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedDonations.length > 0 && selectedDonations.length < (location.state?.selectedItems?.length || 0)}
+                    checked={selectedDonations.length > 0 && selectedDonations.length === (location.state?.selectedItems?.length || 0)}
+                    onChange={() => {
+                      if (selectedDonations.length === (location.state?.selectedItems?.length || 0)) {
+                        setSelectedDonations([]);
+                      } else if (location.state?.selectedItems) {
+                        setSelectedDonations(location.state.selectedItems);
+                      }
+                    }}
+                  />
+                </TableCell>
+
+                <TableCell>Food</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell>Expiry Date</TableCell>
+                <TableCell>Remarks</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Donator</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {cartItems.map((donation) => (
+                donation.foods.map((food) => (
+                  <TableRow key={`${donation.id} - ${food.id}`}>
+                    <TableCell>
+                      <Checkbox
+                        checked={true}
+                        onChange={() => handleItemSelect(donation)}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {food.name}
+                      {donation.imageUrl && (
+                        <img
+                          src={donation.imageUrl}
+                          alt={food.name}
+                          style={{ width: 50, height: 50, marginLeft: 10, objectFit: 'cover' }}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>{food.type}</TableCell>
+                    <TableCell>{food.quantity}</TableCell>
+                    <TableCell>{donation.category}</TableCell>
+                    <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{donation.remarks}</TableCell>
+                    <TableCell>{donation.location}</TableCell>
+                    <TableCell>{donation.donator.name}</TableCell>
+                  </TableRow>
+                ))
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Collection Date"
               type="date"
@@ -199,7 +287,7 @@ const Cart = ({ cartItems }) => {
               sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem', padding: '14px' } }}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Collection Time Start"
               type="time"
@@ -212,7 +300,7 @@ const Cart = ({ cartItems }) => {
               sx={{ '& .MuiInputBase-input': { fontSize: '1.1rem', padding: '14px' } }}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={12}>
             <TextField
               label="Collection Time End"
               type="time"
@@ -254,8 +342,3 @@ const Cart = ({ cartItems }) => {
 };
 
 export default Cart;
-
-
-
-
-

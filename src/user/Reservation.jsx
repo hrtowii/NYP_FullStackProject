@@ -17,6 +17,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
+
 // Add this function to parse the JWT token
 function parseJwt(token) {
     var base64Url = token.split('.')[1];
@@ -26,7 +27,6 @@ function parseJwt(token) {
     }).join(''));
     return JSON.parse(jsonPayload);
 }
-
 // Reservation State Variables
 const Reservation = () => {
     const [currentReservations, setCurrentReservations] = useState([]);
@@ -35,22 +35,17 @@ const Reservation = () => {
     const [error, setError] = useState(null);
     const { token } = useContext(TokenContext);
     const [userId, setUserId] = useState(null);
-
     const [openReschedule, setOpenReschedule] = useState(false);  // Dialog for rescheduling reservation
     const [selectedReservation, setSelectedReservation] = useState(null);
     const [newDate, setNewDate] = useState('');
     const [newTimeStart, setNewTimeStart] = useState('');
     const [newTimeEnd, setNewTimeEnd] = useState('');
-
     const [openCancelDialog, setOpenCancelDialog] = useState(false);  // 1st dialog for cancel confirmation
     const [reservationToCancel, setReservationToCancel] = useState(null);
-
     const [openSuccessDialog, setOpenSuccessDialog] = useState(false);  // 2nd dialog for cancel confirmation
     const [successMessage, setSuccessMessage] = useState('');
-
     const [dateError, setDateError] = useState('');  // Validation state variables
     const [timeError, setTimeError] = useState('');
-
     useEffect(() => {
         if (token) {
             const decodedToken = parseJwt(token);
@@ -60,17 +55,14 @@ const Reservation = () => {
             setIsLoading(false);
         }
     }, [token]);
-
     useEffect(() => {
         if (userId) {
             fetchReservations();
         }
     }, [userId]);
-
     const fetchReservations = async () => {
         setIsLoading(true);
         setError(null);
-
         try {
             console.log('Fetching reservations for user:', userId);
             const currentRes = await fetch(`${backendRoute}/reservation/current/${userId}`, {
@@ -83,17 +75,13 @@ const Reservation = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
-
             if (!currentRes.ok || !pastRes.ok) {
                 throw new Error('Failed to fetch reservations');
             }
-
             const currentData = await currentRes.json();
             const pastData = await pastRes.json();
-
             console.log('Current data:', currentData);
             console.log('Past data:', pastData);
-
             // Ensure we're working with arrays
             setCurrentReservations(Array.isArray(currentData) ? currentData : []);
             setPastReservations(Array.isArray(pastData) ? pastData : []);
@@ -108,26 +96,20 @@ const Reservation = () => {
             console.log('Fetch completed.')
         }
     };
-
     // RESCHEDULE RESERVATION
-
     const handleReschedule = (reservation) => {
         setSelectedReservation(reservation);
         const newDate = new Date(reservation.collectionDate);
         const newTimeStart = new Date(`2000-01-01T${reservation.collectionTimeStart}`);
         const newTimeEnd = new Date(`2000-01-01T${reservation.collectionTimeEnd}`);
-
         setNewDate(newDate);
         setNewTimeStart(newTimeStart);
         setNewTimeEnd(newTimeEnd);
-
         // Validate the current values
         validateDate(newDate);
         validateTimes(newTimeStart, newTimeEnd);
-
         setOpenReschedule(true);
     };
-
     const validateDate = (date) => {
         if (!date) {
             setDateError('Please select a date');
@@ -142,7 +124,6 @@ const Reservation = () => {
         setDateError('');
         return true;
     };
-
     const validateTimes = (start, end) => {
         if (!start || !end) {
             setTimeError('Please select both start and end times');
@@ -152,12 +133,10 @@ const Reservation = () => {
         const endTime = new Date(`2000-01-01T${end.toTimeString().slice(0, 5)}`);
         const minTime = new Date(`2000-01-01T09:00`);
         const maxTime = new Date(`2000-01-01T21:00`);
-
         if (startTime < minTime || startTime > maxTime || endTime < minTime || endTime > maxTime) {
             setTimeError('Collection time must be between 9 AM and 9 PM');
             return false;
         }
-
         if (startTime >= endTime) {
             setTimeError('Start time must be earlier than end time');
             return false;
@@ -165,7 +144,6 @@ const Reservation = () => {
         setTimeError('');
         return true;
     };
-
     const enforceTimeRestrictions = (time) => {
         if (!time) return time;
         const hours = time.getHours();
@@ -174,32 +152,26 @@ const Reservation = () => {
         if (hours >= 21) return new Date(time.setHours(20, 55, 0, 0));
         return time;
     };
-
     const handleTimeStartChange = (newValue) => {
         const restrictedTime = enforceTimeRestrictions(newValue);
         setNewTimeStart(restrictedTime);
         validateTimes(restrictedTime, newTimeEnd);
     };
-
     const handleTimeEndChange = (newValue) => {
         const restrictedTime = enforceTimeRestrictions(newValue);
         setNewTimeEnd(restrictedTime);
         validateTimes(newTimeStart, restrictedTime);
     };
-
     const handleDateChange = (newValue) => {
         setNewDate(newValue);
         validateDate(newValue);
     };
-
     const handleRescheduleSubmit = async () => {
         const isDateValid = validateDate(newDate);
         const isTimeValid = validateTimes(newTimeStart, newTimeEnd);
-
         if (!isDateValid || !isTimeValid) {
             return;
         }
-
         try {
             const res = await fetch(`${backendRoute}/reservation/${selectedReservation.id}`, {
                 method: 'PUT',
@@ -227,10 +199,7 @@ const Reservation = () => {
             setError('Failed to reschedule reservation. ' + error.message);
         }
     };
-
-
     // CANCEL RESERVATION
-
     const handleCancelConfirm = async () => {
         if (reservationToCancel && reservationToCancel.id) {
             try {
@@ -257,8 +226,6 @@ const Reservation = () => {
             setError('Failed to cancel reservation. ' + error.message);
         }
     }
-
-
     const handleCancelClick = (reservation) => {
         if (reservation && reservation.id) {
             setReservationToCancel(reservation);
@@ -268,14 +235,18 @@ const Reservation = () => {
             setError('Unable to cancel reservation: Invalid reservation data');
         }
     };
-
     // INDIVIDUAL RESERVATION CARD
+    const ReservationCard = ({ reservation, isPast }) => {
+        // Check if reservation n these 3 exist first
+        const foodName = reservation.reservationItems?.[0]?.food?.name || 'N/A';
+        const quantity = reservation.reservationItems?.[0]?.food?.quantity || 'N/A';
+        const imageUrl = reservation.reservationItems?.[0]?.food?.donation?.imageUrl || "/path/to/default-food-image.jpg";
 
-    const ReservationCard = ({ reservation, isPast }) => (
+        return (
         <div className="reservation-card">
-            <img src="/path/to/default-food-image.jpg" alt="Food" className="food-image" />
+            <img src={imageUrl} alt="Food" className="food-image" />
             <div className="reservation-details">
-                <h3>[Chicken]</h3>
+                <h3>{foodName}</h3>
                 <p>
                     {new Date(reservation.collectionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
@@ -291,7 +262,7 @@ const Reservation = () => {
                     Status: {reservation.collectionStatus}
                 </p>
             </div>
-            <div className="reservation-amount">[100g]</div>
+            <div className="reservation-amount">{quantity}kg</div>
             {!isPast && (
                 <Button
                     className="cancel-btn"
@@ -315,11 +286,10 @@ const Reservation = () => {
             )}
         </div>
     );
-
+};
     return (
         <>
             <UserNavbar />
-
             <div className="reservation-page">
                 <div className="reservation-header">
                     <h1>Reservations</h1>
@@ -355,7 +325,6 @@ const Reservation = () => {
                     </div>
                 )}
             </div>
-
             {/* RESCHEDULE DIALOG */}
             <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
                 <DialogTitle>Reschedule Reservation</DialogTitle>
@@ -408,7 +377,6 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* CANCELLATION DIALOG */}
             <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
                 <DialogTitle>
@@ -429,7 +397,6 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
                 <DialogTitle>
                     <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
@@ -449,5 +416,4 @@ const Reservation = () => {
         </>
     );
 };
-
 export default Reservation;
