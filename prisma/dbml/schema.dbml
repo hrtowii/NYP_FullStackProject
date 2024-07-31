@@ -84,6 +84,7 @@ Table Food {
   createdAt DateTime [default: `now()`, not null]
   donationId Int [not null]
   donation Donation [not null]
+  reservationItems ReservationItem [not null]
 }
 
 Table Reservation {
@@ -97,6 +98,26 @@ Table Reservation {
   remarks String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
+  reservationItems ReservationItem [not null]
+}
+
+Table ReservationItem {
+  id Int [pk, increment]
+  reservationId Int [not null]
+  reservation Reservation [not null]
+  foodId Int [not null]
+  food Food [not null]
+  quantity Int [not null]
+}
+
+Table Review {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  rating Int [not null]
+  comment String [not null]
+  donatorId Int [not null]
+  donator Donator [not null]
 }
 
 Table Event {
@@ -128,5 +149,11 @@ Ref: Donation.donatorId > Donator.id
 Ref: Food.donationId > Donation.id
 
 Ref: Reservation.userId > User.id
+
+Ref: ReservationItem.reservationId > Reservation.id
+
+Ref: ReservationItem.foodId > Food.id
+
+Ref: Review.donatorId > Donator.id
 
 Ref: Event.donatorId > Donator.id

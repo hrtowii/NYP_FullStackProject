@@ -155,7 +155,7 @@ const AddEventForm = () => {
           dateRange: [null, null],
           imageFile: '',
         });
-        navigate("/donator/events");
+        navigate("/donator/eventAdded");
       } else {
         const responseText = await response.text();
         console.error('Unexpected response format:', responseText);
@@ -254,13 +254,13 @@ const AddEventForm = () => {
                   onChange={handleInputChange}
                   required
                 />
-                <p className="detailsInfo">Will be used as an alternative  to contact you.</p>
+                <p className="detailsInfo">Will be used as an alternative to contact you.</p>
 
               </div>
             </div>
             <div className="right-half">
-              <div>
-                <label htmlFor="datePicker">Date/Period*</label>
+            <p id='datelabel'>Date/Period*</p>
+              <div className="datepickercss">
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DemoContainer components={['DateRangePicker']}>
                     <DateRangePicker
