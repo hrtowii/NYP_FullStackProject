@@ -130,7 +130,7 @@ const router = createBrowserRouter([
   {
     path: "donator/ManageDonations",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
 
         <ManageDonations />
       </ProtectedRoute>
@@ -139,7 +139,7 @@ const router = createBrowserRouter([
   {
     path: "donator/DonateItem",
     element: (
-      <ProtectedRoute allowedRoles={['donator']}>
+      <ProtectedRoute allowedRoles={['donator', 'admin']}>
         <DonateItem />
       </ProtectedRoute>
     ),
