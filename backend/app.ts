@@ -724,6 +724,7 @@ app.delete('/reservation/:id', async (req, res) => {
 
 
 // MARK: event CRUD
+
 interface EventBody {
     title: string,
     briefSummary: string,
