@@ -43,6 +43,7 @@ model Review {
   updatedAt DateTime @updatedAt
   rating    Int
   comment   String
+  isAnonymous Boolean @default(false)
   userId    Int
   user      User     @relation("UserReviews", fields: [userId], references: [id])
   donatorId Int

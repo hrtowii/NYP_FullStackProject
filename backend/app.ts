@@ -887,9 +887,9 @@ app.get('/donator/events', async (req, res) => {
 app.post('/review_submit/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { rating, comment, userId } = req.body;
+        const { rating, comment, userId, isAnonymous } = req.body;
 
-        console.log('Received review submission:', { id, rating, comment, userId });
+        console.log('Received review submission:', { id, rating, comment, userId, isAnonymous });
 
         const donatorId = parseInt(id, 10);
         const reviewerId = parseInt(userId, 10);
@@ -902,7 +902,8 @@ app.post('/review_submit/:id', async (req, res) => {
                     rating,
                     comment,
                     userId: reviewerId,
-                    donatorId: donatorId
+                    donatorId: donatorId,
+                    isAnonymous: isAnonymous || false
                 },
                 include: {
                     user: {
@@ -1026,6 +1027,16 @@ app.get('/reviews/:id', async (req, res) => {
                     }
                 }
             }
+        });
+
+        // Map the reviews to include the isAnonymous field and handle user name display
+        const mappedReviews = reviews.map(review => {
+            const reviewData = { ...review };
+            if (reviewData.isAnonymous) {
+                const name = reviewData.user?.person?.name || 'Anonymous';
+                reviewData.user.person.name = `${name[0]}${'*'.repeat(name.length - 1)}`;
+            }
+            return reviewData;
         });
 
         res.status(200).json(reviews);

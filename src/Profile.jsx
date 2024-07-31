@@ -31,7 +31,7 @@ function parseJwt(token) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
-  }
+}
 
 export default function Profile() {
     const {token} = useContext(TokenContext);
@@ -198,6 +198,13 @@ export default function Profile() {
         }
         setSnackbar({ ...snackbar, open: false });
     };
+    const getDisplayName = (review) => {
+        if (review.isAnonymous) {
+            const name = review.user?.person?.name || 'Unknown User';
+            return `${name[0]}${'*'.repeat(name.length - 1)}`;
+        }
+        return review.user?.person?.name || 'Unknown User';
+    };
 
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 
@@ -213,7 +220,7 @@ export default function Profile() {
                     {reviews.map((review) => (
                         <ListItem key={review.id} divider>
                         <ListItemText
-                            primary={`${review.user?.person?.name || 'Unknown User'} - Rating: ${review.rating}`}
+                            primary={`${getDisplayName(review)} - Rating: ${review.rating}`}
                             secondary={review.comment}
                         />
                         {(review.userId === userId || userRole === "admin") && (
@@ -226,12 +233,6 @@ export default function Profile() {
                                 <EditIcon />
                             </IconButton>
                         )}
-                        {/* <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                            <DeleteIcon />
-                        </IconButton>
-                        <IconButton onClick={() => handleEditClick(review)}>
-                            <EditIcon/>
-                        </IconButton> */}
                     </ListItem>
                     ))}
                 </List>

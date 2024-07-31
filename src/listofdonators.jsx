@@ -22,6 +22,8 @@ import {
     TextField,
     Snackbar,
     TableSortLabel,
+    Checkbox,
+    FormControlLabel,
 } from '@mui/material';
 
 export default function ListOfDonators() {
@@ -36,6 +38,8 @@ export default function ListOfDonators() {
     const [orderBy, setOrderBy] = useState('name');
     const navigate = useNavigate();
     const { token } = useContext(TokenContext);
+    const [ratingError, setRatingError] = useState(false);
+    const [isAnonymous, setIsAnonymous] = useState(false);
 
     function parseJwt(token) {
         var base64Url = token.split('.')[1];
@@ -95,12 +99,6 @@ export default function ListOfDonators() {
         setOpenModal(true);
     };
 
-    const handleCloseModal = () => {
-        setOpenModal(false);
-        setSelectedDonator(null);
-        setRating(0);
-        setComment('');
-    };
 
     const handleViewReviews = (donatorId) => {
         navigate(`/profile/${donatorId}`);
@@ -109,13 +107,17 @@ export default function ListOfDonators() {
     const handleSubmitReview = async () => {
         try {
             if (!rating || rating < 1 || rating > 5) {
+                setRatingError(true);
                 throw new Error('Please select a rating between 1 and 5');
             }
-            if (!comment.trim()) {
-                throw new Error('Please enter a comment');
-            }
 
-            console.log('Submitting review:', { donatorId: selectedDonator.id, rating, comment, userId: currentUserId });
+            console.log('Submitting review:', {
+                donatorId: selectedDonator.id,
+                rating,
+                comment,
+                userId: currentUserId,
+                isAnonymous
+            });
 
             const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
                 method: 'POST',
@@ -123,7 +125,7 @@ export default function ListOfDonators() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ rating, comment, userId: currentUserId }),
+                body: JSON.stringify({ rating, comment, userId: currentUserId, isAnonymous }),
             });
 
             const responseData = await response.json();
@@ -142,6 +144,14 @@ export default function ListOfDonators() {
         }
     };
 
+    const handleCloseModal = () => {
+        setOpenModal(false);
+        setSelectedDonator(null);
+        setRating(0);
+        setComment('');
+        setRatingError(false);
+        setIsAnonymous(false);
+    };
     const handleRequestSort = (property) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
@@ -287,21 +297,38 @@ export default function ListOfDonators() {
                             Add Review for {selectedDonator?.name}
                         </Typography>
                         <Box sx={{ mt: 2 }}>
-                            <Typography component="legend">Rating</Typography>
+                            <Typography component="legend">Rating *</Typography>
                             <Rating
                                 name="rating"
                                 value={rating}
                                 onChange={(event, newValue) => {
                                     setRating(newValue);
+                                    setRatingError(false);
                                 }}
                             />
+                            {ratingError && (
+                                <Typography color="error" variant="caption" display="block" sx={{ mt: 1 }}>
+                                    Please select a rating
+                                </Typography>
+                            )}
                             <TextField
                                 fullWidth
-                                label="Comment"
+                                label="Comment (optional)"
                                 multiline
                                 rows={4}
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
+                                sx={{ mt: 2 }}
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isAnonymous}
+                                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                                        name="anonymous"
+                                    />
+                                }
+                                label="Submit anonymously"
                                 sx={{ mt: 2 }}
                             />
                             <Button
@@ -319,8 +346,12 @@ export default function ListOfDonators() {
                     open={snackbar.open}
                     autoHideDuration={6000}
                     onClose={() => setSnackbar({ ...snackbar, open: false })}
-                    message={snackbar.message}
-                />
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                        {snackbar.message}
+                    </Alert>
+                </Snackbar>
             </div>
         </>
     );
