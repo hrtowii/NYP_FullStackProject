@@ -93,7 +93,7 @@ model Donation {
   donatorId    Int
   donator      Donator  @relation(fields: [donatorId], references: [id])
   foods        Food[]
-  // reservations Reservation[]  // remove for now, to test reservation by itself first
+  reservations Reservation[]  // remove for now, to test reservation by itself first
 }
 
 model Food {
@@ -120,11 +120,8 @@ model Reservation {
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   reservationItems    ReservationItem[]
-
-  // removed donation-related parts first in order to test functionality of just the reservation components
-
-  // donationId          Int? // make it optional to test prisma studio
-  // donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
+  donationId          Int // make it optional to test prisma studio
+  donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
 
   @@index([userId])
 }

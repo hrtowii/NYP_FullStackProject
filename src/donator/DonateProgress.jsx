@@ -20,6 +20,8 @@ import {
 
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import parseJwt from '../utils/parseJwt.jsx'
+
 export default function DonateItem() {
     const [donations, setDonations] = useState([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,14 +38,6 @@ export default function DonateItem() {
 
 
     const fetchDonations = useCallback(async () => {
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
         const donatorId = parseJwt(token).id
         if (!donatorId) {
             setError('No donator ID provided');
@@ -63,6 +57,7 @@ export default function DonateItem() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+            console.log(data)
             setDonations(data.donations);
             setError(null);
         } catch (error) {
@@ -74,14 +69,6 @@ export default function DonateItem() {
     }, []);
 
     const fetchReviews = useCallback(async () => {
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
         const donatorId = parseJwt(token).id
         if (!donatorId) {
             setError('No donator ID provided');
@@ -107,6 +94,12 @@ export default function DonateItem() {
             // Handle error (e.g., show an error message to the user)
         }
     }, [donatorId]);
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Unreserved";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
 
 
     useEffect(() => {
@@ -166,26 +159,42 @@ export default function DonateItem() {
                                     <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: 'error.light' }}>
                                         <CardContent>
                                             <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    {donation.imageUrl && (
+                                                {donation.imageUrl && (
                                                     <img
                                                         src={donation.imageUrl}
                                                         alt={food.name}
                                                         style={{ width: 100, height: 100, objectFit: 'cover' }}
                                                     />
-                                                    )}
-                                                    <Box>
-                                                        <Typography variant="h6">{food.name}</Typography>
-                                                        <Typography variant="body2">{'Unreserved'}</Typography>
-                                                        <Typography variant="body2">{'Unreserved'}</Typography>
-                                                        <Typography variant="body2">Status: {'Unreserved'}</Typography>
-                                                    </Box>
-                                                
-                                                
+                                                )}
+                                                <Box>
+                                                    <Typography variant="h6">{food.name}</Typography>
+                                                    <Typography variant="body2">
+                                                        Collection date: {donation.reservations && donation.reservations.length > 0
+                                                            ? formatDate(donation.reservations[0].collectionDate)
+                                                            : "Unreserved"}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Collection Start Time: {donation.reservations && donation.reservations.length > 0
+                                                            ? donation.reservations[0].collectionTimeStart
+                                                            : "Unreserved"}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Collection End Time: {donation.reservations && donation.reservations.length > 0
+                                                            ? donation.reservations[0].collectionTimeEnd
+                                                            : "Unreserved"}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Status: {donation.reservations && donation.reservations.length > 0
+                                                            ? donation.reservations[0].collectionStatus
+                                                            : "Unreserved"}
+                                                    </Typography>
+                                                </Box>
                                                 <Typography variant="h6">{food.quantity + " g"}</Typography>
                                             </Box>
                                         </CardContent>
                                     </Card>
-                                )))}
+                                ))
+                            )}
                         </Box>
 
                         <Typography variant="h6" gutterBottom mt={4}>Progress</Typography>

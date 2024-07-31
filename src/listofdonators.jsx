@@ -4,6 +4,7 @@ import './index.css';
 import { UserNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
+import parseJwt from './utils/parseJwt.jsx'
 import {
     Button,
     Box,
@@ -41,14 +42,6 @@ export default function ListOfDonators() {
     const [ratingError, setRatingError] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
 
-    function parseJwt(token) {
-        var base64Url = token.split('.')[1];
-        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    }
     const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
 

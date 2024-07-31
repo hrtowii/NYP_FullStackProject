@@ -6,6 +6,7 @@ import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
+import parseJwt from '../utils/parseJwt.jsx'
 import {
     Button,
     TextField,
@@ -76,15 +77,6 @@ export default function DonateItem() {
         setErrors(tempErrors);
         return Object.values(tempErrors).every(x => x === "");
     };
-
-    function parseJwt(token) {
-        var base64Url = token.split('.')[1];
-        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    }
     const { token, updateToken } = useContext(TokenContext);
 
     const handleInputChange = (e) => {

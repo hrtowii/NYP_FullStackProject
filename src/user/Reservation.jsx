@@ -17,17 +17,8 @@ import "./Reservation.css";
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import parseJwt from '../utils/parseJwt.jsx'
 
-
-// Add this function to parse the JWT token
-function parseJwt(token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-}
 // Reservation State Variables
 const Reservation = () => {
     const [currentReservations, setCurrentReservations] = useState([]);
@@ -47,6 +38,8 @@ const Reservation = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [dateError, setDateError] = useState('');  // Validation state variables
     const [timeError, setTimeError] = useState('');
+    const [selectedDonation, setSelectedDonation] = useState(null);
+
     useEffect(() => {
         if (token) {
             const decodedToken = parseJwt(token);
@@ -99,8 +92,9 @@ const Reservation = () => {
     };
     // RESCHEDULE RESERVATION
     
-    const handleReschedule = (reservation) => {
+    const handleReschedule = (reservation,donation) => {
         setSelectedReservation(reservation);
+        setSelectedDonation(donation);
         const newDate = new Date(reservation.collectionDate);
         const newTimeStart = new Date(`2000-01-01T${reservation.collectionTimeStart}`);
         const newTimeEnd = new Date(`2000-01-01T${reservation.collectionTimeEnd}`);
@@ -185,6 +179,7 @@ const Reservation = () => {
                     collectionDate: newDate.toISOString().split('T')[0],
                     collectionTimeStart: newTimeStart.toTimeString().slice(0, 5),
                     collectionTimeEnd: newTimeEnd.toTimeString().slice(0, 5),
+                    donationId : selectedDonation.id
                 }),
             });
             if (res.ok) {
@@ -256,7 +251,7 @@ const Reservation = () => {
                     {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
                     {!isPast && (
                         <span
-                            className="reschedule-link" onClick={() => handleReschedule(reservation)}>Reschedule
+                            className="reschedule-link" onClick={() => handleReschedule(reservation,donation)}>Reschedule
                         </span>
                     )}
                 </p>
