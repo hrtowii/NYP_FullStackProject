@@ -4,16 +4,20 @@ import CheckIcon from '@mui/icons-material/Check';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import DownloadIcon from '@mui/icons-material/Download';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation} from 'react-router-dom';
 import './DonatorEventsAdd.css';
 
 const AddEventThanks = () => {
     const navigate = useNavigate();
-    
-
+    const location = useLocation();
+    const eventId = location.state?.eventId;
+  
     const handleEdit = () => {
+      if (eventId) {
         navigate(`/donator/updateEvent/${eventId}`);
-        console.log("Edit button clicked");
+      } else {
+        console.error("No event ID available for editing");
+      }
     };
 
     const handleDownload = () => {
@@ -41,7 +45,7 @@ const AddEventThanks = () => {
                 <div className="form-response">
                     <div className="thank-you-container">
                         <div className="icon-wrapper">
-                       <CheckCircleOutlineIcon className="checkcircleicon"></CheckCircleOutlineIcon>
+                            <CheckCircleOutlineIcon className="checkcircleicon"></CheckCircleOutlineIcon>
                         </div>
                         <p className="thank-you-text">Thank you</p>
                     </div>
