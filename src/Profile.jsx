@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { UserNavbar } from './components/Navbar'
 import { useParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import {
     List,
     ListItem,
@@ -394,6 +395,11 @@ export default function Profile() {
         setReviewToReply(null);
     }, []);
 
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return format(date, 'dd/MM/yyyy HH:mm');
+    };
+
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 
     return (
@@ -402,7 +408,7 @@ export default function Profile() {
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
-                        Reviews for {donatorName}
+                        {donatorName}'s Reviews
                         {userRole === "donator" && parseInt(donatorId) === userId && " (Myself)"}
                     </Typography>
                     <List>
@@ -417,28 +423,9 @@ export default function Profile() {
                                             <Box>
                                                 <Box display="flex" justifyContent="space-between" alignItems="center">
                                                     <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
-                                                    <Box>
-                                                        {userId === review.userId && (
-                                                            <>
-                                                                <IconButton size="small" onClick={() => handleEditClick(review)}>
-                                                                    <EditIcon fontSize="small" />
-                                                                </IconButton>
-                                                                <IconButton size="small" onClick={() => handleDeleteClick(review.id)}>
-                                                                    <DeleteIcon fontSize="small" />
-                                                                </IconButton>
-                                                            </>
-                                                        )}
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleThumbsUp(review.id)}
-                                                            color={likedReviews[review.id] ? 'primary' : 'default'}
-                                                        >
-                                                            <ThumbUpIcon fontSize="small" />
-                                                        </IconButton>
-                                                        <Typography variant="caption" sx={{ ml: 1 }}>
-                                                            {review.likeCount || 0}
-                                                        </Typography>
-                                                    </Box>
+                                                    <Typography variant="caption">
+                                                        Submitted on {formatDate(review.createdAt)}
+                                                    </Typography>
                                                 </Box>
                                                 <Rating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
@@ -511,6 +498,9 @@ export default function Profile() {
                                                     <Box sx={{ mt: 2, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
                                                         <Typography variant="subtitle2">Donator's Reply:</Typography>
                                                         <Typography variant="body2">{review.reply.content}</Typography>
+                                                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                                                            Replied on {formatDate(review.reply.createdAt)}
+                                                        </Typography>
                                                         {userRole === "donator" && parseInt(donatorId) === userId && (
                                                             <Box sx={{ display: 'flex', mt: 1, justifyContent: 'flex-end' }}>
                                                                 <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
@@ -523,6 +513,7 @@ export default function Profile() {
                                                         )}
                                                     </Box>
                                                 )}
+
                                             </>
                                         }
                                     />

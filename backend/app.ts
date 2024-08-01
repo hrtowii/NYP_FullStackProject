@@ -1361,7 +1361,7 @@ app.get('/reviews/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
-        const userId = parseInt(req.query.userId, 10); // Assuming userId is passed as a query parameter
+        const userId = parseInt(req.query.userId, 10);
 
         console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
 
@@ -1388,6 +1388,9 @@ app.get('/reviews/:id', async (req, res) => {
                 likes: {
                     where: { userId: userId }
                 }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
         });
 
@@ -1680,7 +1683,101 @@ app.delete('/replies/:replyId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Create a new post
+app.post('/posts', async (req, res) => {
+    const { content, imageUrl, donatorId } = req.body;
+    try {
+        const newPost = await prisma.post.create({
+            data: {
+                content,
+                imageUrl,
+                donatorId: parseInt(donatorId)
+            }
+        });
+        res.status(201).json(newPost);
+    } catch (error) {
+        console.error('Error creating post:', error);
+        res.status(500).json({ error: 'Failed to create post' });
+    }
+});
 
+// Get all posts
+app.get('/posts', async (req, res) => {
+    try {
+        const posts = await prisma.post.findMany({
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
+
+// Get posts for a specific donator
+app.get('/posts/:donatorId', async (req, res) => {
+    const { donatorId } = req.params;
+    try {
+        const posts = await prisma.post.findMany({
+            where: {
+                donatorId: parseInt(donatorId)
+            },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
+
+// Update a post
+app.put('/posts/:id', async (req, res) => {
+    const { id } = req.params;
+    const { content, imageUrl } = req.body;
+    try {
+        const updatedPost = await prisma.post.update({
+            where: { id: parseInt(id) },
+            data: { content, imageUrl }
+        });
+        res.status(200).json(updatedPost);
+    } catch (error) {
+        console.error('Error updating post:', error);
+        res.status(500).json({ error: 'Failed to update post' });
+    }
+});
+
+// Delete a post
+app.delete('/posts/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.post.delete({
+            where: { id: parseInt(id) }
+        });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        res.status(500).json({ error: 'Failed to delete post' });
+    }
+});
 
 
 
