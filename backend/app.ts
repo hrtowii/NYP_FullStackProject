@@ -178,12 +178,12 @@ app.post('/sendEmail', async (req, res) => {
 
 app.post('/logout', async (req, res) => {
     res.status(200)
-       .clearCookie('token', { 
-           path: '/', 
-           httpOnly: true, 
-           secure: true 
-       })
-       .json({ success: true });
+        .clearCookie('token', {
+            path: '/',
+            httpOnly: true,
+            secure: true
+        })
+        .json({ success: true });
 });
 
 //MARK: Admin functions
@@ -430,6 +430,12 @@ app.get('/donations', async (req, res) => {
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
+    const donations = await prisma.donation.findMany({
+        where: {
+            availability: "Available"
+        },
+    })
+
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
@@ -451,6 +457,22 @@ app.get('/donations', async (req, res) => {
     } catch (error) {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
+    }
+});
+
+app.patch('/donations/:id/availability', async (req, res) => {  // Patch req -> modifies item, instead of updating all
+    const { id } = req.params;
+    const { availability } = req.body;
+
+    try {
+        const updatedDonation = await prisma.donation.update({
+            where: { id: parseInt(id) },
+            data: { availability },
+        });
+        res.json(updatedDonation);
+    } catch (error) {
+        console.error('Error updating donation availability', error);
+        res.status(500).json({ error: 'Unable to update donation availability' })
     }
 });
 
@@ -581,44 +603,43 @@ interface ReservationInterface {
 }
 
 app.post('/reservation/:id', async (req, res) => {
-    const id: number = parseInt(req.params.id)
+    console.log('Received reservation request for user:', req.params.id);
+    console.log('Request body:', req.body);
+
+
+    // const id: number = parseInt(req.params.id)
+    const userId: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
-    let donationId = req.body.cartItems[0].donatorId;
+    let donationId = formData.cartItems[0].id;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
         const user = await prisma.user.findUnique({
-            where: { id: id },
+            where: { id: userId },
         });
         if (!user) {
-            return res.status(400).json({ error: `User with id ${id} not found` });
+            return res.status(400).json({ error: `User with id ${userId} not found` });
         }
 
-        donationId = parseInt(donationId, 10);
+        donationId = parseInt(donationId.toString(), 10);
 
-        // Remove donation-related for now, to test functionality of just the reservation part
-        // let donation;
-        // if (formData.donationId) {  // check if donation exists
-        //     donation = await prisma.donation.findUnique({
-        //         where: { id: formData.donationId },
-        //     });
-        //     if (!donation) {
-        //         return res.status(400).json({ error: `Donation with id ${formData.donationId} not found` });
-        //     }
-        // }
         const newReservation = await prisma.reservation.create({
             data: {
-                userId: id,
+                user: {
+                    connect: { id: userId }
+                },
                 collectionDate: new Date(formData.collectionDate),
                 collectionTimeStart: formData.collectionTimeStart,
                 collectionTimeEnd: formData.collectionTimeEnd,
                 collectionStatus: 'Uncollected',
                 remarks: formData.remarks,
-                donationId: donationId,
+                donation: {
+                    connect: { id: donationId }
+                },
                 reservationItems: {
                     create: formData.cartItems.flatMap(item =>
                         item.foods.map(food => ({
-                            foodId: food.id,
+                            food: { connect: { id: food.id } },
                             quantity: food.quantity
                         }))
                     )
@@ -627,16 +648,18 @@ app.post('/reservation/:id', async (req, res) => {
             include: {
                 reservationItems: {
                     include: {
-                        food: true          
+                        food: true
                     }
                 },
                 donation: {
                     include: {
                         foods: true
                     }
-                }
+                },
+                user: true
             },
         });
+        console.log('Created reservation:', newReservation);
 
         res.status(201).json(newReservation);
     } catch (error) {
@@ -720,7 +743,7 @@ app.get('/reservation/past/:userId', async (req, res) => {
 // Reschedule Reservation (UPDATE)
 app.put('/reservation/:id', async (req, res) => {
     const { id } = req.params;
-    const { collectionDate, collectionTimeStart, collectionTimeEnd } = req.body;
+    const { collectionDate, collectionTimeStart, collectionTimeEnd, donationId } = req.body;
     try {
         const updatedReservation = await prisma.reservation.update({
             where: {
@@ -730,6 +753,9 @@ app.put('/reservation/:id', async (req, res) => {
                 collectionDate: new Date(collectionDate),
                 collectionTimeStart,
                 collectionTimeEnd,
+                donation: {
+                    connect: { id: parseInt(donationId) }
+                }
             },
             include: {
                 reservationItems: {
@@ -745,29 +771,116 @@ app.put('/reservation/:id', async (req, res) => {
         res.status(500).json({ error: 'Unable to update reservation' });
     }
 });
-// Cancel Reservation
-app.delete('/reservation/:id', async (req, res) => {
+// Cancel Reservation (Soft delete)
+app.patch('/reservation/:id/cancel', async (req, res) => {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid reservation ID' });
-    }
-    try {
-        await prisma.$transaction([
-            prisma.reservationItem.deleteMany({
-                where: { reservationId: id },
-            }),
-            prisma.reservation.delete({
-                where: { id: id },
-            }),
-        ]);
+    console.log('Cancelling reservation with id:', id);
 
-        res.status(204).send();
+    try {
+        const existingReservation = await prisma.reservation.findUnique({
+            where: { id: id }
+        });
+
+        if (!existingReservation) {
+            return res.status(404).json({ error: 'Reservation not found.' });
+        }
+
+        if (existingReservation.collectionStatus !== 'Uncollected') {
+            return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
+        }
+
+        const updatedReservation = await prisma.reservation.update({
+            where: { id: id },
+            data: {
+                collectionStatus: 'Cancelled',
+                updatedAt: new Date()
+            },
+            include: {
+                reservationItems: {
+                    include: {
+                        food: true
+                    }
+                }
+            }
+        });
+
+        console.log('Cancelled reservation:', updatedReservation);
+
+        res.status(200).json({
+            message: 'Reservation cancelled successfully',
+            reservation: updatedReservation
+        });
     } catch (error) {
         console.error('Error cancelling reservation:', error);
-        res.status(500).json({ error: 'Unable to cancel reservation' });
+        res.status(500).json({ error: 'Unable to cancel reservation', details: error.message });
     }
 });
 
+app.patch('/reservation/:id/collect', async (req, res) => {
+    const id = parseInt(req.params.id);
+    console.log('Marking reservation as collected, id:', id);
+
+    try {
+        const existingReservation = await prisma.reservation.findUnique({
+            where: { id: id }
+        });
+
+        if (!existingReservation) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        if (existingReservation.collectionStatus !== 'Uncollected') {
+            return res.status(400).json({ error: 'Cannot mark as collected reservation that is not in Uncollected status' });
+        }
+
+        const updatedReservation = await prisma.reservation.update({
+            where: { id: id },
+            data: {
+                collectionStatus: 'Collected',
+                updatedAt: new Date()
+            },
+            include: {
+                reservationItems: {
+                    include: {
+                        food: true
+                    }
+                }
+            }
+        });
+
+        console.log('Marked reservation as collected:', updatedReservation);
+
+        res.status(200).json({
+            message: 'Reservation marked as collected successfully',
+            reservation: updatedReservation
+        });
+    } catch (error) {
+        console.error('Error marking reservation as collected:', error);
+        res.status(500).json({ error: 'Unable to mark reservation as collected', details: error.message });
+    }
+});
+
+// app.delete('/reservation/:id', async (req, res) => {
+//     const id = parseInt(req.params.id);
+//     if (isNaN(id)) {
+//         return res.status(400).json({ error: 'Invalid reservation ID' });
+//     }
+//     try {
+//         await prisma.$transaction([
+//             prisma.reservationItem.deleteMany({
+//                 where: { reservationId: id },
+//             }),
+//             prisma.reservation.delete({
+//                 where: { id: id },
+//             }),
+//         ]);
+
+//         res.status(204).send();
+//     } catch (error) {
+//         console.error('Error cancelling reservation:', error);
+//         res.status(500).json({ error: 'Unable to cancel reservation' });
+//     }
+// });
 
 // MARK: event CRUD
 
@@ -1255,7 +1368,7 @@ app.delete('/reviews/:id', async (req, res) => {
 
 // Edit a reply
 app.put('/replies/:replyId', async (req, res) => {
-    
+
     const { replyId } = req.params;
     const { content } = req.body;
 

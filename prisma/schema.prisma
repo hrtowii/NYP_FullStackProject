@@ -92,6 +92,7 @@ model Donation {
   updatedAt    DateTime @updatedAt
   donatorId    Int
   donator      Donator  @relation(fields: [donatorId], references: [id])
+  availability String @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
   reservations Reservation[]  // remove for now, to test reservation by itself first
 }
@@ -115,7 +116,7 @@ model Reservation {
   collectionDate      DateTime
   collectionTimeStart String
   collectionTimeEnd   String
-  collectionStatus    String
+  collectionStatus    String @default("Uncollected")
   remarks             String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -124,6 +125,7 @@ model Reservation {
   donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
 
   @@index([userId])
+  @@index([donationId])
 }
 
 model ReservationItem {

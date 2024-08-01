@@ -118,23 +118,22 @@ export default function Fridge() {
     // }
 
     const handleItemSelect = (donation) => {
-        setCartItems(prev => {
-            let updatedCart;
+        setSelectedItems(prev => {
             if (prev.some(item => item.id === donation.id)) {
-                updatedCart = prev.filter(item => item.id !== donation.id);
+                return prev.filter(item => item.id !== donation.id);
             } else if (prev.length < 5) {
-                updatedCart = [...prev, donation];
+                return [...prev, donation];
             } else {
                 alert("You can only select up to 5 items.");
                 return prev;
             }
-            localStorage.setItem('cartItems', JSON.stringify(updatedCart));
-            return updatedCart;
         });
     };
 
     const handleAddToCart = () => {
+        const cartItems = [...selectedItems];
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        setSelectedItems([]);
         alert("Items added to cart successfully!");
     };
 
@@ -192,6 +191,7 @@ export default function Fridge() {
                                         <TableCell>Remarks</TableCell>
                                         <TableCell>Location</TableCell>
                                         <TableCell>Donator</TableCell>
+                                        <TableCell>Availability</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -200,8 +200,9 @@ export default function Fridge() {
                                             <TableRow key={`${donation.id}-${food.id}`}>
                                                 <TableCell>
                                                     <Checkbox
-                                                        checked={cartItems.some(item => item.id === donation.id)}
+                                                        checked={selectedItems.some(item => item.id === donation.id)}
                                                         onChange={() => handleItemSelect(donation)}
+                                                        disabled={donation.availability !== "Available"}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -221,6 +222,7 @@ export default function Fridge() {
                                                 <TableCell>{donation.remarks}</TableCell>
                                                 <TableCell>{donation.location}</TableCell>
                                                 <TableCell>{donation.donator.name}</TableCell>
+                                                <TableCell>{donation.availability}</TableCell>
                                             </TableRow>
                                         ))
                                     ))}
@@ -228,7 +230,7 @@ export default function Fridge() {
                             </Table>
                         </TableContainer>
                         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                            <Button variant="contained" onClick={handleAddToCart} disabled={cartItems.length === 0}>
+                            <Button variant="contained" onClick={handleAddToCart} disabled={selectedItems.length === 0}>
                                 Add to Cart
                             </Button>
                             <Button variant="outlined" onClick={handleViewCart}>
