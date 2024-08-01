@@ -27,3 +27,9 @@ prisma/dev.db
 .env
 
 prisma/migrations/*
+public/image-*.png
+public/image-*.jpg
+public/image-*.jpeg
+public/image-*.webp
+
+backend/uploads/*
