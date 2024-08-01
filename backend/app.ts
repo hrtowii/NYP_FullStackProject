@@ -15,7 +15,7 @@ import { FontDownload, TurnedIn } from "@mui/icons-material"
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+import fs from 'fs/promises';
 
 configDotenv()
 const redisClient = createClient({
@@ -43,7 +43,10 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:8000', // Replace with your frontend URL
+    credentials: true
+  }));
 
 
 // Configure Multer
@@ -540,6 +543,12 @@ app.get('/donations', async (req, res) => {
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
+    const donations = await prisma.donation.findMany({
+        where: {
+            availability: "Available"
+        },
+    })
+
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
@@ -587,6 +596,22 @@ app.get('/api/donations/:donatorId/total', async (req, res) => {
     }
 });
 
+
+app.patch('/donations/:id/availability', async (req, res) => {  // Patch req -> modifies item, instead of updating all
+    const { id } = req.params;
+    const { availability } = req.body;
+
+    try {
+        const updatedDonation = await prisma.donation.update({
+            where: { id: parseInt(id) },
+            data: { availability },
+        });
+        res.json(updatedDonation);
+    } catch (error) {
+        console.error('Error updating donation availability', error);
+        res.status(500).json({ error: 'Unable to update donation availability' })
+    }
+});
 
 // Delete donations
 app.delete('/donations/:id', async (req, res) => {
@@ -715,44 +740,43 @@ interface ReservationInterface {
 }
 
 app.post('/reservation/:id', async (req, res) => {
-    const id: number = parseInt(req.params.id)
+    console.log('Received reservation request for user:', req.params.id);
+    console.log('Request body:', req.body);
+
+
+    // const id: number = parseInt(req.params.id)
+    const userId: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
-    let donationId = req.body.cartItems[0].donatorId;
+    let donationId = formData.cartItems[0].id;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
         const user = await prisma.user.findUnique({
-            where: { id: id },
+            where: { id: userId },
         });
         if (!user) {
-            return res.status(400).json({ error: `User with id ${id} not found` });
+            return res.status(400).json({ error: `User with id ${userId} not found` });
         }
 
-        donationId = parseInt(donationId, 10);
+        donationId = parseInt(donationId.toString(), 10);
 
-        // Remove donation-related for now, to test functionality of just the reservation part
-        // let donation;
-        // if (formData.donationId) {  // check if donation exists
-        //     donation = await prisma.donation.findUnique({
-        //         where: { id: formData.donationId },
-        //     });
-        //     if (!donation) {
-        //         return res.status(400).json({ error: `Donation with id ${formData.donationId} not found` });
-        //     }
-        // }
         const newReservation = await prisma.reservation.create({
             data: {
-                userId: id,
+                user: {
+                    connect: { id: userId }
+                },
                 collectionDate: new Date(formData.collectionDate),
                 collectionTimeStart: formData.collectionTimeStart,
                 collectionTimeEnd: formData.collectionTimeEnd,
                 collectionStatus: 'Uncollected',
                 remarks: formData.remarks,
-                donationId: donationId,
+                donation: {
+                    connect: { id: donationId }
+                },
                 reservationItems: {
                     create: formData.cartItems.flatMap(item =>
                         item.foods.map(food => ({
-                            foodId: food.id,
+                            food: { connect: { id: food.id } },
                             quantity: food.quantity
                         }))
                     )
@@ -768,9 +792,11 @@ app.post('/reservation/:id', async (req, res) => {
                     include: {
                         foods: true
                     }
-                }
+                },
+                user: true
             },
         });
+        console.log('Created reservation:', newReservation);
 
         res.status(201).json(newReservation);
     } catch (error) {
@@ -854,7 +880,7 @@ app.get('/reservation/past/:userId', async (req, res) => {
 // Reschedule Reservation (UPDATE)
 app.put('/reservation/:id', async (req, res) => {
     const { id } = req.params;
-    const { collectionDate, collectionTimeStart, collectionTimeEnd } = req.body;
+    const { collectionDate, collectionTimeStart, collectionTimeEnd, donationId } = req.body;
     try {
         const updatedReservation = await prisma.reservation.update({
             where: {
@@ -864,6 +890,9 @@ app.put('/reservation/:id', async (req, res) => {
                 collectionDate: new Date(collectionDate),
                 collectionTimeStart,
                 collectionTimeEnd,
+                donation: {
+                    connect: { id: parseInt(donationId) }
+                }
             },
             include: {
                 reservationItems: {
@@ -879,29 +908,116 @@ app.put('/reservation/:id', async (req, res) => {
         res.status(500).json({ error: 'Unable to update reservation' });
     }
 });
-// Cancel Reservation
-app.delete('/reservation/:id', async (req, res) => {
+// Cancel Reservation (Soft delete)
+app.patch('/reservation/:id/cancel', async (req, res) => {
     const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid reservation ID' });
-    }
-    try {
-        await prisma.$transaction([
-            prisma.reservationItem.deleteMany({
-                where: { reservationId: id },
-            }),
-            prisma.reservation.delete({
-                where: { id: id },
-            }),
-        ]);
+    console.log('Cancelling reservation with id:', id);
 
-        res.status(204).send();
+    try {
+        const existingReservation = await prisma.reservation.findUnique({
+            where: { id: id }
+        });
+
+        if (!existingReservation) {
+            return res.status(404).json({ error: 'Reservation not found.' });
+        }
+
+        if (existingReservation.collectionStatus !== 'Uncollected') {
+            return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
+        }
+
+        const updatedReservation = await prisma.reservation.update({
+            where: { id: id },
+            data: {
+                collectionStatus: 'Cancelled',
+                updatedAt: new Date()
+            },
+            include: {
+                reservationItems: {
+                    include: {
+                        food: true
+                    }
+                }
+            }
+        });
+
+        console.log('Cancelled reservation:', updatedReservation);
+
+        res.status(200).json({
+            message: 'Reservation cancelled successfully',
+            reservation: updatedReservation
+        });
     } catch (error) {
         console.error('Error cancelling reservation:', error);
-        res.status(500).json({ error: 'Unable to cancel reservation' });
+        res.status(500).json({ error: 'Unable to cancel reservation', details: error.message });
     }
 });
 
+app.patch('/reservation/:id/collect', async (req, res) => {
+    const id = parseInt(req.params.id);
+    console.log('Marking reservation as collected, id:', id);
+
+    try {
+        const existingReservation = await prisma.reservation.findUnique({
+            where: { id: id }
+        });
+
+        if (!existingReservation) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        if (existingReservation.collectionStatus !== 'Uncollected') {
+            return res.status(400).json({ error: 'Cannot mark as collected reservation that is not in Uncollected status' });
+        }
+
+        const updatedReservation = await prisma.reservation.update({
+            where: { id: id },
+            data: {
+                collectionStatus: 'Collected',
+                updatedAt: new Date()
+            },
+            include: {
+                reservationItems: {
+                    include: {
+                        food: true
+                    }
+                }
+            }
+        });
+
+        console.log('Marked reservation as collected:', updatedReservation);
+
+        res.status(200).json({
+            message: 'Reservation marked as collected successfully',
+            reservation: updatedReservation
+        });
+    } catch (error) {
+        console.error('Error marking reservation as collected:', error);
+        res.status(500).json({ error: 'Unable to mark reservation as collected', details: error.message });
+    }
+});
+
+// app.delete('/reservation/:id', async (req, res) => {
+//     const id = parseInt(req.params.id);
+//     if (isNaN(id)) {
+//         return res.status(400).json({ error: 'Invalid reservation ID' });
+//     }
+//     try {
+//         await prisma.$transaction([
+//             prisma.reservationItem.deleteMany({
+//                 where: { reservationId: id },
+//             }),
+//             prisma.reservation.delete({
+//                 where: { id: id },
+//             }),
+//         ]);
+
+//         res.status(204).send();
+//     } catch (error) {
+//         console.error('Error cancelling reservation:', error);
+//         res.status(500).json({ error: 'Unable to cancel reservation' });
+//     }
+// });
 
 // MARK: event CRUD
 
@@ -1063,6 +1179,39 @@ app.get('/donator/events', async (req, res) => {
 //     }
 // })
 
+
+// john's image review code
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsDir = path.join(__dirname, 'uploads');
+await fs.mkdir(uploadsDir, { recursive: true });
+
+// Update multer configuration
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir)
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname))
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Not an image! Please upload an image.') as any, false);
+        }
+    }
+})
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ends here
+
 // Add a new reply
 app.post('/reviews/:reviewId/reply', async (req, res) => {
     const { reviewId } = req.params;
@@ -1091,26 +1240,32 @@ app.post('/reviews/:reviewId/reply', async (req, res) => {
     }
 });
 
-app.post('/review_submit/:id', async (req, res) => {
+app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
     try {
         const { id } = req.params;
         const { rating, comment, userId, isAnonymous } = req.body;
 
-        console.log('Received review submission:', { id, rating, comment, userId, isAnonymous });
-
         const donatorId = parseInt(id, 10);
         const reviewerId = parseInt(userId, 10);
 
-        // Validate input (same as before)
+        // Validate input
+        if (!rating || isNaN(parseInt(rating)) || parseInt(rating) < 1 || parseInt(rating) > 5) {
+            return res.status(400).json({ error: 'Invalid rating' });
+        }
 
         const newReview = await prisma.$transaction(async (prisma) => {
             const review = await prisma.review.create({
                 data: {
-                    rating,
+                    rating: parseInt(rating),
                     comment,
                     userId: reviewerId,
                     donatorId: donatorId,
-                    isAnonymous: isAnonymous || false
+                    isAnonymous: isAnonymous === 'true',
+                    images: {
+                        create: req.files ? req.files.map(file => ({ 
+                            url: path.relative(uploadsDir, file.path).replace(/\\/g, '/') 
+                        })) : []
+                    }
                 },
                 include: {
                     user: {
@@ -1122,25 +1277,20 @@ app.post('/review_submit/:id', async (req, res) => {
                         include: {
                             person: true
                         }
-                    }
+                    },
+                    images: true
                 }
             });
-
-            console.log('Created new review:', JSON.stringify(review, null, 2));
 
             const donator = await prisma.donator.findUnique({
                 where: { id: donatorId },
                 include: { reviews: true }
             });
 
-            console.log('Fetched donator with reviews:', JSON.stringify(donator, null, 2));
-
             const newAverageRating = donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length;
             const newReviewCount = donator.reviews.length;
 
-            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
-
-            const updatedDonator = await prisma.donator.update({
+            await prisma.donator.update({
                 where: { id: donatorId },
                 data: {
                     averageRating: newAverageRating,
@@ -1148,15 +1298,13 @@ app.post('/review_submit/:id', async (req, res) => {
                 }
             });
 
-            console.log('Updated donator:', JSON.stringify(updatedDonator, null, 2));
-
             return review;
         });
 
         res.status(201).json({ message: 'Review created successfully', review: newReview });
     } catch (error) {
         console.error('Error creating review:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -1229,7 +1377,8 @@ app.get('/reviews/:id', async (req, res) => {
                         person: true
                     }
                 },
-                reply: true
+                reply: true,
+                images: true
             }
         });
 
@@ -1243,7 +1392,7 @@ app.get('/reviews/:id', async (req, res) => {
             return reviewData;
         });
 
-        res.status(200).json(reviews);
+        res.status(200).json(mappedReviews);
     } catch (error) {
         console.error('Error fetching reviews:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -1321,69 +1470,90 @@ app.put('/reviews/:id', async (req, res) => {
 
 app.delete('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
-    console.log(`Received delete request for review ID: ${reviewId}`);
-    const startTime = Date.now();
-
-    // Set a timeout to force a response after 10 seconds
-    const timeoutId = setTimeout(() => {
-        console.log(`Delete operation timed out after 10 seconds for review ID: ${reviewId}`);
-        res.status(504).json({ error: 'Delete operation timed out' });
-    }, 10000);
+    const userId = parseInt(req.body.userId, 10);
 
     try {
-        const result = await prisma.$transaction(async (prisma) => {
-            console.log('Attempting to delete review...');
-            const review = await prisma.review.findUnique({
+        console.log(`Attempting to delete review ${reviewId} for user ${userId}`);
+
+        const review = await prisma.review.findUnique({
+            where: { id: reviewId },
+            include: { 
+                reply: true,
+                donator: true,
+                images: true
+            }
+        });
+
+        if (!review) {
+            console.log(`Review ${reviewId} not found`);
+            return res.status(404).json({ error: 'Review not found' });
+        }
+
+        console.log(`Review found:`, JSON.stringify(review, null, 2));
+
+        if (review.userId !== userId) {
+            console.log(`User ${userId} not authorized to delete review ${reviewId}`);
+            return res.status(403).json({ error: 'You are not authorized to delete this review' });
+        }
+
+        await prisma.$transaction(async (prisma) => {
+            // First, delete associated images if they exist
+            if (review.images.length > 0) {
+                console.log(`Deleting ${review.images.length} images for review ${reviewId}`);
+                await prisma.image.deleteMany({
+                    where: { reviewId: reviewId }
+                });
+            }
+
+            // Then, delete the associated reply if it exists
+            if (review.reply) {
+                console.log(`Deleting reply ${review.reply.id} for review ${reviewId}`);
+                await prisma.reply.delete({
+                    where: { id: review.reply.id }
+                });
+            }
+
+            // Now delete the review
+            console.log(`Deleting review ${reviewId}`);
+            await prisma.review.delete({
                 where: { id: reviewId }
             });
 
-            if (!review) {
-                throw new Error('Review not found');
-            }
-
-            const donatorId = review.donatorId;
-
-            // Delete the review
-            await prisma.review.delete({ where: { id: reviewId } });
-
-            // Fetch the updated donator with reviews
+            // Recalculate donator's stats
             const donator = await prisma.donator.findUnique({
-                where: { id: donatorId },
+                where: { id: review.donatorId },
                 include: { reviews: true }
             });
 
-            // Calculate new stats
             const newAverageRating = donator.reviews.length > 0
-                ? donator.reviews.reduce((sum, review) => sum + review.rating, 0) / donator.reviews.length
+                ? donator.reviews.reduce((sum, r) => sum + r.rating, 0) / donator.reviews.length
                 : 0;
-            const newReviewCount = donator.reviews.length;
 
-            console.log('Calculated new stats:', { newAverageRating, newReviewCount });
-
-            // Update the donator
+            console.log(`Updating donator ${review.donatorId} stats`);
             await prisma.donator.update({
-                where: { id: donatorId },
-                data: { averageRating: newAverageRating, reviewCount: newReviewCount }
+                where: { id: review.donatorId },
+                data: {
+                    averageRating: newAverageRating,
+                    reviewCount: donator.reviews.length
+                }
             });
-
-            return { donatorId, newAverageRating, newReviewCount };
         });
 
-        clearTimeout(timeoutId);
-        const endTime = Date.now();
-        console.log(`Review deleted successfully in ${endTime - startTime}ms:`, result);
-        res.status(200).json({
-            message: 'Review deleted successfully',
-            timeTaken: endTime - startTime,
-            donatorId: result.donatorId,
-            newAverageRating: result.newAverageRating,
-            newReviewCount: result.newReviewCount
-        });
+        console.log(`Review ${reviewId}, associated reply, and images deleted successfully`);
+        res.status(200).json({ message: 'Review, associated reply, and images deleted successfully' });
     } catch (error) {
-        clearTimeout(timeoutId);
-        const endTime = Date.now();
-        console.error(`Error deleting review after ${endTime - startTime}ms:`, error);
-        res.status(500).json({ error: 'Failed to delete review', details: error.message, timeTaken: endTime - startTime });
+        console.error('Error deleting review:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Prisma error:', error.message);
+        if (error.meta) {
+            console.error('Prisma error meta:', error.meta);
+        }
+        res.status(500).json({ 
+            error: 'Failed to delete review', 
+            details: error.message, 
+            stack: error.stack,
+            meta: error.meta
+        });
     }
 });
 
@@ -1480,7 +1650,6 @@ app.post('/upload', (req, res) => {
         }
     })
 });
-
 app.get("/exampleAuthenticatedRoute", authenticateToken, (req, res) => {
     res.send('this is homepage')
 })

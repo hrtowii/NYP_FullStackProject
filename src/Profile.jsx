@@ -21,15 +21,17 @@ import {
     Snackbar,
     Box,
     Avatar,
-    AppBar,
-    Toolbar
+    Divider,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import EditIcon from '@mui/icons-material/Edit';
+import ReplyIcon from '@mui/icons-material/Reply';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
-import {backendRoute} from './utils/BackendUrl.jsx'
+import { backendRoute } from './utils/BackendUrl.jsx'
+
 export default function Profile() {
     const { token } = useContext(TokenContext);
     const userId = parseJwt(token).id
@@ -49,7 +51,9 @@ export default function Profile() {
     const [editReplyDialogOpen, setEditReplyDialogOpen] = useState(false);
     const [replyToEdit, setReplyToEdit] = useState(null);
     const [editedReplyContent, setEditedReplyContent] = useState('');
-    
+    const [enlargedImage, setEnlargedImage] = useState(null);
+    const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
+    const [replyToDelete, setReplyToDelete] = useState(null);
 
     const handleThumbsUp = useCallback((reviewId) => {
         setLikedReviews(prev => ({
@@ -57,6 +61,14 @@ export default function Profile() {
             [reviewId]: !prev[reviewId]
         }));
     }, []);
+
+    const handleImageClick = (imageUrl) => {
+        setEnlargedImage(imageUrl);
+    };
+
+    const handleCloseEnlargedImage = () => {
+        setEnlargedImage(null);
+    };
 
     const fetchDonatorName = useCallback(async () => {
         try {
@@ -116,29 +128,33 @@ export default function Profile() {
                 console.log('Sending delete request...');
                 const response = await fetch(`${backendRoute}/reviews/${reviewToDelete}`, {
                     method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId })
                 });
-
+    
                 console.log('Delete response received:', response.status);
-
+    
                 if (response.ok) {
                     console.log('Review deleted successfully');
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
                     setSnackbar({ open: true, message: 'Review deleted successfully', severity: 'success' });
                 } else {
-                    console.error('Server responded with an error:', response.status);
-                    throw new Error(`Failed to delete review: ${response.status}`);
+                    const errorData = await response.json();
+                    console.error('Server error details:', errorData);
+                    throw new Error(errorData.error || `Failed to delete review: ${response.status}`);
                 }
             } catch (error) {
                 console.error('Error during delete operation:', error);
-                setSnackbar({ open: true, message: 'Failed to delete review. Please try again.', severity: 'error' });
+                setSnackbar({ open: true, message: `Failed to delete review: ${error.message}`, severity: 'error' });
             } finally {
                 setDeleteDialogOpen(false);
                 setReviewToDelete(null);
                 fetchReviews();
             }
         }
-    }, [reviewToDelete, fetchReviews]);
-
+    }, [reviewToDelete, fetchReviews, userId, backendRoute]);
     const handleDeleteCancel = useCallback(() => {
         console.log('Delete cancelled');
         setDeleteDialogOpen(false);
@@ -216,19 +232,23 @@ export default function Profile() {
         if (review.isAnonymous) {
             const name = review.user?.person?.name || 'Unknown User';
             if (name.length > 1) {
-                return `${name[0]}${'*'.repeat(6)}`;
+                return `${name[0]}${'*'.repeat(8)}`;
             } else {
-                return `${name[0]}${'*'.repeat(6)}`;
+                return `${name[0]}${'*'.repeat(8)}`;
             }
         }
         return review.user?.person?.name || 'Unknown User';
     };
 
     const handleEditReplyClick = useCallback((reply) => {
-        setReplyToEdit(reply);
-        setEditedReplyContent(reply.content);
-        setEditReplyDialogOpen(true);
-    }, []);
+        if (userRole === "donator" && parseInt(donatorId) === userId) {
+            setReplyToEdit(reply);
+            setEditedReplyContent(reply.content);
+            setEditReplyDialogOpen(true);
+        } else {
+            setSnackbar({ open: true, message: 'You are not authorized to edit this reply.', severity: 'error' });
+        }
+    }, [userRole, donatorId, userId]);
 
     const handleEditReplyConfirm = useCallback(async () => {
         if (replyToEdit && editedReplyContent) {
@@ -262,28 +282,45 @@ export default function Profile() {
         }
     }, [replyToEdit, editedReplyContent, fetchReviews]);
 
-    const handleDeleteReply = useCallback(async (replyId) => {
-        try {
-            const response = await fetch(`${backendRoute}/replies/${replyId}`, {
-                method: 'DELETE',
-            });
-
-            if (response.ok) {
-                fetchReviews();
-                setSnackbar({ open: true, message: 'Reply deleted successfully', severity: 'success' });
-            } else {
-                throw new Error('Failed to delete reply');
-            }
-        } catch (error) {
-            console.error('Error deleting reply:', error);
-            setSnackbar({ open: true, message: 'Failed to delete reply. Please try again.', severity: 'error' });
+    const handleDeleteReply = useCallback((reply) => {
+        if (userRole === "donator" && parseInt(donatorId) === userId) {
+            setReplyToDelete(reply);
+            setDeleteReplyDialogOpen(true);
+        } else {
+            setSnackbar({ open: true, message: 'You are not authorized to delete this reply.', severity: 'error' });
         }
-    }, [fetchReviews]);
+    }, [userRole, donatorId, userId]);
+    const confirmDeleteReply = useCallback(async () => {
+        if (replyToDelete) {
+            try {
+                const response = await fetch(`${backendRoute}/replies/${replyToDelete.id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    fetchReviews();
+                    setSnackbar({ open: true, message: 'Reply deleted successfully', severity: 'success' });
+                } else {
+                    throw new Error('Failed to delete reply');
+                }
+            } catch (error) {
+                console.error('Error deleting reply:', error);
+                setSnackbar({ open: true, message: 'Failed to delete reply. Please try again.', severity: 'error' });
+            } finally {
+                setDeleteReplyDialogOpen(false);
+                setReplyToDelete(null);
+            }
+        }
+    }, [replyToDelete, fetchReviews, backendRoute]);
 
     const handleReplyClick = useCallback((review) => {
-        setReviewToReply(review);
-        setReplyDialogOpen(true);
-    }, []);
+        if (userRole === "donator" && parseInt(donatorId) === userId) {
+            setReviewToReply(review);
+            setReplyDialogOpen(true);
+        } else {
+            setSnackbar({ open: true, message: 'You are not authorized to reply to this review.', severity: 'error' });
+        }
+    }, [userRole, donatorId, userId]);
 
     const handleReplyConfirm = useCallback(async () => {
         if (reviewToReply && replyContent) {
@@ -332,71 +369,129 @@ export default function Profile() {
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
                         Reviews for {donatorName}
+                        {userRole === "donator" && parseInt(donatorId) === userId && " (Myself)"}
                     </Typography>
                     <List>
                         {reviews.map((review) => (
-                            <ListItem key={review.id} alignItems="flex-start" divider>
-                                <Box sx={{ display: 'flex', width: '100%' }}>
+                            <React.Fragment key={review.id}>
+                                <ListItem alignItems="flex-start" component="div">
                                     <ListItemAvatar>
                                         <Avatar>{getDisplayName(review)[0]}</Avatar>
                                     </ListItemAvatar>
-                                    <Box sx={{ flex: 1 }}>
-                                        <ListItemText
-                                            primary={getDisplayName(review)}
-                                            secondary={
-                                                <>
-                                                    <Rating name="read-only" value={review.rating} readOnly />
-                                                    <Box sx={{ mt: 1 }}>
-                                                        <Typography component="span" variant="body2" color="text.primary">
-                                                            {review.comment}
-                                                        </Typography>
+                                    <ListItemText
+                                        primary={
+                                            <Box>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                    <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
+                                                    <Box>
+                                                        {userId === review.userId && (
+                                                            <>
+                                                                <IconButton size="small" onClick={() => handleEditClick(review)}>
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton size="small" onClick={() => handleDeleteClick(review.id)}>
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </>
+                                                        )}
+                                                        <IconButton size="small" onClick={() => handleThumbsUp(review.id)}>
+                                                            <ThumbUpIcon color={likedReviews[review.id] ? 'primary' : 'default'} fontSize="small" />
+                                                        </IconButton>
                                                     </Box>
-                                                </>
-                                            }
-                                        />
-                                        {userRole === "donator" && parseInt(donatorId) === review.donatorId && !review.reply && (
-                                            <Button onClick={() => handleReplyClick(review)}>Reply</Button>
-                                        )}
-                                        {review.reply && (
-                                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                                                <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="subtitle2">Donator's Reply:</Typography>
-                                                    <Typography variant="body2">{review.reply.content}</Typography>
                                                 </Box>
-                                                {userRole === "donator" && parseInt(donatorId) === review.donatorId && (
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
-                                                            <EditIcon fontSize="small" />
-                                                        </IconButton>
-                                                        <IconButton onClick={() => handleDeleteReply(review.reply.id)} size="small">
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
+                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <>
+                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1 }}>
+                                                    {review.comment}
+                                                </Typography>
+                                                {review.images && review.images.length > 0 && (
+                                                    <Box sx={{ display: 'flex', mt: 2 }}>
+                                                        {review.images.map((image, index) => (
+                                                            <Box
+                                                                key={index}
+                                                                sx={{
+                                                                    position: 'relative',
+                                                                    width: 80,
+                                                                    height: 80,
+                                                                    mr: 1,
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                                onClick={() => handleImageClick(`${backendRoute}/uploads/${image.url}`)}
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        backgroundImage: `url(${backendRoute}/uploads/${image.url})`,
+                                                                        backgroundSize: 'cover',
+                                                                        backgroundPosition: 'center',
+                                                                        border: '1px solid #ddd',
+                                                                        borderRadius: '4px',
+                                                                    }}
+                                                                />
+                                                                <Box
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        background: 'rgba(0, 0, 0, 0.3)',
+                                                                        opacity: 0,
+                                                                        transition: 'opacity 0.2s',
+                                                                        '&:hover': {
+                                                                            opacity: 1,
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <ZoomInIcon sx={{ color: 'white' }} />
+                                                                </Box>
+                                                            </Box>
+                                                        ))}
                                                     </Box>
                                                 )}
-                                            </Box>
-                                        )}
-                                    </Box>
-                                    <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-                                        {userId === review.userId && (
-                                            <>
-                                                <IconButton edge="end" aria-label="edit" onClick={() => handleEditClick(review)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                                                    <DeleteIcon />
-                                                </IconButton>
+                                                {userRole === "donator" && parseInt(donatorId) === userId && !review.reply && (
+                                                    <Button
+                                                        size="small"
+                                                        startIcon={<ReplyIcon />}
+                                                        onClick={() => handleReplyClick(review)}
+                                                        sx={{ mt: 1 }}
+                                                    >
+                                                        Reply
+                                                    </Button>
+                                                )}
+                                                {review.reply && (
+                                                    <Box sx={{ mt: 2, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+                                                        <Typography variant="subtitle2">Donator's Reply:</Typography>
+                                                        <Typography variant="body2">{review.reply.content}</Typography>
+                                                        {userRole === "donator" && parseInt(donatorId) === userId && (
+                                                            <Box sx={{ display: 'flex', mt: 1, justifyContent: 'flex-end' }}>
+                                                                <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton onClick={() => handleDeleteReply(review.reply)} size="small">
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                )}
                                             </>
-                                        )}
-                                        <IconButton edge="end" aria-label="thumbs up" onClick={() => handleThumbsUp(review.id)}>
-                                            <ThumbUpIcon color={likedReviews[review.id] ? 'primary' : 'default'} />
-                                        </IconButton>
-                                    </Box>
-                                </Box>
-                            </ListItem>
+                                        }
+                                    />
+                                </ListItem>
+                                <Divider variant="inset" component="li" />
+                            </React.Fragment>
                         ))}
                     </List>
                 </Paper>
-    
+
                 <Dialog
                     open={deleteDialogOpen}
                     onClose={handleDeleteCancel}
@@ -416,7 +511,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={editDialogOpen}
                     onClose={handleEditCancel}
@@ -449,7 +544,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={replyDialogOpen}
                     onClose={handleReplyCancel}
@@ -477,7 +572,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={editReplyDialogOpen}
                     onClose={() => setEditReplyDialogOpen(false)}
@@ -505,7 +600,47 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
+                <Dialog
+                    open={Boolean(enlargedImage)}
+                    onClose={handleCloseEnlargedImage}
+                    maxWidth="lg"
+                >
+                    <DialogContent>
+                        <img
+                            src={enlargedImage}
+                            alt="Enlarged"
+                            style={{
+                                width: '100%',
+                                border: '2px solid black',
+                                borderRadius: '4px'
+                            }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                    </DialogActions>
+                </Dialog>
+                <Dialog
+                    open={deleteReplyDialogOpen}
+                    onClose={() => setDeleteReplyDialogOpen(false)}
+                    aria-labelledby="delete-reply-dialog-title"
+                    aria-describedby="delete-reply-dialog-description"
+                >
+                    <DialogTitle id="delete-reply-dialog-title">{"Confirm Delete Reply"}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="delete-reply-dialog-description">
+                            Are you sure you want to delete this reply? This action cannot be undone.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteReplyDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={confirmDeleteReply} color="error" autoFocus>
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={6000}
@@ -515,5 +650,7 @@ export default function Profile() {
             </Container>
         </>
     );
-     
 }
+
+
+
