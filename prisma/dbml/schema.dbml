@@ -190,9 +190,9 @@ Ref: Donator.id - Person.id [delete: Cascade]
 
 Ref: Admin.id - Person.id [delete: Cascade]
 
-Ref: Donation.donatorId > Donator.id
+Ref: Donation.donatorId > Donator.id [delete: Cascade]
 
-Ref: Food.donationId > Donation.id
+Ref: Food.donationId > Donation.id [delete: Cascade]
 
 Ref: Reservation.userId > User.id
 

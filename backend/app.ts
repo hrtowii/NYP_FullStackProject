@@ -46,7 +46,7 @@ app.use(function (req, res, next) {
 app.use(cors({
     origin: 'http://localhost:8000', // Replace with your frontend URL
     credentials: true
-  }));
+}));
 
 
 // Configure Multer
@@ -486,7 +486,7 @@ app.patch('/donators/:id/achievement', async (req, res) => {
     const { achievement } = req.body;  // Get the achievement from the request body
 
     // Ensure the achievement is valid
-    const validAchievements = ['Noob', 'Intermediate', 'Pro', 'MrBeast'];
+    const validAchievements = ['Silver', 'Gold', 'Diamond', 'Supreme'];
     if (!validAchievements.includes(achievement)) {
         return res.status(400).json({ error: 'Invalid achievement value' });
     }
@@ -626,17 +626,30 @@ app.delete('/donations/:id', async (req, res) => {
 
     try {
         const result = await prisma.$transaction(async (prisma) => {
-            // Delete related foods
-            await prisma.food.deleteMany({
-                where: { donationId: donationId }
+            // Find all reservations associated with this donation
+            const reservations = await prisma.reservation.findMany({
+                where: { donationId: donationId },
+                include: { reservationItems: true }
             });
 
-            // Delete related reservations
+            // Delete all reservation items for each reservation
+            for (const reservation of reservations) {
+                await prisma.reservationItem.deleteMany({
+                    where: { reservationId: reservation.id }
+                });
+            }
+
+            // Delete all reservations associated with this donation
             await prisma.reservation.deleteMany({
                 where: { donationId: donationId }
             });
 
-            // Now delete the donation
+            // Delete all foods associated with this donation
+            await prisma.food.deleteMany({
+                where: { donationId: donationId }
+            });
+
+            // Finally, delete the donation
             const deletedDonation = await prisma.donation.delete({
                 where: { id: donationId }
             });
@@ -1294,8 +1307,8 @@ app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
                     donatorId: donatorId,
                     isAnonymous: isAnonymous === 'true',
                     images: {
-                        create: req.files ? req.files.map(file => ({ 
-                            url: path.relative(uploadsDir, file.path).replace(/\\/g, '/') 
+                        create: req.files ? req.files.map(file => ({
+                            url: path.relative(uploadsDir, file.path).replace(/\\/g, '/')
                         })) : []
                     }
                 },
@@ -1591,7 +1604,7 @@ app.delete('/reviews/:id', async (req, res) => {
 
         const review = await prisma.review.findUnique({
             where: { id: reviewId },
-            include: { 
+            include: {
                 reply: true,
                 donator: true,
                 images: true
@@ -1662,9 +1675,9 @@ app.delete('/reviews/:id', async (req, res) => {
         if (error.meta) {
             console.error('Prisma error meta:', error.meta);
         }
-        res.status(500).json({ 
-            error: 'Failed to delete review', 
-            details: error.message, 
+        res.status(500).json({
+            error: 'Failed to delete review',
+            details: error.message,
             stack: error.stack,
             meta: error.meta
         });

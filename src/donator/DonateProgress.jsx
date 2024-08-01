@@ -43,6 +43,8 @@ export default function DonateItem() {
     const [goalAchieved, setGoalAchieved] = useState(false);
     const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false); // State for the goal achieved dialog
     const [enlargedImage, setEnlargedImage] = useState(null);
+    const [collectedDonations, setCollectedDonations] = useState([]);
+    const [uncollectedDonations, setUncollectedDonations] = useState([]);
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -64,8 +66,23 @@ export default function DonateItem() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            console.log(data)
-            setDonations(data.donations);
+            console.log(data);
+
+            // Separate collected and uncollected donations
+            const collected = [];
+            const uncollected = [];
+
+            data.donations.forEach(donation => {
+                if (donation.reservations && donation.reservations.length > 0 &&
+                    donation.reservations[0].collectionStatus === 'Collected') {
+                    collected.push(donation);
+                } else {
+                    uncollected.push(donation);
+                }
+            });
+
+            setCollectedDonations(collected);
+            setUncollectedDonations(uncollected);
             setError(null);
         } catch (error) {
             console.error('Error fetching donations:', error);
@@ -139,13 +156,13 @@ export default function DonateItem() {
     const determineAchievement = (totalQuantity) => {
         let newAchievement = '';
         if (totalQuantity >= 10000) {
-            newAchievement = 'MrBeast';
+            newAchievement = 'Supreme';
         } else if (totalQuantity >= 5000) {
-            newAchievement = 'Pro';
+            newAchievement = 'Diamond';
         } else if (totalQuantity >= 1000) {
-            newAchievement = 'Intermediate';
+            newAchievement = 'Gold';
         } else {
-            newAchievement = 'Noob';
+            newAchievement = 'Silver';
         }
         setAchievement(newAchievement);
     };
@@ -338,27 +355,18 @@ export default function DonateItem() {
 
     const handleCloseEnlargedImage = () => {
         setEnlargedImage(null);
-      };
-    
-      const handleImageClick = (imageUrl) => {
+    };
+
+    const handleImageClick = (imageUrl) => {
         setEnlargedImage(imageUrl);
-      };
+    };
 
 
     const achievements = [
-        { name: 'Noob', description: 'Donated less than 1000 grams' },
-        { name: 'Intermediate', description: 'Donated less than 5000 grams' },
-        { name: 'Pro', description: 'Donated less than 10000 grams' },
-        { name: 'MrBeast', description: 'Donated 10000 grams or more' },
-    ];
-
-    const uncollectedItems = [
-        { name: 'Chicken', date: 'Tuesday, 24 May 2023', time: '23:00 - 23:30', quantity: '100g', status: 'Uncollected' },
-        { name: 'Chicken', date: 'Unreserved', time: 'Unreserved', quantity: '100g', status: 'Unreserved' },
-    ];
-
-    const collectedItems = [
-        // { name: 'Chicken', date: 'Tuesday, 24 May 2023', time: '23:00 - 23:30', quantity: '100g', status: 'Collected' },
+        { name: 'Silver', description: 'Donated less than 1000 grams' },
+        { name: 'Gold', description: 'Donated less than 5000 grams' },
+        { name: 'Diamond', description: 'Donated less than 10000 grams' },
+        { name: 'Supreme', description: 'Donated 10000 grams or more' },
     ];
 
     return (
@@ -383,7 +391,7 @@ export default function DonateItem() {
                         Your Donations
                     </Typography>
                     <Typography variant="h6" gutterBottom mt={1}>
-                        Achievement: {achievement}
+                        Rank: {achievement}
                     </Typography>
                 </Box>
 
@@ -391,10 +399,10 @@ export default function DonateItem() {
                     <Box width="60%">
                         <Typography variant="h6" gutterBottom>Uncollected</Typography>
                         <Box bgcolor="error.main" p={2} borderRadius={2}>
-                            {donations.length === 0 ? (
+                            {uncollectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no uncollected donations.</Alert>
                             ) : (
-                                donations.flatMap((donation) =>
+                                uncollectedDonations.flatMap((donation) =>
                                     donation.foods.map((food) => (
                                         <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
                                             <CardContent>
@@ -543,24 +551,87 @@ export default function DonateItem() {
 
                         <Typography variant="h6" gutterBottom mt={4}>Collected</Typography>
                         <Box bgcolor="success.main" p={2} borderRadius={2}>
-                            {collectedItems.length === 0 ? (
+                            {collectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no collected donations.</Alert>
                             ) : (
-                                collectedItems.map((item, index) => (
-                                    <Card key={index} sx={{ mb: 2, bgcolor: 'success.light' }}>
-                                        <CardContent>
-                                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                <Box>
-                                                    <Typography variant="h6">{item.name}</Typography>
-                                                    <Typography variant="body2">{item.date}</Typography>
-                                                    <Typography variant="body2">{item.time}</Typography>
-                                                    <Typography variant="body2">Status: {item.status}</Typography>
+                                collectedDonations.flatMap((donation) =>
+                                    donation.foods.map((food) => (
+                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
+                                            <CardContent>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                    {donation.image && (
+                                                        <Box
+                                                            sx={{
+                                                                position: 'relative',
+                                                                width: 80,
+                                                                height: 80,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: 'center',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            />
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    background: 'rgba(0, 0, 0, 0.3)',
+                                                                    opacity: 0,
+                                                                    transition: 'opacity 0.2s',
+                                                                    '&:hover': {
+                                                                        opacity: 1,
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <ZoomInIcon sx={{ color: 'white' }} />
+                                                            </Box>
+                                                        </Box>
+                                                    )}
+
+                                                    <Box>
+                                                        <Typography variant="h6">{food.name}</Typography>
+                                                        <Typography variant="body2">
+                                                            Collection date: {donation.reservations && donation.reservations.length > 0
+                                                                ? formatDate(donation.reservations[0].collectionDate)
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeStart
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeEnd
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Status: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionStatus
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
                                                 </Box>
-                                                <Typography variant="h6">{item.quantity}</Typography>
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                ))
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                )
                             )}
                         </Box>
                     </Box>
@@ -594,7 +665,7 @@ export default function DonateItem() {
                     <Typography variant="h4" component="h1">Donation Goal</Typography>
                     <Typography variant="h6">Current Goal: {donationGoal} grams</Typography>
                     <Typography variant="h6">Total Donations: {totalDonations} grams</Typography>
-                    <Typography variant="h6">Current Achievement: {achievement}</Typography>
+                    <Typography variant="h6">Current rank: {achievement}</Typography>
 
                     <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
                         Set New Goal
@@ -627,7 +698,7 @@ export default function DonateItem() {
                 </Box>
 
                 <Box mt={4} mb={6} textAlign="center">
-                    <Typography mb={2} variant="h4" component="h1">Achievements</Typography>
+                    <Typography mb={2} variant="h4" component="h1">Donator Rank</Typography>
                     <Box
                         display="flex"
                         flexDirection="row"
