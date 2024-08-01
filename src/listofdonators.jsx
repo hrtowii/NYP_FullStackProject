@@ -55,7 +55,7 @@ export default function ListOfDonators() {
     const handleImageSelect = (event) => {
         const files = Array.from(event.target.files);
         if (files.length > 2) {
-            setSnackbar({ open: true, message: 'You can only upload up to 1 images', severity: 'error' });
+            setSnackbar({ open: true, message: 'You can only upload up to 2 images', severity: 'error' });
             return;
         }
         setSelectedImages(files);
