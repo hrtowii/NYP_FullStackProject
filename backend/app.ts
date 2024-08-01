@@ -437,23 +437,28 @@ app.get('/donations', async (req, res) => {
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const donations = await prisma.donation.findMany({
-        where: {
-            availability: "Available"
-        },
-    })
-
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
+                where: {
+                    availability: "Available"
+                },
                 include: {
                     foods: true,
-                    donator: true,
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    },
                 },
                 skip,
                 take: limitNumber,
             }),
-            prisma.donation.count(),
+            prisma.donation.count({
+                where: {
+                    availability: "Available"
+                }
+            }),
         ]);
 
         res.status(200).json({
@@ -465,7 +470,7 @@ app.get('/donations', async (req, res) => {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
     }
-});
+})
 
 app.patch('/donations/:id/availability', async (req, res) => {  // Patch req -> modifies item, instead of updating all
     const { id } = req.params;

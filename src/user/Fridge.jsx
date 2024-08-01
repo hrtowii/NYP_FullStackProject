@@ -3,13 +3,33 @@ import Navbar, { UserNavbar } from "../components/Navbar";
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
-    Paper, Box, Checkbox, Button, Alert, CircularProgress
+    Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel
 } from '@mui/material';
 import "./Fridge.css"
 import ReactOdometer from 'react-odometerjs';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
+import { styled } from '@mui/material/styles';
 
+const CompactFormControl = styled(FormControl)(({ theme }) => ({
+    minWidth: 120,
+    '& .MuiInputBase-root': {
+        height: 40,
+    },
+    '& .MuiInputLabel-root': {
+        transform: 'translate(14px, 12px) scale(1)',
+    },
+    '& .MuiInputLabel-shrink': {
+        transform: 'translate(14px, -6px) scale(0.75)',
+    },
+}));
+
+const CompactSelect = styled(Select)(({ theme }) => ({
+    '& .MuiSelect-select': {
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
+}));
 
 const AnimatedCounter = ({ value }) => {
     const [displayValue, setDisplayValue] = useState(0);
@@ -52,10 +72,16 @@ export default function Fridge() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [order, setOrder] = useState('asc');
+    const [orderBy, setOrderBy] = useState('name');
     const [fridgesCount, setFridgesCount] = useState(0);
     const [foodDonated, setFoodDonated] = useState(0);
     const [familiesSupported, setFamiliesSupported] = useState(0);
     const [cartItems, setCartItems] = useState([]);
+    const [filterLocation, setFilterLocation] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterType, setFilterType] = useState('all');
+    const [filterAvailability, setFilterAvailability] = useState('all');
     const navigate = useNavigate();
 
 
@@ -71,6 +97,7 @@ export default function Fridge() {
                 });
                 if (!response.ok) throw new Error('Failed to fetch donations');
                 const data = await response.json();
+                console.log(data)
                 setDonations(data.donations);
             } catch (error) {
                 console.error('Error fetching donations:', error);
@@ -141,6 +168,52 @@ export default function Fridge() {
         navigate('/user/cart')
     }
 
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
+
+    const handleFilterChange = (event, filterType) => {
+        switch (filterType) {
+            case 'location':
+                setFilterLocation(event.target.value);
+                break;
+            case 'category':
+                setFilterCategory(event.target.value);
+                break;
+            case 'type':
+                setFilterType(event.target.value);
+                break;
+            case 'availability':
+                setFilterAvailability(event.target.value);
+                break;
+            default:
+                break;
+        }
+    };
+
+    const filteredAndSortedDonations = donations
+        .filter(donation =>
+            (filterLocation === 'all' || donation.location === filterLocation) &&
+            (filterCategory === 'all' || donation.category === filterCategory) &&
+            (filterType === 'all' || donation.foods.some(food => food.type === filterType)) &&
+            (filterAvailability === 'all' || donation.availability === filterAvailability)
+        )
+        .sort((a, b) => {
+            const isAsc = order === 'asc';
+            switch (orderBy) {
+                case 'name':
+                    return isAsc ? a.foods[0].name.localeCompare(b.foods[0].name) : b.foods[0].name.localeCompare(a.foods[0].name);
+                case 'quantity':
+                    return isAsc ? a.foods[0].quantity - b.foods[0].quantity : b.foods[0].quantity - a.foods[0].quantity;
+                case 'expiryDate':
+                    return isAsc ? new Date(a.foods[0].expiryDate) - new Date(b.foods[0].expiryDate) : new Date(b.foods[0].expiryDate) - new Date(a.foods[0].expiryDate);
+                default:
+                    return 0;
+            }
+        });
+
 
     if (loading) return <Typography>Loading...</Typography>;
     if (error) return <Typography color="error">{error}</Typography>;
@@ -173,8 +246,45 @@ export default function Fridge() {
                 </div>
 
                 <h2>Fridge</h2>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
+                    <CompactFormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Location</InputLabel>
+                        <CompactSelect value={filterLocation} onChange={(e) => handleFilterChange(e, 'location')}>
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
+                            <MenuItem value="Sengkang">Sengkang</MenuItem>
+                        </CompactSelect>
+                    </CompactFormControl>
+                    <CompactFormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Category</InputLabel>
+                        <CompactSelect value={filterCategory} onChange={(e) => handleFilterChange(e, 'category')}>
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="perishable">Perishable</MenuItem>
+                            <MenuItem value="non-perishable">Non-perishable</MenuItem>
+                            <MenuItem value="canned">Canned</MenuItem>
+                            <MenuItem value="frozen">Frozen</MenuItem>
+                        </CompactSelect>
+                    </CompactFormControl>
+                    <CompactFormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Type</InputLabel>
+                        <CompactSelect value={filterType} onChange={(e) => handleFilterChange(e, 'type')}>
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="meat">Meat</MenuItem>
+                            <MenuItem value="vegetable">Vegetable</MenuItem>
+                            {/* Add more food types as needed */}
+                        </CompactSelect>
+                    </CompactFormControl>
+                    <CompactFormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Availability</InputLabel>
+                        <CompactSelect value={filterAvailability} onChange={(e) => handleFilterChange(e, 'availability')}>
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="Available">Available</MenuItem>
+                            <MenuItem value="Unavailable">Unavailable</MenuItem>
+                        </CompactSelect>
+                    </CompactFormControl>
+                </Box>
                 {/* Display fridge table */}
-                {donations.length === 0 ? (
+                {filteredAndSortedDonations.length === 0 ? (
                     <Typography>No donations available at the moment.</Typography>
                 ) : (
                     <>
@@ -183,11 +293,36 @@ export default function Fridge() {
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Select</TableCell>
-                                        <TableCell>Food</TableCell>
+                                        <TableCell>Image</TableCell>
+                                        <TableCell>
+                                            <TableSortLabel
+                                                active={orderBy === 'name'}
+                                                direction={orderBy === 'name' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('name')}
+                                            >
+                                                Food
+                                            </TableSortLabel>
+                                        </TableCell>
                                         <TableCell>Type</TableCell>
-                                        <TableCell>Quantity</TableCell>
+                                        <TableCell>
+                                            <TableSortLabel
+                                                active={orderBy === 'quantity'}
+                                                direction={orderBy === 'quantity' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('quantity')}
+                                            >
+                                                Quantity (kg)
+                                            </TableSortLabel>
+                                        </TableCell>
                                         <TableCell>Category</TableCell>
-                                        <TableCell>Expiry Date</TableCell>
+                                        <TableCell>
+                                            <TableSortLabel
+                                                active={orderBy === 'expiryDate'}
+                                                direction={orderBy === 'expiryDate' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('expiryDate')}
+                                            >
+                                                Expiry Date
+                                            </TableSortLabel>
+                                        </TableCell>
                                         <TableCell>Remarks</TableCell>
                                         <TableCell>Location</TableCell>
                                         <TableCell>Donator</TableCell>
@@ -195,7 +330,7 @@ export default function Fridge() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {donations.map((donation) => (
+                                    {filteredAndSortedDonations.map((donation) => (
                                         donation.foods.map((food) => (
                                             <TableRow key={`${donation.id}-${food.id}`}>
                                                 <TableCell>
@@ -206,22 +341,21 @@ export default function Fridge() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    {food.name}
                                                     {donation.imageUrl && (
                                                         <img
                                                             src={donation.imageUrl}
-                                                            alt={food.name}
                                                             style={{ width: 50, height: 50, marginLeft: 10, objectFit: 'cover' }}
                                                         />
                                                     )}
                                                 </TableCell>
+                                                <TableCell>{food.name}</TableCell>
                                                 <TableCell>{food.type}</TableCell>
                                                 <TableCell>{food.quantity}</TableCell>
                                                 <TableCell>{donation.category}</TableCell>
                                                 <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
                                                 <TableCell>{donation.remarks}</TableCell>
                                                 <TableCell>{donation.location}</TableCell>
-                                                <TableCell>{donation.donator.name}</TableCell>
+                                                <TableCell>{donation.donator.person.name}</TableCell>
                                                 <TableCell>{donation.availability}</TableCell>
                                             </TableRow>
                                         ))

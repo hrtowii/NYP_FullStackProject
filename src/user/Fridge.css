@@ -1,24 +1,45 @@
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
 .fridge-container {
     text-align: center;
+    margin: 0 auto;
 }
 
 .fridge-header {
-    background-color: gray;
-    width: 100%;
-    height: auto;
-    padding: 20px 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/fridgepagepic.png');
+    padding: 80px;
+    text-align: center; 
+    margin-bottom: 20px;
+    color: white;
 }
 
+/* .fridge-header {
+    background-color: #2196F3;
+    color: white;
+    height: auto;
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+} */
+
 .fridge-header h1 {
-    margin-top: 0px;
-    padding-top: 40px;
+    margin: 0;
+    margin-bottom: 15px;
     font-size: 35px;
 }
 
-.fridge-container p {
-    font-size: 20px;
-    /* padding: 0 1rem; */
-    padding: 0 100px 0 100px;
+.fridge-header p {
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .fridge-stats {
@@ -31,15 +52,95 @@
 .fridge-stat-item {
     text-align: center;
     padding: 20px;
-    box-sizing: border-box;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    margin: 0 10px 20px;
+    min-width: 200px;
 }
 
-
-.odometer {
+.fridge-stat-item .odometer {
     font-size: 2.5em;
     font-weight: bold;
     color: blue;
     display: block;
     margin-bottom: 10px;
-} 
+}
 
+.fridge-stat-item p {
+    font-size: 1rem;
+    color: #666;
+    margin: 0;
+}
+
+h2 {
+    color: #2196F3;
+    margin-bottom: 20px;
+}
+
+.MuiFormControl-root {
+    margin-bottom: 20px;
+}
+
+.MuiTableContainer-root {
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.MuiTableHead-root {
+    background-color: #f0f0f0;
+}
+
+.MuiTableRow-root:nth-of-type(even) {
+    background-color: #f9f9f9;
+}
+
+.MuiTableCell-root {
+    padding: 16px;
+}
+
+.MuiButton-contained {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.MuiButton-contained:hover {
+    background-color: #45a049;
+}
+
+.MuiButton-outlined {
+    color: #2196F3;
+    border-color: #2196F3;
+}
+
+.MuiButton-outlined:hover {
+    background-color: rgba(33, 150, 243, 0.04);
+}
+
+@media (max-width: 768px) {
+    .fridge-header {
+        padding: 30px 15px;
+    }
+
+    .fridge-header h1 {
+        font-size: 2rem;
+    }
+
+    .fridge-header p {
+        font-size: 1rem;
+    }
+
+    .fridge-stats {
+        flex-direction: column;
+    }
+
+    .fridge-stat-item {
+        margin: 0 0 20px;
+    }
+
+    .MuiFormControl-root {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
