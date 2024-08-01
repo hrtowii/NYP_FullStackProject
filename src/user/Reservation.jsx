@@ -92,7 +92,7 @@ const Reservation = () => {
     };
     // RESCHEDULE RESERVATION
     
-    const handleReschedule = (reservation,donation) => {
+    const handleReschedule = (reservation, donation) => {
         setSelectedReservation(reservation);
         setSelectedDonation(donation);
         const newDate = new Date(reservation.collectionDate);
@@ -200,20 +200,22 @@ const Reservation = () => {
     const handleCancelConfirm = async () => {
         if (reservationToCancel && reservationToCancel.id) {
             try {
-                const res = await fetch(`${backendRoute}/reservation/${reservationToCancel.id}`, {
-                    method: 'DELETE',
+                const res = await fetch(`${backendRoute}/reservation/${reservationToCancel.id}/cancel`, {
+                    method: 'PATCH',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
                 if (res.ok) {
-                    setCurrentReservations(currentReservations.filter(reservation => reservation.id !== reservationToCancel.id));
+                    const data = await res.json();
+                    fetchReservations();
                     setOpenCancelDialog(false);
-                    setSuccessMessage('Your reservation of [Chicken] has been removed.');
+                    setSuccessMessage(data.message || 'Your reservation has been cancelled.');
                     setOpenSuccessDialog(true);
                 } else {
                     const errorData = await res.json();
-                    throw new Error('Failed to cancel reservation');
+                    throw new Error(errorData.error || 'Failed to cancel reservation');
                 }
             } catch (error) {
                 console.error('Error cancelling reservation:', error);
@@ -232,6 +234,31 @@ const Reservation = () => {
             setError('Unable to cancel reservation: Invalid reservation data');
         }
     };
+
+    const handleCollectClick = async (reservation) => {
+        try {
+            const res = await fetch (`${backendRoute}/reservation/${reservation.id}/collect`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                fetchReservations();
+                setSuccessMessage('Your reservation has been marked as collected.');
+                setOpenSuccessDialog(true);
+            } else {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to mark reservation as collected');
+            }
+        } catch (error) {
+            console.error('Error marking reservation as collected:', error);
+            setError('Failed to mark reservation as collected. ' + error.message);
+        }
+    };
+
     // INDIVIDUAL RESERVATION CARD
     const ReservationCard = ({ reservation, isPast }) => {
         // Check if reservation n these 3 exist first
@@ -249,9 +276,9 @@ const Reservation = () => {
                 </p>
                 <p>
                     {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
-                    {!isPast && (
+                    {!isPast && reservation.collectionStatus === 'Uncollected' && (
                         <span
-                            className="reschedule-link" onClick={() => handleReschedule(reservation,donation)}>Reschedule
+                            className="reschedule-link" onClick={() => handleReschedule(reservation, reservation.reservationItems[0]?.food?.donation)}>Reschedule
                         </span>
                     )}
                 </p>
@@ -260,7 +287,8 @@ const Reservation = () => {
                 </p>
             </div>
             <div className="reservation-amount">{quantity}kg</div>
-            {!isPast && (
+            {!isPast && reservation.collectionStatus === 'Uncollected' && (
+                <>
                 <Button
                     className="cancel-btn"
                     onClick={() => handleCancelClick(reservation)}
@@ -277,6 +305,23 @@ const Reservation = () => {
                         },
                     }}>Cancel
                 </Button>
+                <Button
+                    className="collect-btn"
+                    onClick={() => handleCollectClick(reservation)}
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    sx={{
+                        position: 'absolute',
+                        bottom: '10px',
+                        right: '10px',
+                        backgroundColor: '#4CAF50',
+                        '&:hover': {
+                            backgroundColor: '#45a049',
+                        },
+                    }}>Collect
+                    </Button>
+                </>
             )}
             {isPast && reservation.collectionStatus === 'Collected' && (
                 <Button className="review-btn">Write a review</Button>

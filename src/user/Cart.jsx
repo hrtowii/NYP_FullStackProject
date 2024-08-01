@@ -44,6 +44,12 @@ const Cart = () => {
     localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
   };
 
+  const handleItemRemove = (donation) => {
+    const updatedCartItems = cartItems.filter(item => item.id !== donation.id);
+    setCartItems(updatedCartItems);
+    localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
+  }
+
   const clearForm = () => {
     setCollectionDate('');
     setCollectionTimeStart('');
@@ -122,15 +128,26 @@ const Cart = () => {
     }
 
     const payload = {
-      userId,
       collectionDate,
       collectionTimeStart,
       collectionTimeEnd,
       remarks,
-      cartItems: cartItems
+      cartItems: cartItems.map(item => ({
+        id: item.id,
+        foods: item.foods.map(food => ({
+          id: food.id,
+          quantity: food.quantity
+        }))
+      }))
     };
 
+    console.log('Starting reservation process');
+    console.log('Form data:', { userId, collectionDate, collectionTimeStart, collectionTimeEnd, remarks });
+    console.log('Cart items:', cartItems);
+
     try {
+      console.log('Sending request to backend:', payload);
+
       const id = parseJwt(token).id;
       const response = await fetch(`${backendRoute}/reservation/${id}`, {
         method: 'POST',
@@ -148,11 +165,25 @@ const Cart = () => {
 
       const data = await response.json();
       console.log('Reservation created:', data);
+
+      await Promise.all(cartItems.map(item => 
+        fetch(`${backendRoute}/donations/${item.id}/availability`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ availability: 'Reserved' }),
+        })
+      ));
+
+      console.log('Response status:', response.status);
+
       setShowAlert(true);
       clearForm();
       setCartItems([]);
       localStorage.removeItem('cartItems');
-      
+
       // Go to Reservation page after successful reservation
       setTimeout(() => {
         console.log('Navigating to:', '/user/reservation');
