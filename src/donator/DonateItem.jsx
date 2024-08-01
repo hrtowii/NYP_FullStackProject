@@ -16,7 +16,9 @@ import {
     InputLabel,
     Typography,
     FormHelperText,
+    IconButton,
 } from '@mui/material';
+import CancelIcon from '@mui/icons-material/Cancel';
 import Box from '@mui/material/Box';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
@@ -32,13 +34,14 @@ export default function DonateItem() {
         type: '',
         category: '',
         remarks: '',
-        imageURL: '',
+        image: '',
     });
     const [errors, setErrors] = useState({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
     const [shouldNavigate, setShouldNavigate] = useState(false);
     const navigate = useNavigate();
+    const [selectedImages, setSelectedImages] = useState([]);
 
     useEffect(() => {
         let timer;
@@ -50,23 +53,31 @@ export default function DonateItem() {
 
     useEffect(() => {
         if (shouldNavigate) {
-            navigate('/donator');
+            navigate('/donator/ManageDonations');
         }
     }, [shouldNavigate, navigate]);
+
+    const handleRemoveImage = () => {
+        setFormData({ ...formData, image: null });
+        setSelectedImages([]);
+        setErrors({ ...errors, image: "" });
+    };
+
+
 
     const validateForm = () => {
         let tempErrors = {};
         tempErrors.foodName = formData.foodName ? "" : "Food name is required";
         tempErrors.quantity = formData.quantity ? "" : "Quantity is required";
-        if (formData.quantity && !Number.isInteger(Number(formData.quantity))) {
-            tempErrors.quantity = "Quantity must be an integer";
+        if (formData.quantity && (!Number.isInteger(Number(formData.quantity)) || Number(formData.quantity) < 0)) {
+            tempErrors.quantity = "Quantity must be a non-negative integer";
         }
         tempErrors.type = formData.type ? "" : "Type is required";
         tempErrors.category = formData.category ? "" : "Category is required";
         tempErrors.expiryDate = formData.expiryDate ? "" : "Expiry date is required";
         tempErrors.deliveryDate = formData.deliveryDate ? "" : "Delivery date is required";
         tempErrors.location = formData.location ? "" : "Location is required";
-        tempErrors.imageURL = formData.imageURL ? "" : "Image is required";
+        tempErrors.image = formData.image ? "" : "Image is required";
 
         if (formData.expiryDate && formData.deliveryDate) {
             if (new Date(formData.expiryDate) <= new Date(formData.deliveryDate)) {
@@ -79,15 +90,35 @@ export default function DonateItem() {
     };
     const { token, updateToken } = useContext(TokenContext);
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.type.startsWith('image/')) {
+                setFormData({ ...formData, image: file });
+                setErrors({ ...errors, image: "" });
+                setSelectedImages([file]); // Change this to an array with a single file
+            } else {
+                setFormData({ ...formData, image: null });
+                setErrors({ ...errors, image: "Please select a valid image file" });
+            }
+        } else {
+            setFormData({ ...formData, image: null });
+            setErrors({ ...errors, image: "Please select an image" });
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'quantity') {
-            // Only allow integer values for quantity
+            // Only allow non-negative integer values for quantity
             const intValue = parseInt(value);
-            if (!isNaN(intValue) && intValue.toString() === value) {
+            if (!isNaN(intValue) && intValue >= 0 && intValue.toString() === value) {
                 setFormData({ ...formData, [name]: intValue.toString() });
+                setErrors({ ...errors, quantity: "" });
             } else if (value === '') {
                 setFormData({ ...formData, [name]: '' });
+            } else {
+                setErrors({ ...errors, quantity: "Quantity must be a non-negative integer" });
             }
         } else {
             setFormData({ ...formData, [name]: value });
@@ -95,11 +126,6 @@ export default function DonateItem() {
         if (errors[name]) {
             setErrors({ ...errors, [name]: "" });
         }
-    };
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        setFormData({ ...formData, image: file });
     };
 
     const handleNext = () => {
@@ -120,12 +146,21 @@ export default function DonateItem() {
     const handleConfirm = async () => {
         setShowConfirmDialog(false);
         try {
-            const id = parseJwt(token).id
+            const id = parseJwt(token).id;
+            const formDataToSend = new FormData();
+            for (const key in formData) {
+                if (key === 'image') {
+                    formDataToSend.append('image', formData.image);
+                } else {
+                    formDataToSend.append(key, formData[key]);
+                }
+            }
+
             const response = await fetch(`${backendRoute}/donation/${id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: formDataToSend, // Send as FormData
             });
+
             if (response.ok) {
                 console.log('Donation created:', response);
                 setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -143,149 +178,168 @@ export default function DonateItem() {
         switch (step) {
             case 0:
                 return (
-                    <form className="donation-form">
-                        <Typography variant="h6" gutterBottom>Food Information</Typography>
-                        <TextField
-                            fullWidth
-                            label="Food Name"
-                            name="foodName"
-                            value={formData.foodName}
-                            onChange={handleInputChange}
-                            margin="normal"
-                            required
-                            error={!!errors.foodName}
-                            helperText={errors.foodName}
-                        />
-                        <TextField
-                            fullWidth
-                            label="Quantity in g (integer value)"
-                            name="quantity"
-                            value={formData.quantity}
-                            onChange={handleInputChange}
-                            margin="normal"
-                            required
-                            error={!!errors.quantity}
-                            helperText={errors.quantity}
-                            type="number"
-                            inputProps={{ step: 1 }}
-                        />
-                        <TextField
-                            fullWidth
-                            label="Remarks"
-                            name="remarks"
-                            value={formData.remarks}
-                            onChange={handleInputChange}
-                            margin="normal"
-                        />
-                        <FormControl fullWidth margin="normal" required error={!!errors.type}>
-                            <InputLabel>Type</InputLabel>
-                            <Select
-                                name="type"
-                                value={formData.type}
+                    <div className="donation-form-container">
+                        <div className="donation-form-left">
+                            <Typography variant="h6" gutterBottom>Food Information</Typography>
+                            <TextField
+                                fullWidth
+                                label="Food Name"
+                                name="foodName"
+                                value={formData.foodName}
                                 onChange={handleInputChange}
-                            >
-                                <MenuItem value="">Select Type</MenuItem>
-                                <MenuItem value="meat">Meat</MenuItem>
-                                <MenuItem value="vegetable">Vegetable</MenuItem>
-                                <MenuItem value="dairy">Dairy</MenuItem>
-                            </Select>
-                            <FormHelperText>{errors.type}</FormHelperText>
-                        </FormControl>
-                        <FormControl fullWidth margin="normal" required error={!!errors.category}>
-                            <InputLabel>Category</InputLabel>
-                            <Select
-                                name="category"
-                                value={formData.category}
+                                margin="normal"
+                                required
+                                error={!!errors.foodName}
+                                helperText={errors.foodName}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Quantity in g (non-negative integer)"
+                                name="quantity"
+                                value={formData.quantity}
                                 onChange={handleInputChange}
-                            >
-                                <MenuItem value="">Select Category</MenuItem>
-                                <MenuItem value="perishable">Perishable</MenuItem>
-                                <MenuItem value="non-perishable">Non-Perishable</MenuItem>
-                                <MenuItem value="canned">Canned</MenuItem>
-                                <MenuItem value="frozen">Frozen</MenuItem>
-                            </Select>
-                            <FormHelperText>{errors.category}</FormHelperText>
-                        </FormControl>
-
-                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Dates</Typography>
-                        <TextField
-                            fullWidth
-                            label="Expiry Date"
-                            type="date"
-                            name="expiryDate"
-                            value={formData.expiryDate}
-                            onChange={handleInputChange}
-                            margin="normal"
-                            required
-                            InputLabelProps={{ shrink: true }}
-                            error={!!errors.expiryDate}
-                            helperText={errors.expiryDate}
-                        />
-                        <TextField
-                            fullWidth
-                            label="Delivery Date"
-                            type="date"
-                            name="deliveryDate"
-                            value={formData.deliveryDate}
-                            onChange={handleInputChange}
-                            margin="normal"
-                            required
-                            InputLabelProps={{ shrink: true }}
-                            error={!!errors.deliveryDate}
-                            helperText={errors.deliveryDate}
-                        />
-                        <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
-                            Please make sure the food is delivered by the end of the day
-                        </Typography>
-
-                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Location</Typography>
-                        <FormControl fullWidth margin="normal" required error={!!errors.location}>
-                            <InputLabel>Location</InputLabel>
-                            <Select
-                                name="location"
-                                value={formData.location}
+                                margin="normal"
+                                required
+                                error={!!errors.quantity}
+                                helperText={errors.quantity}
+                                type="number"
+                                inputProps={{ min: 0, step: 1 }}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Remarks"
+                                name="remarks"
+                                value={formData.remarks}
                                 onChange={handleInputChange}
-                            >
-                                <MenuItem value="">Select Location</MenuItem>
-                                <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
-                                <MenuItem value="Sengkang">Sengkang</MenuItem>
-                            </Select>
-                            <FormHelperText>{errors.location}</FormHelperText>
-                        </FormControl>
-                        <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Image URL</Typography>
-                        <TextField
-                            fullWidth
-                            label="ImageURL"
-                            name="imageURL"
-                            value={formData.imageURL}
-                            onChange={handleInputChange}
-                            margin="normal"
-                        />
-                    </form>
+                                margin="normal"
+                            />
+                            <FormControl fullWidth margin="normal" required error={!!errors.type}>
+                                <InputLabel>Type</InputLabel>
+                                <Select
+                                    name="type"
+                                    value={formData.type}
+                                    onChange={handleInputChange}
+                                >
+                                    <MenuItem value="">Select Type</MenuItem>
+                                    <MenuItem value="meat">Meat</MenuItem>
+                                    <MenuItem value="vegetable">Vegetable</MenuItem>
+                                    <MenuItem value="dairy">Dairy</MenuItem>
+                                </Select>
+                                <FormHelperText>{errors.type}</FormHelperText>
+                            </FormControl>
+                            <FormControl fullWidth margin="normal" required error={!!errors.category}>
+                                <InputLabel>Category</InputLabel>
+                                <Select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleInputChange}
+                                >
+                                    <MenuItem value="">Select Category</MenuItem>
+                                    <MenuItem value="perishable">Perishable</MenuItem>
+                                    <MenuItem value="non-perishable">Non-Perishable</MenuItem>
+                                    <MenuItem value="canned">Canned</MenuItem>
+                                    <MenuItem value="frozen">Frozen</MenuItem>
+                                </Select>
+                                <FormHelperText>{errors.category}</FormHelperText>
+                            </FormControl>
+                        </div>
+                        <div className="donation-form-right">
+                            <Typography variant="h6" gutterBottom>Dates</Typography>
+                            <TextField
+                                fullWidth
+                                label="Expiry Date"
+                                type="date"
+                                name="expiryDate"
+                                value={formData.expiryDate}
+                                onChange={handleInputChange}
+                                margin="normal"
+                                required
+                                InputLabelProps={{ shrink: true }}
+                                error={!!errors.expiryDate}
+                                helperText={errors.expiryDate}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Delivery Date"
+                                type="date"
+                                name="deliveryDate"
+                                value={formData.deliveryDate}
+                                onChange={handleInputChange}
+                                margin="normal"
+                                required
+                                InputLabelProps={{ shrink: true }}
+                                error={!!errors.deliveryDate}
+                                helperText={errors.deliveryDate}
+                            />
+                            <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
+                                Please make sure the food is delivered by the end of the day
+                            </Typography>
+                            <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Location</Typography>
+                            <FormControl fullWidth margin="normal" required error={!!errors.location}>
+                                <InputLabel>Location</InputLabel>
+                                <Select
+                                    name="location"
+                                    value={formData.location}
+                                    onChange={handleInputChange}
+                                >
+                                    <MenuItem value="">Select Location</MenuItem>
+                                    <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
+                                    <MenuItem value="Sengkang">Sengkang</MenuItem>
+                                </Select>
+                                <FormHelperText>{errors.location}</FormHelperText>
+                            </FormControl>
+                            <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>Image Upload</Typography>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                style={{ display: 'none', marginTop: '10px' }}
+                                id="image-upload"
+                            />
+                            <label htmlFor="image-upload">
+                                <Button variant="contained" component="span">
+                                    Upload Image
+                                </Button>
+                            </label>
+                            {errors.image && <Typography color="error">{errors.image}</Typography>}
+                            {formData.image && (
+                                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                    <Typography>{formData.image.name}</Typography>
+                                    <IconButton onClick={handleRemoveImage} size="small">
+                                        <CancelIcon />
+                                    </IconButton>
+                                </Box>
+                            )}
+                        </div>
+                    </div>
                 );
             case 1:
                 return (
                     <div className="donation-summary">
-                        <Typography variant="h6" gutterBottom>Donation Summary</Typography>
-                        <Box
-                            component="img"
-                            sx={{
-                                height: 233,
-                                width: 350,
-                                maxHeight: { xs: 233, md: 167 },
-                                maxWidth: { xs: 350, md: 250 },
-                            }}
-                            alt="image."
-                            src={formData.imageURL}
-                        />
-                        <Typography>Food Name: {formData.foodName}</Typography>
-                        <Typography>Quantity: {formData.quantity}</Typography>
-                        <Typography>Type: {formData.type}</Typography>
-                        <Typography>Category: {formData.category}</Typography>
-                        <Typography>Expiry Date: {formData.expiryDate}</Typography>
-                        <Typography>Delivery Date: {formData.deliveryDate}</Typography>
-                        <Typography>Location: {formData.location}</Typography>
-                        {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
+                        <div className="summary-info">
+                            <Typography variant="h6" gutterBottom>Donation Summary</Typography>
+                            <Typography>Food Name: {formData.foodName}</Typography>
+                            <Typography>Quantity: {formData.quantity}</Typography>
+                            <Typography>Type: {formData.type}</Typography>
+                            <Typography>Category: {formData.category}</Typography>
+                            <Typography>Expiry Date: {formData.expiryDate}</Typography>
+                            <Typography>Delivery Date: {formData.deliveryDate}</Typography>
+                            <Typography>Location: {formData.location}</Typography>
+                            {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
+
+                        </div>
+                        <div>
+                            {formData.image && (
+                                <Typography variant="body2" color="textSecondary" style={{ marginBottom: '10px' }}>
+                                    <img
+                                        src={URL.createObjectURL(formData.image)}
+                                        alt="Uploaded food"
+                                        style={{ maxWidth: '100%', maxHeight: '200px' }}
+                                    />
+                                </Typography>
+                            )}
+                        </div>
+
                     </div>
                 );
             case 2:
@@ -294,6 +348,7 @@ export default function DonateItem() {
                         <Typography variant="h6" gutterBottom>Thank You for Your Donation!</Typography>
                         <Typography>Your contribution will make a difference in someone's life.</Typography>
                     </div>
+
                 );
             default:
                 return <div></div>;
@@ -318,7 +373,7 @@ export default function DonateItem() {
                     </div>
                 </div>
                 <div className="donation-container">
-                    <Typography variant="h4" className='Title'>Food Donation</Typography>
+                    <Typography variant="h4" className='Title' textAlign="center" mb={2}>Food Donation</Typography>
                     <div className="stepper">
                         {steps.map((label, index) => (
                             <div key={label} className={`step ${index === activeStep ? 'active' : ''}`}>

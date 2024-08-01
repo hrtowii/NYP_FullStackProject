@@ -21,12 +21,13 @@ import {
     Snackbar,
     Box,
     Avatar,
-    AppBar,
-    Toolbar
+    Divider,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import EditIcon from '@mui/icons-material/Edit';
+import ReplyIcon from '@mui/icons-material/Reply';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
 import { backendRoute } from './utils/BackendUrl.jsx'
@@ -37,13 +38,13 @@ export default function Profile() {
     const userRole = parseJwt(token).role
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
+    const [likedReviews, setLikedReviews] = useState({});
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [reviewToEdit, setReviewToEdit] = useState(null);
     const [donatorName, setDonatorName] = useState("Loading...");
-    const [likedReviews, setLikedReviews] = useState({});
     const [replyDialogOpen, setReplyDialogOpen] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [reviewToReply, setReviewToReply] = useState(null);
@@ -54,12 +55,37 @@ export default function Profile() {
     const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
     const [replyToDelete, setReplyToDelete] = useState(null);
 
-    const handleThumbsUp = useCallback((reviewId) => {
-        setLikedReviews(prev => ({
-            ...prev,
-            [reviewId]: !prev[reviewId]
-        }));
-    }, []);
+    const handleThumbsUp = useCallback(async (reviewId) => {
+        try {
+            const response = await fetch(`${backendRoute}/reviews/${reviewId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            if (response.ok) {
+                const { message, likeCount, liked } = await response.json();
+                setReviews(prevReviews => prevReviews.map(review =>
+                    review.id === reviewId
+                        ? { ...review, likeCount: likeCount }
+                        : review
+                ));
+                setLikedReviews(prev => ({
+                    ...prev,
+                    [reviewId]: liked
+                }));
+                setSnackbar({ open: true, message: message, severity: 'success' });
+            } else {
+                throw new Error('Failed to update like');
+            }
+        } catch (error) {
+            console.error('Error updating like:', error);
+            setSnackbar({ open: true, message: 'Failed to update like. Please try again.', severity: 'error' });
+        }
+    }, [token, userId, backendRoute]);
 
     const handleImageClick = (imageUrl) => {
         setEnlargedImage(imageUrl);
@@ -92,22 +118,31 @@ export default function Profile() {
     const fetchReviews = useCallback(async () => {
         console.log('Fetching reviews...');
         try {
-            const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
+            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
             });
             if (!response.ok) {
-                throw new Error('Failed to fetch reviews');
+                const errorBody = await response.text();
+                console.error('Error response:', errorBody);
+                throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
             console.log('Reviews fetched:', data);
             setReviews(data);
+            // Initialize likedReviews state based on fetched data
+            const initialLikedReviews = {};
+            data.forEach(review => {
+                initialLikedReviews[review.id] = review.liked || false;
+            });
+            setLikedReviews(initialLikedReviews);
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [donatorId]);
+    }, [donatorId, userId, token, backendRoute]);
 
     useEffect(() => {
         fetchReviews();
@@ -132,9 +167,9 @@ export default function Profile() {
                     },
                     body: JSON.stringify({ userId: userId })
                 });
-    
+
                 console.log('Delete response received:', response.status);
-    
+
                 if (response.ok) {
                     console.log('Review deleted successfully');
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
@@ -363,7 +398,7 @@ export default function Profile() {
 
     return (
         <>
-            {/* <UserNavbar /> */}
+            <UserNavbar />
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
@@ -372,77 +407,128 @@ export default function Profile() {
                     </Typography>
                     <List>
                         {reviews.map((review) => (
-                            <ListItem key={review.id} alignItems="flex-start" divider component="div">
-                                <Box sx={{ display: 'flex', width: '100%' }}>
+                            <React.Fragment key={review.id}>
+                                <ListItem alignItems="flex-start" component="div">
                                     <ListItemAvatar>
                                         <Avatar>{getDisplayName(review)[0]}</Avatar>
                                     </ListItemAvatar>
-                                    <Box sx={{ flex: 1 }}>
-                                        <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
-                                        <Box sx={{ mt: 1 }}>
-                                            <Rating name="read-only" value={review.rating} readOnly size="small" />
-                                        </Box>
-                                        <Typography variant="body2" sx={{ mt: 1 }}>
-                                            {review.comment}
-                                        </Typography>
-                                        {review.images && review.images.length > 0 && (
-                                            <Box sx={{ display: 'flex', mt: 2 }}>
-                                                {review.images.map((image, index) => (
-                                                    <Box
-                                                        key={index}
-                                                        sx={{
-                                                            width: 100,
-                                                            height: 100,
-                                                            mr: 1,
-                                                            backgroundImage: `url(${backendRoute}/uploads/${image.url})`,
-                                                            backgroundSize: 'cover',
-                                                            backgroundPosition: 'center',
-                                                            cursor: 'pointer',
-                                                            border: '2px solid black', // Add this line for the border
-                                                            borderRadius: '4px', // Optional: adds rounded corners
-                                                        }}
-                                                        onClick={() => handleImageClick(`${backendRoute}/uploads/${image.url}`)}
-                                                    />
-                                                ))}
+                                    <ListItemText
+                                        primary={
+                                            <Box>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                    <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
+                                                    <Box>
+                                                        {userId === review.userId && (
+                                                            <>
+                                                                <IconButton size="small" onClick={() => handleEditClick(review)}>
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton size="small" onClick={() => handleDeleteClick(review.id)}>
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </>
+                                                        )}
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleThumbsUp(review.id)}
+                                                            color={likedReviews[review.id] ? 'primary' : 'default'}
+                                                        >
+                                                            <ThumbUpIcon fontSize="small" />
+                                                        </IconButton>
+                                                        <Typography variant="caption" sx={{ ml: 1 }}>
+                                                            {review.likeCount || 0}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
-                                        )}
-                                        {userRole === "donator" && parseInt(donatorId) === userId && !review.reply && (
-                                            <Button sx={{ mt: 1 }} onClick={() => handleReplyClick(review)}>Reply</Button>
-                                        )}
-                                        {review.reply && (
-                                            <Box sx={{ mt: 1 }}>
-                                                <Typography variant="subtitle2">Donator's Reply:</Typography>
-                                                <Typography variant="body2">{review.reply.content}</Typography>
-                                                {userRole === "donator" && parseInt(donatorId) === userId && (
-                                                    <Box sx={{ display: 'flex', mt: 1 }}>
-                                                        <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
-                                                            <EditIcon fontSize="small" />
-                                                        </IconButton>
-                                                        <IconButton onClick={() => handleDeleteReply(review.reply)} size="small">
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
+                                        }
+                                        secondary={
+                                            <>
+                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1 }}>
+                                                    {review.comment}
+                                                </Typography>
+                                                {review.images && review.images.length > 0 && (
+                                                    <Box sx={{ display: 'flex', mt: 2 }}>
+                                                        {review.images.map((image, index) => (
+                                                            <Box
+                                                                key={index}
+                                                                sx={{
+                                                                    position: 'relative',
+                                                                    width: 80,
+                                                                    height: 80,
+                                                                    mr: 1,
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                                onClick={() => handleImageClick(`${backendRoute}/uploads/${image.url}`)}
+                                                            >
+                                                                <Box
+                                                                    sx={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        backgroundImage: `url(${backendRoute}/uploads/${image.url})`,
+                                                                        backgroundSize: 'cover',
+                                                                        backgroundPosition: 'center',
+                                                                        border: '1px solid #ddd',
+                                                                        borderRadius: '4px',
+                                                                    }}
+                                                                />
+                                                                <Box
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        background: 'rgba(0, 0, 0, 0.3)',
+                                                                        opacity: 0,
+                                                                        transition: 'opacity 0.2s',
+                                                                        '&:hover': {
+                                                                            opacity: 1,
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <ZoomInIcon sx={{ color: 'white' }} />
+                                                                </Box>
+                                                            </Box>
+                                                        ))}
                                                     </Box>
                                                 )}
-                                            </Box>
-                                        )}
-                                    </Box>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        {userId === review.userId && (
-                                            <>
-                                                <IconButton edge="end" aria-label="edit" onClick={() => handleEditClick(review)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteClick(review.id)}>
-                                                    <DeleteIcon />
-                                                </IconButton>
+                                                {userRole === "donator" && parseInt(donatorId) === userId && !review.reply && (
+                                                    <Button
+                                                        size="small"
+                                                        startIcon={<ReplyIcon />}
+                                                        onClick={() => handleReplyClick(review)}
+                                                        sx={{ mt: 1 }}
+                                                    >
+                                                        Reply
+                                                    </Button>
+                                                )}
+                                                {review.reply && (
+                                                    <Box sx={{ mt: 2, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+                                                        <Typography variant="subtitle2">Donator's Reply:</Typography>
+                                                        <Typography variant="body2">{review.reply.content}</Typography>
+                                                        {userRole === "donator" && parseInt(donatorId) === userId && (
+                                                            <Box sx={{ display: 'flex', mt: 1, justifyContent: 'flex-end' }}>
+                                                                <IconButton onClick={() => handleEditReplyClick(review.reply)} size="small">
+                                                                    <EditIcon fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton onClick={() => handleDeleteReply(review.reply)} size="small">
+                                                                    <DeleteIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                )}
                                             </>
-                                        )}
-                                        <IconButton edge="end" aria-label="thumbs up" onClick={() => handleThumbsUp(review.id)}>
-                                            <ThumbUpIcon color={likedReviews[review.id] ? 'primary' : 'default'} />
-                                        </IconButton>
-                                    </Box>
-                                </Box>
-                            </ListItem>
+                                        }
+                                    />
+                                </ListItem>
+                                <Divider variant="inset" component="li" />
+                            </React.Fragment>
                         ))}
                     </List>
                 </Paper>

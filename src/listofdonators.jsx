@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 import { UserNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
-import { useParams } from 'react-router-dom';
 import parseJwt from './utils/parseJwt.jsx'
 import {
     Button,
@@ -28,7 +27,7 @@ import {
     FormControlLabel,
     IconButton,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 export default function ListOfDonators() {
@@ -41,6 +40,7 @@ export default function ListOfDonators() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [order, setOrder] = useState('asc');
     const [orderBy, setOrderBy] = useState('name');
+    const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const { token } = useContext(TokenContext);
     const [ratingError, setRatingError] = useState(false);
@@ -55,11 +55,16 @@ export default function ListOfDonators() {
     const handleImageSelect = (event) => {
         const files = Array.from(event.target.files);
         if (files.length > 2) {
-            setSnackbar({ open: true, message: 'You can only upload up to 2 images', severity: 'error' });
+            setSnackbar({ open: true, message: 'You can only upload up to 1 images', severity: 'error' });
             return;
         }
         setSelectedImages(files);
     };
+
+    const handleSearchChange = (event) => {
+        setSearchQuery(event.target.value);
+    };
+
 
     function stringToColor(string) {
         let hash = 0;
@@ -180,7 +185,7 @@ export default function ListOfDonators() {
         setOrderBy(property);
     };
 
-    const sortedProfiles = React.useMemo(() => {
+    const sortedAndFilteredProfiles = useMemo(() => {
         const comparator = (a, b) => {
             if (orderBy === 'name') {
                 return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
@@ -195,17 +200,38 @@ export default function ListOfDonators() {
             }
             return 0;
         };
-        return [...profiles].sort(comparator);
-    }, [profiles, order, orderBy]);
+
+        return [...profiles]
+            .sort(comparator)
+            .filter(profile => profile.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [profiles, order, orderBy, searchQuery]);
 
     return (
         <>
-            {/* <UserNavbar /> */}
+            <UserNavbar />
             <div className="container">
                 <Box sx={{ p: 3 }}>
                     <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
                         List of Donators
                     </Typography>
+                    <Box sx={{ mb: 3, width: '100%' }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            placeholder="Search donators by name..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            InputProps={{
+                                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                                endAdornment: searchQuery && (
+                                    <IconButton size="small" onClick={() => setSearchQuery('')}>
+                                        <CancelIcon />
+                                    </IconButton>
+                                ),
+                            }}
+                        />
+                    </Box>
                     {error ? (
                         <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
                             <Alert severity="info">{error}</Alert>
@@ -247,7 +273,7 @@ export default function ListOfDonators() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {sortedProfiles.map((profile, index) => (
+                                    {sortedAndFilteredProfiles.map((profile, index) => (
                                         <TableRow
                                             key={profile.id}
                                             sx={{

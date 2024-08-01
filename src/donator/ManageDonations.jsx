@@ -25,8 +25,12 @@ import {
   FormHelperText,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import SearchIcon from '@mui/icons-material/Search';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
@@ -45,6 +49,21 @@ export default function ManageDonations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token, updateToken } = useContext(TokenContext);
+  const [enlargedImage, setEnlargedImage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleCloseEnlargedImage = () => {
+    setEnlargedImage(null);
+  };
+
+  const handleImageClick = (imageUrl) => {
+    setEnlargedImage(imageUrl);
+  };
 
   const fetchDonations = useCallback(async () => {
     const donatorId = parseJwt(token).id
@@ -66,6 +85,7 @@ export default function ManageDonations() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log(data)
       setDonations(data.donations);
       setError(null);
     } catch (error) {
@@ -79,6 +99,13 @@ export default function ManageDonations() {
   useEffect(() => {
     fetchDonations();
   }, [fetchDonations]);
+
+  const formatImagePath = (path) => {
+    if (!path) return '';
+    const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
+    console.log('Formatted Image Path:', formattedPath);
+    return path.replace(/\\/g, '/').replace(/^public/, '');
+  };
 
   const handleDeleteClick = (donationId) => {
     setDonationToDelete(donationId);
@@ -193,8 +220,31 @@ export default function ManageDonations() {
       }
       return 0;
     };
-    return [...donations].sort(comparator);
-  }, [donations, order, orderBy]);
+
+    const searchFields = (donation) => {
+      const searchableFields = [
+        ...donation.foods.flatMap(food => [
+          food.name,
+          food.type,
+          food.quantity.toString(),
+          new Date(food.expiryDate).toLocaleDateString()
+        ]),
+        donation.category,
+        donation.location,
+        donation.remarks,
+        new Date(donation.deliveryDate).toLocaleDateString(),
+        donation.availability
+      ];
+
+      return searchableFields.some(field =>
+        field && field.toString().toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    };
+
+    return [...donations]
+      .sort(comparator)
+      .filter(searchFields);
+  }, [donations, order, orderBy, searchQuery]);
 
   if (loading) {
     return (
@@ -230,11 +280,29 @@ export default function ManageDonations() {
           </div>
         </div>
 
-        <Container maxWidth="md">
+        <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
           <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
+            <Box sx={{ mb: 3, width: '100%' }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                size="small"
+                placeholder="Search donations by any field..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                  endAdornment: searchQuery && (
+                    <IconButton size="small" onClick={() => setSearchQuery('')}>
+                      <CancelIcon />
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
             {donations.length === 0 ? (
               <Typography align="center" variant="h6" style={{ marginTop: '20px' }}>
                 You have no donations at the moment. Click 'Donate New Item' to make a donation.
@@ -284,12 +352,48 @@ export default function ManageDonations() {
                       donation.foods.map((food) => (
                         <TableRow key={`${donation.id}-${food.id}`}>
                           <TableCell>
-                            {donation.imageUrl && (
-                              <img
-                                src={donation.imageUrl}
-                                alt={food.name}
-                                style={{ width: 50, height: 50, objectFit: 'cover' }}
-                              />
+                            {donation.image && (
+                              <Box
+                                sx={{
+                                  position: 'relative',
+                                  width: 80,
+                                  height: 80,
+                                  cursor: 'pointer',
+                                }}
+                                onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                              >
+                                <Box
+                                  sx={{
+                                    width: '100%',
+                                    height: '100%',
+                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                  }}
+                                />
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'rgba(0, 0, 0, 0.3)',
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    '&:hover': {
+                                      opacity: 1,
+                                    },
+                                  }}
+                                >
+                                  <ZoomInIcon sx={{ color: 'white' }} />
+                                </Box>
+                              </Box>
                             )}
                           </TableCell>
                           <TableCell>{food.name || 'N/A'}</TableCell>
@@ -316,6 +420,27 @@ export default function ManageDonations() {
             )}
           </Paper>
         </Container>
+
+        <Dialog
+          open={Boolean(enlargedImage)}
+          onClose={handleCloseEnlargedImage}
+          maxWidth="lg"
+        >
+          <DialogContent>
+            <img
+              src={enlargedImage}
+              alt="Enlarged"
+              style={{
+                width: '100%',
+                border: '2px solid black',
+                borderRadius: '4px'
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEnlargedImage}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         <Dialog
           open={deleteDialogOpen}

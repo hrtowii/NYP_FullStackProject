@@ -48,6 +48,35 @@ app.use(cors({
     credentials: true
   }));
 
+
+// Configure Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './public'); // Make sure this directory exists
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Use this function when saving the path to the database
+const formatImagePath = (filename) => {
+    return '/public/' + filename.replace(/\\/g, '/');
+};
+
+export { upload, formatImagePath };
+
+// Convert import.meta.url to __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the "../public" directory
+const publicPath = path.join(__dirname, '../public');
+console.log('Serving static files from:', publicPath);
+app.use('/public', express.static(publicPath));
 app.get('/', (req, res) => {
     res.send('this is homepage')
 })
@@ -210,7 +239,13 @@ app.post('/createAccounts', async (req, res) => {
             email: user.email,
             [user.role]: {
                 create: {}
-            }
+            },
+            // ["donator"]: {
+            //     create: {}
+            // },
+            // ["user"]: {
+            //     create: {}
+            // }
         },
         include: {
             user: true,
@@ -355,45 +390,123 @@ app.post('/reset-password/:id', isAdmin, async (req, res) => {
 
 // MARK: Donation CRUD - Andric
 interface donationInterface {
-    foodName: string,
-    quantity: string,
-    expiryDate: string,
-    type: string,
-    category: string,
-    location: string,
-    remarks: string,
-    imageURL: string,
+    foodName: string;
+    quantity: string;
+    expiryDate: string;
+    deliveryDate: string;  // Add this field
+    type: string;
+    category: string;
+    location: string;
+    remarks: string;
+    image: Express.Multer.File;  // Change this to match the file object
 }
-app.post('/donation/:id', async (req, res) => {
+
+app.post('/donation/:id', upload.single('image'), async (req: Request, res: Response) => {
     const id: number = parseInt(req.params.id);
-    let formData: donationInterface = req.body
-    const result = await prisma.donation.create({
-        data: {
-            donator: {
-                connect: {
-                    id: id,
+    let formData: donationInterface = req.body;
+
+    // The uploaded file is available as req.file
+    const imagePath = req.file ? `/public/${req.file.filename}` : null;
+
+    try {
+        const result = await prisma.donation.create({
+            data: {
+                donator: {
+                    connect: {
+                        id: id,
+                    },
+                },
+                category: formData.category,
+                deliveryDate: new Date(formData.deliveryDate),
+                location: formData.location,
+                remarks: formData.remarks,
+                image: imagePath, // Save the path to the image
+                foods: {
+                    create: {
+                        name: formData.foodName,
+                        quantity: parseInt(formData.quantity, 10),
+                        type: formData.type,
+                        expiryDate: new Date(formData.expiryDate),
+                    },
                 },
             },
-            category: formData.category,
-            deliveryDate: new Date(formData.expiryDate),
-            location: formData.location,
-            remarks: formData.remarks,
-            imageUrl: formData.imageURL,
-            foods: {
-                create: {
-                    name: formData.foodName,
-                    quantity: parseInt(formData.quantity, 10),
-                    type: formData.type,
-                    expiryDate: new Date(formData.expiryDate),
-                },
+            include: {
+                foods: true,
             },
-        },
-        include: {
-            foods: true,
-        },
-    });
-    res.status(200).json(result)
-})
+        });
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error creating donation:', error);
+        res.status(500).json({ error: 'Failed to create donation' });
+    }
+});
+
+app.patch('/donators/:donatorId/goal', async (req, res) => {
+    const donatorId = parseInt(req.params.donatorId, 10);
+    const { donationGoal } = req.body;
+
+    try {
+        if (isNaN(donatorId) || donationGoal < 0) {
+            return res.status(400).json({ error: 'Invalid data' });
+        }
+
+        const donator = await prisma.donator.update({
+            where: { id: donatorId },
+            data: { donationGoal },
+        });
+
+        res.json(donator);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update donation goal' });
+    }
+});
+
+app.get('/donators/:id/goal', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const donator = await prisma.donator.findUnique({
+            where: { id: parseInt(id) },
+            select: { donationGoal: true }
+        });
+
+        if (!donator) {
+            return res.status(404).json({ error: 'Donator not found' });
+        }
+
+        res.json({ donationGoal: donator.donationGoal });
+    } catch (error) {
+        console.error('Error fetching donation goal:', error);
+        res.status(500).json({ error: 'Failed to fetch donation goal' });
+    }
+});
+
+app.patch('/donators/:id/achievement', async (req, res) => {
+    const donatorId = parseInt(req.params.id, 10);
+    const { achievement } = req.body;  // Get the achievement from the request body
+
+    // Ensure the achievement is valid
+    const validAchievements = ['Noob', 'Intermediate', 'Pro', 'MrBeast'];
+    if (!validAchievements.includes(achievement)) {
+        return res.status(400).json({ error: 'Invalid achievement value' });
+    }
+
+    try {
+        // Update the achievement in the database
+        const donator = await prisma.donator.update({
+            where: { id: donatorId },
+            data: { achievement }
+        });
+
+        res.json(donator);
+    } catch (error) {
+        console.error('Error updating achievement:', error);
+        res.status(500).json({ error: 'Failed to update achievement' });
+    }
+});
+
+
+
 // View donations with pagination and sorting
 app.get('/donations/:id', async (req, res) => {
     const donorId: number = parseInt(req.params.id);
@@ -418,7 +531,6 @@ app.get('/donations/:id', async (req, res) => {
                 where: { donatorId: donorId }
             }),
         ]);
-
         res.status(200).json({
             donations,
             totalPages: Math.ceil(totalCount / limitNumber),
@@ -471,6 +583,30 @@ app.get('/donations', async (req, res) => {
         res.status(500).json({ error: 'Error getting donations', details: error.message });
     }
 })
+
+// Endpoint to get total donations for a specific donator
+app.get('/api/donations/:donatorId/total', async (req, res) => {
+    const { donatorId } = req.params;
+
+    try {
+        const totalDonations = await prisma.food.aggregate({
+            _sum: {
+                quantity: true,
+            },
+            where: {
+                donation: {
+                    donatorId: parseInt(donatorId, 10),
+                },
+            },
+        });
+
+        res.json({ totalQuantity: totalDonations._sum.quantity || 0 });
+    } catch (error) {
+        console.error('Error fetching total donations:', error);
+        res.status(500).json({ error: 'Failed to fetch total donations' });
+    }
+});
+
 
 app.patch('/donations/:id/availability', async (req, res) => {  // Patch req -> modifies item, instead of updating all
     const { id } = req.params;
@@ -528,14 +664,14 @@ app.delete('/donations/:id', async (req, res) => {
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, category, remarks, imageUrl } = req.body;
+    const { foods, category, remarks, image } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
             data: {
                 category,
                 remarks,
-                imageUrl,
+                image,
                 foods: {
                     updateMany: foods.map((food) => ({
                         where: { id: food.id },
@@ -558,6 +694,34 @@ app.put('/donations/:id', async (req, res) => {
     }
 });
 
+app.get('/reservations', async (req, res) => {
+    try {
+        console.log("Fetching reservations");
+        const reservations = await prisma.reservation.findMany({
+            include: {
+                reservationItems: {
+                    include: {
+                        food: {
+                            include: {
+                                donation: {
+                                    include: {
+                                        donator: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        console.log('Current reservations:', reservations);
+        console.log(reservations[0].reservationItems)
+        res.json(reservations);
+    } catch (error) {
+        console.error('Error fetching reservations:', error);
+        res.status(500).json({ error: 'An error occurred while fetching reservations' });
+    }
+});
 app.get('/reservation/:donerId', async (req, res) => {
     const donerId = parseInt(req.params.donerId);
     console.log('Received userId:', donerId);
@@ -671,8 +835,6 @@ app.post('/reservation/:id', async (req, res) => {
                 user: true
             },
         });
-        console.log('Created reservation:', newReservation);
-
         res.status(201).json(newReservation);
     } catch (error) {
         console.error('Error creating reservation:', error);
@@ -1056,33 +1218,33 @@ app.get('/donator/events', async (req, res) => {
 
 
 // john's image review code
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 const uploadsDir = path.join(__dirname, 'uploads');
 await fs.mkdir(uploadsDir, { recursive: true });
 
 // Update multer configuration
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir)
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname))
-    }
-});
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, uploadsDir)
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, Date.now() + path.extname(file.originalname))
+//     }
+// });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Not an image! Please upload an image.') as any, false);
-        }
-    }
-})
+// const upload = multer({
+//     storage: storage,
+//     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+//     fileFilter: (req, file, cb) => {
+//         if (file.mimetype.startsWith('image/')) {
+//             cb(null, true);
+//         } else {
+//             cb(new Error('Not an image! Please upload an image.') as any, false);
+//         }
+//     }
+// })
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ends here
@@ -1126,10 +1288,6 @@ app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
         // Validate input
         if (!rating || isNaN(parseInt(rating)) || parseInt(rating) < 1 || parseInt(rating) > 5) {
             return res.status(400).json({ error: 'Invalid rating' });
-        }
-
-        if (!comment || comment.trim() === '') {
-            return res.status(400).json({ error: 'Comment is required' });
         }
 
         const newReview = await prisma.$transaction(async (prisma) => {
@@ -1240,6 +1398,9 @@ app.get('/reviews/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
+        const userId = parseInt(req.query.userId, 10); // Assuming userId is passed as a query parameter
+
+        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1257,23 +1418,102 @@ app.get('/reviews/:id', async (req, res) => {
                     }
                 },
                 reply: true,
-                images: true
+                images: true,
+                _count: {
+                    select: { likes: true }
+                },
+                likes: {
+                    where: { userId: userId }
+                }
             }
         });
 
-        // Map the reviews to include the isAnonymous field and handle user name display
+        console.log(`Found ${reviews.length} reviews`);
+
         const mappedReviews = reviews.map(review => {
             const reviewData = { ...review };
             if (reviewData.isAnonymous) {
                 const name = reviewData.user?.person?.name || 'Anonymous';
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
+            reviewData.likeCount = reviewData._count.likes;
+            reviewData.likedByUser = reviewData.likes.length > 0;
+            delete reviewData._count;
+            delete reviewData.likes;
             return reviewData;
         });
 
         res.status(200).json(mappedReviews);
     } catch (error) {
         console.error('Error fetching reviews:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Internal server error', details: error.message, stack: error.stack });
+    }
+});
+
+app.post('/reviews/:reviewId/like', async (req, res) => {
+    const { reviewId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const existingLike = await prisma.like.findUnique({
+            where: {
+                userId_reviewId: {
+                    userId: parseInt(userId),
+                    reviewId: parseInt(reviewId)
+                }
+            }
+        });
+
+        let updatedReview;
+        let message;
+        let liked;
+
+        if (existingLike) {
+            // Unlike the review
+            await prisma.like.delete({
+                where: {
+                    userId_reviewId: {
+                        userId: parseInt(userId),
+                        reviewId: parseInt(reviewId)
+                    }
+                }
+            });
+
+            updatedReview = await prisma.review.update({
+                where: { id: parseInt(reviewId) },
+                data: { likeCount: { decrement: 1 } },
+                include: { _count: { select: { likes: true } } }
+            });
+
+            message = 'Review unliked';
+            liked = false;
+        } else {
+            // Like the review
+            await prisma.like.create({
+                data: {
+                    userId: parseInt(userId),
+                    reviewId: parseInt(reviewId)
+                }
+            });
+
+            updatedReview = await prisma.review.update({
+                where: { id: parseInt(reviewId) },
+                data: { likeCount: { increment: 1 } },
+                include: { _count: { select: { likes: true } } }
+            });
+
+            message = 'Review liked';
+            liked = true;
+        }
+
+        res.status(200).json({
+            message: message,
+            likeCount: updatedReview._count.likes,
+            liked: liked
+        });
+    } catch (error) {
+        console.error('Error handling review like:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

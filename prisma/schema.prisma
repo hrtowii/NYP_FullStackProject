@@ -33,6 +33,7 @@ model User {
   person       Person        @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   reservations Reservation[]
   reviews      Review[]      @relation("UserReviews")
+  likes        Like[]
 
   @@id([id])
 }
@@ -50,8 +51,20 @@ model Review {
   donator     Donator  @relation("DonatorReviews", fields: [donatorId], references: [id])
   reply       Reply?
   images      Image[]
+  likes       Like[]
+  likeCount   Int      @default(0)
 }
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  reviewId  Int
+  user      User     @relation(fields: [userId], references: [id])
+  review    Review   @relation(fields: [reviewId], references: [id])
+  likeCount Int @default(0)
 
+  @@unique([userId, reviewId])
+}
 model Reply {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -78,9 +91,14 @@ model Donator {
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
   reviewCount   Int        @default(0)
-  replies Reply[]
+  replies             Reply[]
+  donationGoal  Int?
+  achievement   String?
+
+
   @@id([id])
 }
+
 
 model Admin {
   id     Int    @unique
@@ -90,19 +108,19 @@ model Admin {
 }
 
 model Donation {
-  id           Int      @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   category     String
   deliveryDate DateTime
   location     String
   remarks      String?
-  imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  image        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   donatorId    Int
-  donator      Donator  @relation(fields: [donatorId], references: [id])
+  donator      Donator       @relation(fields: [donatorId], references: [id])
   availability String @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
-  reservations Reservation[]  // remove for now, to test reservation by itself first
+  reservations Reservation[] // remove for now, to test reservation by itself first
 }
 
 model Food {
@@ -130,7 +148,7 @@ model Reservation {
   updatedAt           DateTime          @updatedAt
   reservationItems    ReservationItem[]
   donationId          Int // make it optional to test prisma studio
-  donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
+  donation            Donation?         @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
 
   @@index([userId])
   @@index([donationId])
