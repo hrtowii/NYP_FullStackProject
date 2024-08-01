@@ -1193,6 +1193,7 @@ interface EventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
@@ -1200,7 +1201,7 @@ interface EventBody {
 
 
 app.post('/events', upload.array('images', 1), async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     try {
@@ -1214,6 +1215,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 maxSlots: parseInt(maxSlots),
+                takenSlots: 0,
                 attire,
                 donatorId: parseInt(donatorId),
                 images: {
@@ -1226,7 +1228,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 images: true
             }
         });
-
+        console.log(newEvent)
         res.status(200).json(newEvent);
     } catch (error) {
         console.error('Error creating event:', error);
@@ -1243,14 +1245,15 @@ interface updateEventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
 
 }
 app.put('/events/update/:eventId', async (req, res) => {
-    const { eventId } = req.params;
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const { eventId } = req.params;  // Get eventId from params, not body
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, takenSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     try {
@@ -1295,7 +1298,8 @@ app.get('/events/:eventId', async (req, res) => {
         const event = await prisma.event.findUnique({
             where: { id: Number(eventId) },
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         if (event) {
@@ -1309,11 +1313,13 @@ app.get('/events/:eventId', async (req, res) => {
     }
 });
 
+
 app.get('/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany({
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         res.json(events);
@@ -1330,6 +1336,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
         }
     })
     res.status(200).json(donator)
+    
 })
 
 app.delete('/event/:id', async (req, res) => {
@@ -1358,6 +1365,52 @@ app.get('/donator/events', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
+
+// sign up functionality
+app.post('/events/:eventId/signup', async (req, res) => {
+    const { eventId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { participants: true }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        if (event.participants.some(participant => participant.userId === Number(userId))) {
+            return res.status(400).json({ error: 'You have already signed up for this event' });
+        }
+
+        if (event.takenSlots >= event.maxSlots) {
+            return res.status(400).json({ error: 'Event is already full' });
+        }
+
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                takenSlots: { increment: 1 },
+                participants: {
+                    create: { userId: Number(userId) }
+                }
+            },
+            include: { 
+                participants: true,
+                images: true 
+            }
+        });
+        console.log(updatedEvent);
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error signing up for event:', error);
+        res.status(500).json({ error: 'Failed to sign up for event' });
+    }
+    
+});
+
 
 // MARK: review CRUD
 // app.post('/get_donator/', async (req,res) => {
