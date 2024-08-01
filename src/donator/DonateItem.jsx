@@ -19,6 +19,9 @@ import {
     IconButton,
 } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AddIcon from '@mui/icons-material/Add';
 import Box from '@mui/material/Box';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
@@ -359,19 +362,72 @@ export default function DonateItem() {
         <div className="container">
             <DonatorNavbar />
             <div className='contents'>
-                <div className="centered">
-                    <div className="action-buttons">
-                        <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
-                            Manage Donations
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
-                            Track Donation Progress
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
-                            Donate New Item
-                        </Button>
-                    </div>
+                <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
+                    <Box
+                        display="flex"
+                        flexDirection="row"
+                        gap={4}
+                        ml={6}
+                        mr={6}
+                        mb={2}
+                        sx={{
+                            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Shadow for the outer box
+                            padding: 2, // Padding inside the outer box
+                            borderRadius: 2, // Rounded corners for the outer box
+                            backgroundColor: '#f5f5f5' // Optional: Background color for the outer box
+                        }}
+                    >
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/ManageDonations"
+                                sx={{
+                                    backgroundColor: 'white', // Light blue background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AssignmentIcon />} // Use the startIcon prop
+                            >
+                                Manage Donations
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateProgress"
+                                sx={{
+                                    backgroundColor: '#b3e0ff', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<ShowChartIcon />} // Use the startIcon prop
+                            >
+                                Track Donation Progress
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateItem"
+                                sx={{
+                                    backgroundColor: 'white', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AddIcon />} // Use the startIcon prop
+                            >
+                                Donate New Item
+                            </Button>
+                        </Box>
+                    </Box>
                 </div>
+
                 <div className="donation-container">
                     <Typography variant="h4" className='Title' textAlign="center" mb={2}>Food Donation</Typography>
                     <div className="stepper">

@@ -30,6 +30,9 @@ import {
     Divider,
 } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AddIcon from '@mui/icons-material/Add';
 import parseJwt from '../utils/parseJwt.jsx'
 
 export default function DonateItem() {
@@ -388,27 +391,168 @@ export default function DonateItem() {
         <div className="container">
             <DonatorNavbar />
             <div className='contents'>
-                <div className="centered">
-                    <div className="action-buttons">
-                        <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
-                            Manage Donations
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
-                            Track Donation Progress
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
-                            Donate New Item
-                        </Button>
-                    </div>
+                <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
+                    <Box
+                        display="flex"
+                        flexDirection="row"
+                        gap={4}
+                        ml={6}
+                        mr={6}
+                        mb={2}
+                        sx={{
+                            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Shadow for the outer box
+                            padding: 2, // Padding inside the outer box
+                            borderRadius: 2, // Rounded corners for the outer box
+                            backgroundColor: '#f5f5f5' // Optional: Background color for the outer box
+                        }}
+                    >
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/ManageDonations"
+                                sx={{
+                                    backgroundColor: 'white', // Light blue background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AssignmentIcon />} // Use the startIcon prop
+                            >
+                                Manage Donations
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateProgress"
+                                sx={{
+                                    backgroundColor: '#b3e0ff', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<ShowChartIcon />} // Use the startIcon prop
+                            >
+                                Track Donation Progress
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateItem"
+                                sx={{
+                                    backgroundColor: 'white', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AddIcon />} // Use the startIcon prop
+                            >
+                                Donate New Item
+                            </Button>
+                        </Box>
+                    </Box>
                 </div>
+
+
                 <Box justifyContent="center" textAlign="center" mt={2}>
                     <Typography variant="h4" gutterBottom mt={2}>
                         Your Donations
                     </Typography>
-                    <Typography variant="h6" gutterBottom mt={1}>
-                        Rank: {achievement}
-                    </Typography>
+                    <Box mt={2} mb={2} textAlign="center">
+                        <Box
+                            display="flex"
+                            flexDirection="row"
+                            flexWrap="wrap"
+                            justifyContent="center"
+                            alignItems="center"
+                            sx={{ gap: 2 }}
+                        >
+                            {achievements.map((achievementItem) => (
+                                <Card
+                                    key={achievementItem.name}
+                                    sx={{
+                                        minWidth: 200,
+                                        bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
+                                        color: achievement === achievementItem.name ? 'white' : 'black',
+                                    }}
+                                >
+                                    <CardContent>
+                                        <Typography variant="h6">{achievementItem.name}</Typography>
+                                        <Typography variant="body2">{achievementItem.description}</Typography>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Box>
+                    </Box>
                 </Box>
+
+                <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
+                    <Box flex={1} mr={2}>
+                        <Typography variant="h6" gutterBottom>
+                            Progress
+                        </Typography>
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                height: 15, // Thicker progress bar
+                                borderRadius: 8, // Thicker border radius
+                                border: '3px solid lightgrey', // Thicker and light grey border
+                                backgroundColor: 'lightgrey', // Light grey background
+                            }}
+                        >
+                            <LinearProgress
+                                variant="determinate"
+                                value={(totalDonations / donationGoal) * 100}
+                                sx={{
+                                    height: '100%',
+                                    borderRadius: 'inherit', // Inherit the border radius from the container
+                                    backgroundColor: 'transparent', // Make background transparent to show the border
+                                    '& .MuiLinearProgress-bar': {
+                                        backgroundColor: '#4caf50', // Completed portion color (green)
+                                        borderRadius: 8, // Match the border radius of the container
+                                    },
+                                }}
+                            />
+                        </Box>
+                        <Typography variant="body1" mt={2}>
+                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                        </Typography>
+                    </Box>
+                    <Box>
+                        <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
+                            Set New Goal
+                        </Button>
+                        <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
+                            <DialogTitle>Set New Donation Goal</DialogTitle>
+                            <DialogContent>
+                                <TextField
+                                    autoFocus
+                                    margin="dense"
+                                    label="New Donation Goal"
+                                    type="number"
+                                    fullWidth
+                                    value={goalInput}
+                                    onChange={handleGoalChange}
+                                    error={!!goalError}
+                                    helperText={goalError}
+                                />
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={handleCloseGoalModal} color="primary">
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleGoalSubmit} color="primary">
+                                    Submit
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
+                    </Box>
+                </Box>
+
 
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
                     <Box width="60%">
@@ -498,30 +642,7 @@ export default function DonateItem() {
                             )}
                         </Box>
 
-                        <Typography variant="h6" gutterBottom mt={4}>Progress</Typography>
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                height: 15, // Thicker progress bar
-                                borderRadius: 8, // Thicker border radius
-                                border: '3px solid lightgrey', // Thicker and light grey border
-                                backgroundColor: 'lightgrey', // Light grey background
-                            }}
-                        >
-                            <LinearProgress
-                                variant="determinate"
-                                value={(totalDonations / donationGoal) * 100}
-                                sx={{
-                                    height: '100%',
-                                    borderRadius: 'inherit', // Inherit the border radius from the container
-                                    backgroundColor: 'transparent', // Make background transparent to show the border
-                                    '& .MuiLinearProgress-bar': {
-                                        backgroundColor: '#4caf50', // Completed portion color (green)
-                                        borderRadius: 8, // Match the border radius of the container
-                                    },
-                                }}
-                            />
-                        </Box>
+
 
                         <Dialog
                             open={Boolean(enlargedImage)}
@@ -558,14 +679,8 @@ export default function DonateItem() {
                             </DialogActions>
                         </Dialog>
 
-
-
-                        <Typography variant="body1" mt={2}>
-                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                        </Typography>
-
                         <Typography variant="h6" gutterBottom mt={4}>Collected</Typography>
-                        <Box bgcolor="success.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
+                        <Box bgcolor="success.main" p={2} borderRadius={2} maxHeight={330} overflow="auto" mb={10}>
                             {collectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no collected donations.</Alert>
                             ) : (
@@ -712,69 +827,6 @@ export default function DonateItem() {
                     </Box>
                 </Box>
 
-                <Box justifyContent="center" textAlign="center" mt={4} mb={5}>
-                    <Typography variant="h4" component="h1">Donation Goal</Typography>
-                    <Typography variant="h6">Current Goal: {donationGoal} grams</Typography>
-                    <Typography variant="h6">Total Donations: {totalDonations} grams</Typography>
-                    <Typography variant="h6">Current rank: {achievement}</Typography>
-
-                    <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
-                        Set New Goal
-                    </Button>
-
-                    <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
-                        <DialogTitle>Set New Donation Goal</DialogTitle>
-                        <DialogContent>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="New Donation Goal"
-                                type="number"
-                                fullWidth
-                                value={goalInput}
-                                onChange={handleGoalChange}
-                                error={!!goalError}
-                                helperText={goalError}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleCloseGoalModal} color="primary">
-                                Cancel
-                            </Button>
-                            <Button onClick={handleGoalSubmit} color="primary">
-                                Submit
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                </Box>
-
-                <Box mt={4} mb={6} textAlign="center">
-                    <Typography mb={2} variant="h4" component="h1">Donator Rank</Typography>
-                    <Box
-                        display="flex"
-                        flexDirection="row"
-                        flexWrap="wrap"
-                        justifyContent="center"
-                        alignItems="center"
-                        sx={{ gap: 2 }}
-                    >
-                        {achievements.map((achievementItem) => (
-                            <Card
-                                key={achievementItem.name}
-                                sx={{
-                                    minWidth: 200,
-                                    bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
-                                    color: achievement === achievementItem.name ? 'white' : 'black',
-                                }}
-                            >
-                                <CardContent>
-                                    <Typography variant="h6">{achievementItem.name}</Typography>
-                                    <Typography variant="body2">{achievementItem.description}</Typography>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </Box>
-                </Box>
             </div>
         </div>
     );
