@@ -4,6 +4,7 @@ import './index.css';
 import { UserNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
+import { useParams } from 'react-router-dom';
 import parseJwt from './utils/parseJwt.jsx'
 import {
     Button,
@@ -23,9 +24,12 @@ import {
     TextField,
     Snackbar,
     TableSortLabel,
-    Checkbox,
+    Switch,
     FormControlLabel,
+    IconButton,
 } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 export default function ListOfDonators() {
     const [error, setError] = useState(null);
@@ -41,9 +45,21 @@ export default function ListOfDonators() {
     const { token } = useContext(TokenContext);
     const [ratingError, setRatingError] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
 
     const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
+    const currentUserName = parseJwt(token).name;
+    const userId = parseJwt(token).id;
+
+    const handleImageSelect = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length > 2) {
+            setSnackbar({ open: true, message: 'You can only upload up to 2 images', severity: 'error' });
+            return;
+        }
+        setSelectedImages(files);
+    };
 
     function stringToColor(string) {
         let hash = 0;
@@ -57,6 +73,17 @@ export default function ListOfDonators() {
         }
         return color;
     }
+
+    const getDisplayName = (name, isAnonymous) => {
+        if (isAnonymous) {
+            return `${name[0]}${'*'.repeat(8)}`;
+        }
+        return name;
+    };
+
+    const handleRemoveImage = (index) => {
+        setSelectedImages(prevImages => prevImages.filter((_, i) => i !== index));
+    };
 
     const fetchProfiles = useCallback(async () => {
         console.log('Fetching profiles...');
@@ -92,7 +119,6 @@ export default function ListOfDonators() {
         setOpenModal(true);
     };
 
-
     const handleViewReviews = (donatorId) => {
         navigate(`/profile/${donatorId}`);
     };
@@ -104,33 +130,34 @@ export default function ListOfDonators() {
                 throw new Error('Please select a rating between 1 and 5');
             }
 
-            console.log('Submitting review:', {
-                donatorId: selectedDonator.id,
-                rating,
-                comment,
-                userId: currentUserId,
-                isAnonymous
+            const formData = new FormData();
+            formData.append('rating', rating);
+            formData.append('comment', comment);
+            formData.append('userId', currentUserId);
+            formData.append('isAnonymous', isAnonymous);
+            selectedImages.forEach((image, index) => {
+                formData.append('images', image);
             });
 
             const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ rating, comment, userId: currentUserId, isAnonymous }),
+                body: formData,
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit review');
+            }
 
             const responseData = await response.json();
             console.log('Review submission response:', responseData);
 
-            if (!response.ok) {
-                throw new Error(responseData.error || 'Failed to submit review');
-            }
-
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseModal();
-            fetchProfiles(); // Refresh the profiles after submitting a review
+            fetchProfiles();
         } catch (error) {
             console.error('Error submitting review:', error);
             setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
@@ -144,7 +171,9 @@ export default function ListOfDonators() {
         setComment('');
         setRatingError(false);
         setIsAnonymous(false);
+        setSelectedImages([]);
     };
+
     const handleRequestSort = (property) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
@@ -171,7 +200,7 @@ export default function ListOfDonators() {
 
     return (
         <>
-            <UserNavbar/>
+            {/* <UserNavbar /> */}
             <div className="container">
                 <Box sx={{ p: 3 }}>
                     <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
@@ -230,12 +259,13 @@ export default function ListOfDonators() {
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                    <Typography>{profile.name}</Typography>
+                                                    {profile.name}
+                                                    {profile.id === userId && " (Myself)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
                                                 <Box display="flex" alignItems="center" justifyContent="center">
-                                                    <Rating value={profile.donator.averageRating?.toFixed(1) || 0} readOnly size="small" />
+                                                    <Rating value={Number(profile.donator.averageRating?.toFixed(1)) || 0} readOnly size="small" />
                                                     <Typography variant="body2" sx={{ ml: 1 }}>
                                                         ({profile.donator.averageRating?.toFixed(1) || 'N/A'})
                                                     </Typography>
@@ -315,7 +345,7 @@ export default function ListOfDonators() {
                             />
                             <FormControlLabel
                                 control={
-                                    <Checkbox
+                                    <Switch
                                         checked={isAnonymous}
                                         onChange={(e) => setIsAnonymous(e.target.checked)}
                                         name="anonymous"
@@ -324,6 +354,36 @@ export default function ListOfDonators() {
                                 label="Submit anonymously"
                                 sx={{ mt: 2 }}
                             />
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                Your username will be shown as: {getDisplayName(currentUserName, isAnonymous)}
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
+                                <input
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    id="raised-button-file"
+                                    multiple
+                                    type="file"
+                                    onChange={handleImageSelect}
+                                />
+                                <label htmlFor="raised-button-file">
+                                    <Button variant="contained" component="span">
+                                        Upload Image (Max 1)
+                                    </Button>
+                                </label>
+                            </Box>
+                            {selectedImages.length > 0 && (
+                                <Box sx={{ mt: 2 }}>
+                                    {selectedImages.map((image, index) => (
+                                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                            <Typography>{image.name}</Typography>
+                                            <IconButton onClick={() => handleRemoveImage(index)}>
+                                                <CancelIcon />
+                                            </IconButton>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
                             <Button
                                 variant="contained"
                                 onClick={handleSubmitReview}

@@ -53,6 +53,7 @@ export function DonatorNavbar() {
       <NavLink to={"/donator/ManageDonations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
       <NavLink to={"/donator/events"}>Manage Events</NavLink>
+      <NavLink to={"/listofdonators"}>Donators (temp)</NavLink>
       </div>
       <div className="avatarmenu">
       <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
