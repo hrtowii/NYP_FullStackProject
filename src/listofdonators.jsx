@@ -265,8 +265,12 @@ export default function ListOfDonators() {
                             <TableCell component="th" scope="row">
                                 <Box display="flex" alignItems="center">
                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                    {profile.name}
-                                    {profile.id === userId && " (Myself)"}
+                                    
+                                    <Typography color={"blue"}>
+                                        {profile.name}
+                                        {profile.id === userId && " (You)"}
+                                    </Typography>
+                                    
                                 </Box>
                             </TableCell>
                             <TableCell align="center">
@@ -391,7 +395,7 @@ export default function ListOfDonators() {
                                                         <Box display="flex" alignItems="center">
                                                             <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
                                                             {profile.name}
-                                                            {profile.id === userId && " (Myself)"}
+                                                            {profile.id === userId && " (You)"}
                                                         </Box>
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -466,8 +470,8 @@ export default function ListOfDonators() {
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                    {profile.name}
-                                                    {profile.id === userId && " (Myself)"}
+                                                        {profile.name}
+                                                        {profile.id === userId && " (You)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
