@@ -59,6 +59,8 @@ Table Donator {
   averageRating Float [not null, default: 0]
   reviewCount Int [not null, default: 0]
   replies Reply [not null]
+  donationGoal Int
+  achievement String
 
   indexes {
     (id) [pk]
@@ -80,7 +82,7 @@ Table Donation {
   deliveryDate DateTime [not null]
   location String [not null]
   remarks String
-  imageUrl String
+  image String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
   donatorId Int [not null]

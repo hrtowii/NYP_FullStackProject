@@ -70,7 +70,10 @@ model Donator {
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
   reviewCount   Int        @default(0)
-  replies Reply[]
+  replies       Reply[]
+  donationGoal  Int?
+  achievement   String?
+
   @@id([id])
 }
 
@@ -82,18 +85,18 @@ model Admin {
 }
 
 model Donation {
-  id           Int      @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   category     String
   deliveryDate DateTime
   location     String
   remarks      String?
-  imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  image        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   donatorId    Int
-  donator      Donator  @relation(fields: [donatorId], references: [id])
+  donator      Donator       @relation(fields: [donatorId], references: [id])
   foods        Food[]
-  reservations Reservation[]  // remove for now, to test reservation by itself first
+  reservations Reservation[] // remove for now, to test reservation by itself first
 }
 
 model Food {
@@ -121,7 +124,7 @@ model Reservation {
   updatedAt           DateTime          @updatedAt
   reservationItems    ReservationItem[]
   donationId          Int // make it optional to test prisma studio
-  donation            Donation? @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
+  donation            Donation?         @relation(fields: [donationId], references: [id]) // make it optional to test prisma studio
 
   @@index([userId])
 }
