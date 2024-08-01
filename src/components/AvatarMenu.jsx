@@ -96,10 +96,10 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        {currentUserRole == "donator" ?
+        {currentUserRole == "donator" &&
         <MenuItem onClick={() => navigate(`/profile/${currentUserId}`)}>
           <Avatar /> Profile
-        </MenuItem> : <></>}
+        </MenuItem>}
         {/* <MenuItem onClick={() => navigate('/account')}>
           <Avatar /> My account
         </MenuItem> */}

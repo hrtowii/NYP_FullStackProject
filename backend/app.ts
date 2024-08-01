@@ -239,7 +239,13 @@ app.post('/createAccounts', async (req, res) => {
             email: user.email,
             [user.role]: {
                 create: {}
-            }
+            },
+            // ["donator"]: {
+            //     create: {}
+            // },
+            // ["user"]: {
+            //     create: {}
+            // }
         },
         include: {
             user: true,
@@ -683,6 +689,27 @@ app.put('/donations/:id', async (req, res) => {
     }
 });
 
+app.get('/reservations'), async (req, res) => {
+    const reservations = await prisma.reservation.findMany({
+        include: {
+            reservationItems: {
+                include: {
+                    food: {
+                        include: {
+                            donation: {
+                                include: {
+                                    donator: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+    console.log('Current reservations:', reservations);
+    res.json(reservations);
+}
 app.get('/reservation/:donerId', async (req, res) => {
     const donerId = parseInt(req.params.donerId);
     console.log('Received userId:', donerId);
@@ -796,8 +823,6 @@ app.post('/reservation/:id', async (req, res) => {
                 user: true
             },
         });
-        console.log('Created reservation:', newReservation);
-
         res.status(201).json(newReservation);
     } catch (error) {
         console.error('Error creating reservation:', error);
