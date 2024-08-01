@@ -23,6 +23,7 @@ import {
     TextField,
     Container,
 } from '@mui/material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import Box from '@mui/material/Box';
 import parseJwt from '../utils/parseJwt.jsx'
 
@@ -41,6 +42,7 @@ export default function DonateItem() {
     const [achievement, setAchievement] = useState('');
     const [goalAchieved, setGoalAchieved] = useState(false);
     const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false); // State for the goal achieved dialog
+    const [enlargedImage, setEnlargedImage] = useState(null);
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -223,7 +225,7 @@ export default function DonateItem() {
         }
         updateAchievement();
     }, [totalDonations, donationGoal, goalAchieved]);
-    
+
     // Add this separate effect to reset the dialog when the goal changes
     useEffect(() => {
         setGoalAchieved(false);
@@ -334,6 +336,14 @@ export default function DonateItem() {
         }
     };
 
+    const handleCloseEnlargedImage = () => {
+        setEnlargedImage(null);
+      };
+    
+      const handleImageClick = (imageUrl) => {
+        setEnlargedImage(imageUrl);
+      };
+
 
     const achievements = [
         { name: 'Noob', description: 'Donated less than 1000 grams' },
@@ -389,17 +399,49 @@ export default function DonateItem() {
                                         <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
                                             <CardContent>
                                                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    <img
-                                                        src={`${backendRoute}${formatImagePath(donation.image)}`}
-                                                        alt={food.name}
-                                                        style={{
-                                                            width: 100,
-                                                            height: 100,
-                                                            objectFit: 'cover',
-                                                            border: '2px solid #000', // Add a border with 2px width, solid style, and black color
-                                                            borderRadius: '4px' // Optional: Add rounded corners
-                                                        }}
-                                                    />
+                                                    {donation.image && (
+                                                        <Box
+                                                            sx={{
+                                                                position: 'relative',
+                                                                width: 80,
+                                                                height: 80,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: 'center',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            />
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    background: 'rgba(0, 0, 0, 0.3)',
+                                                                    opacity: 0,
+                                                                    transition: 'opacity 0.2s',
+                                                                    '&:hover': {
+                                                                        opacity: 1,
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <ZoomInIcon sx={{ color: 'white' }} />
+                                                            </Box>
+                                                        </Box>
+                                                    )}
 
                                                     <Box>
                                                         <Typography variant="h6">{food.name}</Typography>
@@ -457,6 +499,27 @@ export default function DonateItem() {
                                 }}
                             />
                         </Box>
+
+                        <Dialog
+                            open={Boolean(enlargedImage)}
+                            onClose={handleCloseEnlargedImage}
+                            maxWidth="lg"
+                        >
+                            <DialogContent>
+                                <img
+                                    src={enlargedImage}
+                                    alt="Enlarged"
+                                    style={{
+                                        width: '100%',
+                                        border: '2px solid black',
+                                        borderRadius: '4px'
+                                    }}
+                                />
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                            </DialogActions>
+                        </Dialog>
 
                         <Dialog open={goalAchievedDialogOpen} onClose={handleCloseGoalAchievedDialog}>
                             <DialogTitle>Congratulations!</DialogTitle>

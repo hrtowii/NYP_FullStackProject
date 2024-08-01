@@ -1,22 +1,40 @@
-.reservation-page {
-    margin: 0 auto;
-    max-width: 1200px;
+body {
+    background-color: #f4f4f4;
+    color: #333;
 }
 
 .reservation-header {
-    background-color: #f0f0f0;
-    background-image: url('/path/to/header-image.jpg');
-    background-size: cover;
-    color: black;
-    padding: 40px;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/reservationpagepic.png');
+    padding: 80px;
+    text-align: center; 
     margin-bottom: 20px;
-    text-align: center;
+    
+}
+
+.reservation-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* background: rgba(0, 0, 0, 0.5); */
     border-radius: 15px;
 }
 
 .reservation-header h1 {
     font-size: 2.5em;
     margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+    color: #fff;
+}
+
+.reservation-header p {
+    font-size: 1.1em;
+    position: relative;
+    z-index: 1;
+    color: #fff;
 }
 
 .reservation-sections {
@@ -30,12 +48,21 @@
     border-radius: 15px;
     padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-right: 2%;
+}
+
+.reservation-section:last-child {
+    margin-right: 0; /* Add this block */
 }
 
 .reservation-section h2 {
     font-size: 25px;
     margin-bottom: 20px;
     font-weight: 500;
+    color: #333;
+    border-bottom:2px solid white;
+    padding-bottom: 10px;
 }
 
 .reservation-card {
@@ -45,20 +72,24 @@
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
 }
 
 .food-image {
-    width: 90px;
-    height: 90px;
+    width: 100px;
+    height: 100px;
     object-fit: cover;
     margin-right: 15px;
-    background-color: #e0e0e0;
+    border-radius: 8px;
 }
 
 .reservation-details {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* margin-bottom: 40px; */
 }
 
 .reservation-details h3 {
@@ -69,11 +100,23 @@
 .reservation-details p {
     margin: 3px 0;
     font-size: 14px;
+    display: flex;
+    /* justify-content: space-between; */
+    align-items: center;
+}
+
+.reservation-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    min-width: 100px;
 }
 
 .status {
     font-weight: bold;
     font-size: 14px;
+    border-radius: 12px;
 }
 
 .status-text.uncollected {
@@ -92,53 +135,29 @@
     font-size: 20px;
     font-weight: bold;
     margin-right: 15px;
+    /* align-self: center; */
 }
 
-/* .review-btn {
-    position: ab
-    padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 12px;
-} */
-
-.cancel-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: #ff4d4d;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    text-transform: uppercase;
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
-
-/* .review-btn {
-    background-color: #4da6ff;
-    color: white;
-} */
 
 .reschedule-link {
-    color: #4da6ff;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 12px;
-    text-decoration: underline;
+    color: #4da6ff;     cursor: pointer;     margin-left: 10px;     font-size: 12px;     text-decoration: underline; 
 }
 
-.reschedule-link:hover {
-    color: #2a7fdb;
+@media (max-width: 768px) {
+    .reservation-sections {
+        flex-direction: column;
+    }
+    .reservation-section {
+        width: 100%;
+    }
 }
 
-.cancel-btn:hover {
-    background-color: #ff3333;
-}
-
-/* Dialog styles */
+/* .review-btn {     position: ab     padding: 8px 15px;     border: none;     border-radius: 4px;     cursor: pointer;     font-weight: bold;     text-transform: uppercase;     font-size: 12px; } /  .cancel-btn {     position: absolute;     top: 10px;     right: 10px;     background-color: #ff4d4d;     color: white;     padding: 5px 10px;     border-radius: 4px;     font-size: 12px;     text-transform: uppercase; }  / .review-btn {     background-color: #4da6ff;     color: white; } /  .reschedule-link {     color: #4da6ff;     cursor: pointer;     margin-left: 10px;     font-size: 12px;     text-decoration: underline; }  .reschedule-link:hover {     color: #2a7fdb; }  .cancel-btn:hover {     background-color: #ff3333; }  / Dialog styles */
 .MuiDialog-paper {
     border-radius: 10px;
     overflow: hidden;
@@ -175,6 +194,12 @@
     border-radius: 4px;
     font-size: 12px;
     text-transform: uppercase;
+}
+
+.MuiButton-root.collect-btn {
+    background-color: green;
+    font-size: 12px;
+    height: 30px;
 }
 
 .reservation-card .MuiButton-root.cancel-btn:hover {

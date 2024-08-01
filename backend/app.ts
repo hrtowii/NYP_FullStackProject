@@ -239,7 +239,13 @@ app.post('/createAccounts', async (req, res) => {
             email: user.email,
             [user.role]: {
                 create: {}
-            }
+            },
+            // ["donator"]: {
+            //     create: {}
+            // },
+            // ["user"]: {
+            //     create: {}
+            // }
         },
         include: {
             user: true,
@@ -543,23 +549,28 @@ app.get('/donations', async (req, res) => {
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const donations = await prisma.donation.findMany({
-        where: {
-            availability: "Available"
-        },
-    })
-
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
+                where: {
+                    availability: "Available"
+                },
                 include: {
                     foods: true,
-                    donator: true,
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    },
                 },
                 skip,
                 take: limitNumber,
             }),
-            prisma.donation.count(),
+            prisma.donation.count({
+                where: {
+                    availability: "Available"
+                }
+            }),
         ]);
 
         res.status(200).json({
@@ -571,7 +582,7 @@ app.get('/donations', async (req, res) => {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
     }
-});
+})
 
 // Endpoint to get total donations for a specific donator
 app.get('/api/donations/:donatorId/total', async (req, res) => {
@@ -683,6 +694,34 @@ app.put('/donations/:id', async (req, res) => {
     }
 });
 
+app.get('/reservations', async (req, res) => {
+    try {
+        console.log("Fetching reservations");
+        const reservations = await prisma.reservation.findMany({
+            include: {
+                reservationItems: {
+                    include: {
+                        food: {
+                            include: {
+                                donation: {
+                                    include: {
+                                        donator: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        console.log('Current reservations:', reservations);
+        console.log(reservations[0].reservationItems)
+        res.json(reservations);
+    } catch (error) {
+        console.error('Error fetching reservations:', error);
+        res.status(500).json({ error: 'An error occurred while fetching reservations' });
+    }
+});
 app.get('/reservation/:donerId', async (req, res) => {
     const donerId = parseInt(req.params.donerId);
     console.log('Received userId:', donerId);
@@ -796,8 +835,6 @@ app.post('/reservation/:id', async (req, res) => {
                 user: true
             },
         });
-        console.log('Created reservation:', newReservation);
-
         res.status(201).json(newReservation);
     } catch (error) {
         console.error('Error creating reservation:', error);
