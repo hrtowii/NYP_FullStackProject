@@ -1257,28 +1257,26 @@ app.put('/events/update/:eventId', async (req, res) => {
     const files = req.files as Express.Multer.File[];
 
     try {
-        let updateData: any = {
-            title,
-            briefSummary,
-            fullSummary,
-            phoneNumber,
-            emailAddress,
-            startDate: new Date(startDate),
-            endDate: new Date(endDate),
-            maxSlots,
-            attire,
-            donatorId: Number(donatorId),
-        };
-        if (files && files.length > 0) {
-            updateData.images = {
-                create: files.map(file => ({
-                    url: `/public/${file.filename}`
-                }))
-            };
-        }
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
-            data: updateData,
+            data: {
+                title,
+                briefSummary,
+                fullSummary,
+                phoneNumber,
+                emailAddress,
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                maxSlots,
+                takenSlots,
+                attire,
+                donatorId: Number(donatorId),
+                images: {
+                    create: files.map(file => ({
+                        url: `/public/${file.filename}` // Store the path relative to your public directory
+                    }))
+                }
+            },
             include: {
                 images: true
             }

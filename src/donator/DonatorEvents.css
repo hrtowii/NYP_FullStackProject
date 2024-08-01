@@ -2,17 +2,14 @@
 .image-container {
     position: relative;
     width: 100%;
-    height: 60vh;
-    overflow: hidden;
-  }
-  
-  .full-width-image {
+}
+
+.full-width-image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .overlay {
+    height: auto;
+}
+
+.overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -24,120 +21,245 @@
     align-items: center;
     background: rgba(0, 0, 0, 0.2);
     text-align: center;
-    padding: 2rem;
-  }
-  
-  .overlay-text {
+}
+
+.overlay-text {
     color: white;
     margin: 0;
-  }
-  
-  .title {
-    font-size: 4rem;
+}
+
+.title {
+    font-size: 6rem;
     font-weight: 700;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  }
-  
-  .description {
-    font-size: 1.5rem;
+}
+
+.description {
+    font-size: 2rem;
     font-weight: 400;
-    margin-top: 1rem;
-    max-width: 80%;
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-  }
-  
-  /* Middle container styles */
-  .middle-container {
+    margin-top: 0.5rem;
+    max-width: 70%;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.middle-container {
     display: flex;
     justify-content: center;
-    padding: 2rem 0;
-  }
-  
-  .buttonicon {
-    margin-right: 0.5rem;
+    padding-block: 10px;
+}
+
+.buttonicon {
+    padding-right: 5px;
     display: flex;
+}
+
+/* New styles for event layout */
+.events-container {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-  }
-  
-  /* Events container styles */
-  .events-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    padding: 2rem;
-  }
-  
-  /* Card styles */
-  .MuiCard-root {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .MuiCard-root:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  .MuiCardContent-root {
-    padding: 1.5rem;
-  }
-  
-  .MuiTypography-h5 {
-    margin-bottom: 1rem;
-    color: #2c3e50;
-  }
-  
-  .MuiTypography-body2 {
-    color: #7f8c8d;
-  }
-  
-  .MuiCardActions-root {
-    padding: 1rem 1.5rem;
+    padding: 20px;
+}
+
+.event-card {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    width: 90%;
+    margin: 20px 0;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.displayEventImage {
+    flex: 0 0 auto;
+    margin-right: 20px;
+}
+
+.event-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.rightSide-title-summary {
+    margin-bottom: 20px;
+}
+
+.event-details-and-actions {
+    display: flex;
     justify-content: space-between;
-  }
-  
-  /* Button styles */
-  .MuiButton-contained {
-    text-transform: none;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-  }
-  
-  /* Event date and duration styles */
-  .event-info {
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.event-details {
+    display: flex;
+    gap: 15px;
+    margin-top: 5%;
+    margin-bottom: 10px;
+}
+
+.event-detail {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .event-info-item {
-    display: flex;
-    align-items: center;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 0.5rem 0.75rem;
-    margin-right: 1rem;
-    font-size: 0.875rem;
-    color: #555;
-  }
-  
-  .event-info-icon {
-    margin-right: 0.5rem;
+    padding: 4px 8px;
+}
+
+.event-detail svg {
     font-size: 1rem;
-    color: #3498db;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .title {
-      font-size: 3rem;
+    margin-right: 4px;
+}
+
+.event-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 5%;
+    margin-bottom: 10px;
+
+}
+.event-action {
+    display: flex;
+    gap : 10px ;
+}
+
+@media (max-width: 768px) {
+    .event-card {
+        flex-direction: column;
+        width: 95%;
     }
-  
-    .description {
-      font-size: 1.25rem;
+
+    .displayEventImage {
+        margin-right: 0;
+        margin-bottom: 20px;
     }
-  
-    .events-container {
-      grid-template-columns: 1fr;
+
+    .event-details-and-actions {
+        flex-direction: column;
+        align-items: flex-start;
     }
-  }
+
+    .event-actions {
+        margin-top: 10px;
+    }
+}
+.event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+
+/*Pop up */
+
+.event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    height: 60%;
+    max-width: 1500px;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    max-height: 60vh;
+    bottom: 10px;
+    padding-top: 13%;
+}
+
+.modal-close {
+    background: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+
+}
+
+.modal-body {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.modal-left {
+    flex: 0 0 300px;
+    margin-right: 40px;
+}
+
+.modal-left img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.modal-details {
+    flex: 1;
+    min-width: 300px;
+}
+
+.modal-title {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.modal-summary {
+    margin-bottom: 20px;
+}
+
+.modal-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+    flex-direction: column;
+}
+
+.modal-info-item {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    max-width: fit-content;
+    
+}
+
+.modal-info-item svg {
+    margin-right: 5px;
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        flex-direction: column;
+    }
+
+    .modal-left {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+}
