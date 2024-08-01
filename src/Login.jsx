@@ -65,6 +65,7 @@ export default function Login() {
           <TextField margin="normal" label="Password" type="password" name="password" value={formData.password} onChange={handleChange} />
           <Button variant="contained" type="submit">Log In</Button>
           <p className='smallText'>Don't have an account? <Link to={'/signup'}>Sign up here</Link></p>
+          <p className='smallText'>Forgot your password? <Link to={'/reset-password-request'}>Reset it here</Link></p>
           {error && <p style={{ color: 'red' }}>{error}</p>}
         </form>
     </div>

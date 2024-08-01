@@ -16,6 +16,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 
 configDotenv()
 const redisClient = createClient({
@@ -220,6 +221,81 @@ app.post('/logout', async (req, res) => {
             secure: true
         })
         .json({ success: true });
+});
+
+app.post('/reset-password-send-token', async (req, res) => {
+    const { email }: { email: string } = req.body;
+
+    try {
+        const user = await prisma.person.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const token = uuidv4();
+        const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+        // Store the hash in Redis with the email as the value (1 hour expiry)
+        await redisClient.set(`pwd_reset:${hash}`, email, 'EX', 3600);
+
+        // Send email with reset link
+        const resetLink = `http://localhost:8000/reset/${token}`;
+        await resend.emails.send({
+            from: "ecosanct@hrtowii.dev",
+            to: [email],
+            subject: "Reset Your CommuniFridge Password",
+            html: `Click this link to reset your password: <a href="${resetLink}">${resetLink}</a>`,
+        });
+
+        res.json({ message: "Password reset link sent to your email" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/validate-reset', async (req, res) => {
+    const { token }: { token: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (email) {
+            res.json({ isValid: true });
+        } else {
+            res.json({ isValid: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, password }: { token: string, password: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (!email) {
+            return res.status(400).json({ message: "Invalid or expired token" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await prisma.person.update({
+            where: { email },
+            data: { hashedPassword }
+        });
+
+        // Delete the used token
+        await redisClient.del(`pwd_reset:${hash}`);
+
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
 });
 
 //MARK: Admin functions
