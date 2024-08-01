@@ -19,6 +19,7 @@ Table User {
   person Person [not null]
   reservations Reservation [not null]
   reviews Review [not null]
+  likes Like [not null]
 
   indexes {
     (id) [pk]
@@ -38,6 +39,22 @@ Table Review {
   donator Donator [not null]
   reply Reply
   images Image [not null]
+  likes Like [not null]
+  likeCount Int [not null, default: 0]
+}
+
+Table Like {
+  id Int [pk, increment]
+  createdAt DateTime [default: `now()`, not null]
+  userId Int [not null]
+  reviewId Int [not null]
+  user User [not null]
+  review Review [not null]
+  likeCount Int [not null, default: 0]
+
+  indexes {
+    (userId, reviewId) [unique]
+  }
 }
 
 Table Reply {
@@ -158,6 +175,10 @@ Ref: User.id - Person.id [delete: Cascade]
 Ref: Review.userId > User.id
 
 Ref: Review.donatorId > Donator.id
+
+Ref: Like.userId > User.id
+
+Ref: Like.reviewId > Review.id
 
 Ref: Reply.reviewId - Review.id [delete: Cascade]
 

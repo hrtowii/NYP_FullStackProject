@@ -1361,6 +1361,9 @@ app.get('/reviews/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
+        const userId = parseInt(req.query.userId, 10); // Assuming userId is passed as a query parameter
+
+        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1378,23 +1381,102 @@ app.get('/reviews/:id', async (req, res) => {
                     }
                 },
                 reply: true,
-                images: true
+                images: true,
+                _count: {
+                    select: { likes: true }
+                },
+                likes: {
+                    where: { userId: userId }
+                }
             }
         });
 
-        // Map the reviews to include the isAnonymous field and handle user name display
+        console.log(`Found ${reviews.length} reviews`);
+
         const mappedReviews = reviews.map(review => {
             const reviewData = { ...review };
             if (reviewData.isAnonymous) {
                 const name = reviewData.user?.person?.name || 'Anonymous';
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
+            reviewData.likeCount = reviewData._count.likes;
+            reviewData.likedByUser = reviewData.likes.length > 0;
+            delete reviewData._count;
+            delete reviewData.likes;
             return reviewData;
         });
 
         res.status(200).json(mappedReviews);
     } catch (error) {
         console.error('Error fetching reviews:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Internal server error', details: error.message, stack: error.stack });
+    }
+});
+
+app.post('/reviews/:reviewId/like', async (req, res) => {
+    const { reviewId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const existingLike = await prisma.like.findUnique({
+            where: {
+                userId_reviewId: {
+                    userId: parseInt(userId),
+                    reviewId: parseInt(reviewId)
+                }
+            }
+        });
+
+        let updatedReview;
+        let message;
+        let liked;
+
+        if (existingLike) {
+            // Unlike the review
+            await prisma.like.delete({
+                where: {
+                    userId_reviewId: {
+                        userId: parseInt(userId),
+                        reviewId: parseInt(reviewId)
+                    }
+                }
+            });
+
+            updatedReview = await prisma.review.update({
+                where: { id: parseInt(reviewId) },
+                data: { likeCount: { decrement: 1 } },
+                include: { _count: { select: { likes: true } } }
+            });
+
+            message = 'Review unliked';
+            liked = false;
+        } else {
+            // Like the review
+            await prisma.like.create({
+                data: {
+                    userId: parseInt(userId),
+                    reviewId: parseInt(reviewId)
+                }
+            });
+
+            updatedReview = await prisma.review.update({
+                where: { id: parseInt(reviewId) },
+                data: { likeCount: { increment: 1 } },
+                include: { _count: { select: { likes: true } } }
+            });
+
+            message = 'Review liked';
+            liked = true;
+        }
+
+        res.status(200).json({
+            message: message,
+            likeCount: updatedReview._count.likes,
+            liked: liked
+        });
+    } catch (error) {
+        console.error('Error handling review like:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

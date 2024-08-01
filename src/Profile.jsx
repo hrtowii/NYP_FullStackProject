@@ -38,13 +38,13 @@ export default function Profile() {
     const userRole = parseJwt(token).role
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
+    const [likedReviews, setLikedReviews] = useState({});
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [reviewToEdit, setReviewToEdit] = useState(null);
     const [donatorName, setDonatorName] = useState("Loading...");
-    const [likedReviews, setLikedReviews] = useState({});
     const [replyDialogOpen, setReplyDialogOpen] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [reviewToReply, setReviewToReply] = useState(null);
@@ -55,12 +55,37 @@ export default function Profile() {
     const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
     const [replyToDelete, setReplyToDelete] = useState(null);
 
-    const handleThumbsUp = useCallback((reviewId) => {
-        setLikedReviews(prev => ({
-            ...prev,
-            [reviewId]: !prev[reviewId]
-        }));
-    }, []);
+    const handleThumbsUp = useCallback(async (reviewId) => {
+        try {
+            const response = await fetch(`${backendRoute}/reviews/${reviewId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            if (response.ok) {
+                const { message, likeCount, liked } = await response.json();
+                setReviews(prevReviews => prevReviews.map(review =>
+                    review.id === reviewId
+                        ? { ...review, likeCount: likeCount }
+                        : review
+                ));
+                setLikedReviews(prev => ({
+                    ...prev,
+                    [reviewId]: liked
+                }));
+                setSnackbar({ open: true, message: message, severity: 'success' });
+            } else {
+                throw new Error('Failed to update like');
+            }
+        } catch (error) {
+            console.error('Error updating like:', error);
+            setSnackbar({ open: true, message: 'Failed to update like. Please try again.', severity: 'error' });
+        }
+    }, [token, userId, backendRoute]);
 
     const handleImageClick = (imageUrl) => {
         setEnlargedImage(imageUrl);
@@ -93,22 +118,31 @@ export default function Profile() {
     const fetchReviews = useCallback(async () => {
         console.log('Fetching reviews...');
         try {
-            const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
+            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
             });
             if (!response.ok) {
-                throw new Error('Failed to fetch reviews');
+                const errorBody = await response.text();
+                console.error('Error response:', errorBody);
+                throw new Error(`Failed to fetch reviews: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
             console.log('Reviews fetched:', data);
             setReviews(data);
+            // Initialize likedReviews state based on fetched data
+            const initialLikedReviews = {};
+            data.forEach(review => {
+                initialLikedReviews[review.id] = review.liked || false;
+            });
+            setLikedReviews(initialLikedReviews);
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [donatorId]);
+    }, [donatorId, userId, token, backendRoute]);
 
     useEffect(() => {
         fetchReviews();
@@ -133,9 +167,9 @@ export default function Profile() {
                     },
                     body: JSON.stringify({ userId: userId })
                 });
-    
+
                 console.log('Delete response received:', response.status);
-    
+
                 if (response.ok) {
                     console.log('Review deleted successfully');
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
@@ -394,9 +428,16 @@ export default function Profile() {
                                                                 </IconButton>
                                                             </>
                                                         )}
-                                                        <IconButton size="small" onClick={() => handleThumbsUp(review.id)}>
-                                                            <ThumbUpIcon color={likedReviews[review.id] ? 'primary' : 'default'} fontSize="small" />
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleThumbsUp(review.id)}
+                                                            color={likedReviews[review.id] ? 'primary' : 'default'}
+                                                        >
+                                                            <ThumbUpIcon fontSize="small" />
                                                         </IconButton>
+                                                        <Typography variant="caption" sx={{ ml: 1 }}>
+                                                            {review.likeCount || 0}
+                                                        </Typography>
                                                     </Box>
                                                 </Box>
                                                 <Rating name="read-only" value={review.rating} readOnly size="small" />
