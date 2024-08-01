@@ -111,6 +111,20 @@ export default function Fridge() {
         fetchDonations();
     }, [token]);
 
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const storedCartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            setCartItems(storedCartItems);
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        handleStorageChange(); // Initial load
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
 
     useEffect(() => {  // Load selected items from localstorage (so selected items dont disappear)
         const storedCartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
@@ -146,21 +160,24 @@ export default function Fridge() {
     // }
 
     const handleItemSelect = (donation) => {
-        setSelectedItems(prev => {
-            if (prev.some(item => item.id === donation.id)) {
+        if (!cartItems.some(item => item.id === donation.id)) {
+            setSelectedItems(prev => {
+              if (prev.some(item => item.id === donation.id)) {
                 return prev.filter(item => item.id !== donation.id);
-            } else if (prev.length < 5) {
+              } else if (prev.length < 5) {
                 return [...prev, donation];
-            } else {
+              } else {
                 alert("You can only select up to 5 items.");
                 return prev;
-            }
-        });
-    };
+              }
+            });
+          }
+        };
 
     const handleAddToCart = () => {
-        const cartItems = [...selectedItems];
-        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        const newCartItems = [...cartItems, ...selectedItems];
+        localStorage.setItem('cartItems', JSON.stringify(newCartItems));
+        setCartItems(newCartItems);
         setSelectedItems([]);
         alert("Items added to cart successfully!");
     };
@@ -225,8 +242,8 @@ export default function Fridge() {
     }
 
 
-    if (loading) return <Typography>Loading...</Typography>;
-    if (error) return <Typography color="error">{error}</Typography>;
+    // if (loading) return <Typography>Loading...</Typography>;
+    // if (error) return <Typography color="error">{error}</Typography>;
 
 
     return (
@@ -356,7 +373,7 @@ export default function Fridge() {
                                                             <Checkbox
                                                                 checked={selectedItems.some(item => item.id === donation.id)}
                                                                 onChange={() => handleItemSelect(donation)}
-                                                                disabled={donation.availability !== "Available"}
+                                                                disabled={cartItems.some(item => item.id === donation.id) || donation.availability !== "Available"}
                                                             />
                                                         </TableCell>
                                                         <TableCell>
@@ -376,7 +393,11 @@ export default function Fridge() {
                                                         <TableCell>{donation.remarks}</TableCell>
                                                         <TableCell>{donation.location}</TableCell>
                                                         <TableCell>{donation.donator.person.name}</TableCell>
-                                                        <TableCell>{donation.availability}</TableCell>
+                                                        <TableCell>
+                                                            <span style= {{ color: donation.availability === "Available" ? "green" : "inherit" }}>
+                                                                {donation.availability}
+                                                            </span>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))
                                             ))
