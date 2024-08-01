@@ -49,9 +49,7 @@ export function DonatorNavbar() {
     <div className='navbar'>
       <div>
       <NavLink to={"/donator"}>Home</NavLink>
-      <NavLink to={"/donator/inventory"}>Inventory</NavLink>
       <NavLink to={"/donator/ManageDonations"}>Manage Donations</NavLink>
-      <NavLink to={"/donator/feedback"}>View Feedback</NavLink>
       <NavLink to={"/donator/events"}>Manage Events</NavLink>
       <NavLink to={"/listofdonators"}>Donators (temp)</NavLink>
       </div>
