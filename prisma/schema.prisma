@@ -185,10 +185,12 @@ model Event {
   startDate      DateTime
   endDate        DateTime
   maxSlots       Int
+  takenSlots     Int
   attire         String
   donatorId      Int
   eventOrganiser Donator       @relation("Events", fields: [donatorId], references: [id])
   images         EventImage[]
+  participants Participant[]
 }
 
 model EventImage {
@@ -196,4 +198,10 @@ model EventImage {
   url     String
   eventId Int
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+model Participant {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
 }

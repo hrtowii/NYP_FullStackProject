@@ -16,6 +16,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 
 configDotenv()
 const redisClient = createClient({
@@ -220,6 +221,81 @@ app.post('/logout', async (req, res) => {
             secure: true
         })
         .json({ success: true });
+});
+
+app.post('/reset-password-send-token', async (req, res) => {
+    const { email }: { email: string } = req.body;
+
+    try {
+        const user = await prisma.person.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const token = uuidv4();
+        const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+        // Store the hash in Redis with the email as the value (1 hour expiry)
+        await redisClient.set(`pwd_reset:${hash}`, email, 'EX', 3600);
+
+        // Send email with reset link
+        const resetLink = `http://localhost:8000/reset/${token}`;
+        await resend.emails.send({
+            from: "ecosanct@hrtowii.dev",
+            to: [email],
+            subject: "Reset Your CommuniFridge Password",
+            html: `Click this link to reset your password: <a href="${resetLink}">${resetLink}</a>`,
+        });
+
+        res.json({ message: "Password reset link sent to your email" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/validate-reset', async (req, res) => {
+    const { token }: { token: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (email) {
+            res.json({ isValid: true });
+        } else {
+            res.json({ isValid: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, password }: { token: string, password: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (!email) {
+            return res.status(400).json({ message: "Invalid or expired token" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await prisma.person.update({
+            where: { email },
+            data: { hashedPassword }
+        });
+
+        // Delete the used token
+        await redisClient.del(`pwd_reset:${hash}`);
+
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
 });
 
 //MARK: Admin functions
@@ -1117,6 +1193,7 @@ interface EventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
@@ -1124,7 +1201,7 @@ interface EventBody {
 
 
 app.post('/events', upload.array('images', 1), async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     try {
@@ -1138,6 +1215,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 maxSlots: parseInt(maxSlots),
+                takenSlots: 0,
                 attire,
                 donatorId: parseInt(donatorId),
                 images: {
@@ -1150,7 +1228,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 images: true
             }
         });
-
+        console.log(newEvent)
         res.status(200).json(newEvent);
     } catch (error) {
         console.error('Error creating event:', error);
@@ -1167,39 +1245,38 @@ interface updateEventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
 
 }
 app.put('/events/update/:eventId', async (req, res) => {
-    const { eventId } = req.params;
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const { eventId } = req.params;  // Get eventId from params, not body
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, takenSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     try {
-        let updateData: any = {
-            title,
-            briefSummary,
-            fullSummary,
-            phoneNumber,
-            emailAddress,
-            startDate: new Date(startDate),
-            endDate: new Date(endDate),
-            maxSlots,
-            attire,
-            donatorId: Number(donatorId),
-        };
-        if (files && files.length > 0) {
-            updateData.images = {
-                create: files.map(file => ({
-                    url: `/public/${file.filename}`
-                }))
-            };
-        }
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
-            data: updateData,
+            data: {
+                title,
+                briefSummary,
+                fullSummary,
+                phoneNumber,
+                emailAddress,
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                maxSlots,
+                takenSlots,
+                attire,
+                donatorId: Number(donatorId),
+                images: {
+                    create: files.map(file => ({
+                        url: `/public/${file.filename}` // Store the path relative to your public directory
+                    }))
+                }
+            },
             include: {
                 images: true
             }
@@ -1219,7 +1296,8 @@ app.get('/events/:eventId', async (req, res) => {
         const event = await prisma.event.findUnique({
             where: { id: Number(eventId) },
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         if (event) {
@@ -1233,11 +1311,13 @@ app.get('/events/:eventId', async (req, res) => {
     }
 });
 
+
 app.get('/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany({
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         res.json(events);
@@ -1254,6 +1334,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
         }
     })
     res.status(200).json(donator)
+    
 })
 
 app.delete('/event/:id', async (req, res) => {
@@ -1282,6 +1363,52 @@ app.get('/donator/events', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
+
+// sign up functionality
+app.post('/events/:eventId/signup', async (req, res) => {
+    const { eventId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { participants: true }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        if (event.participants.some(participant => participant.userId === Number(userId))) {
+            return res.status(400).json({ error: 'You have already signed up for this event' });
+        }
+
+        if (event.takenSlots >= event.maxSlots) {
+            return res.status(400).json({ error: 'Event is already full' });
+        }
+
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                takenSlots: { increment: 1 },
+                participants: {
+                    create: { userId: Number(userId) }
+                }
+            },
+            include: { 
+                participants: true,
+                images: true 
+            }
+        });
+        console.log(updatedEvent);
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error signing up for event:', error);
+        res.status(500).json({ error: 'Failed to sign up for event' });
+    }
+    
+});
+
 
 // MARK: review CRUD
 // app.post('/get_donator/', async (req,res) => {
