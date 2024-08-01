@@ -163,11 +163,18 @@ Table Event {
   emailAddress String [not null]
   startDate DateTime [not null]
   endDate DateTime [not null]
-  imageFile String [not null]
   maxSlots Int [not null]
   attire String [not null]
   donatorId Int [not null]
   eventOrganiser Donator [not null]
+  images EventImage [not null]
+}
+
+Table EventImage {
+  id Int [pk, increment]
+  url String [not null]
+  eventId Int [not null]
+  event Event [not null]
 }
 
 Ref: User.id - Person.id [delete: Cascade]
@@ -203,3 +210,5 @@ Ref: ReservationItem.reservationId > Reservation.id
 Ref: ReservationItem.foodId > Food.id
 
 Ref: Event.donatorId > Donator.id
+
+Ref: EventImage.eventId > Event.id [delete: Cascade]
