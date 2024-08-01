@@ -200,7 +200,7 @@ export default function ListOfDonators() {
 
     return (
         <>
-            {/* <UserNavbar /> */}
+            <UserNavbar />
             <div className="container">
                 <Box sx={{ p: 3 }}>
                     <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>

@@ -363,7 +363,7 @@ export default function Profile() {
 
     return (
         <>
-            {/* <UserNavbar /> */}
+            <UserNavbar />
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
