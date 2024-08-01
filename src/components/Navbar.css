@@ -23,7 +23,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-right: 12px;
+    margin-right: 10px;
 }
 
 .navbar a:hover {
@@ -34,4 +34,14 @@
 .navbar .active {
     border-bottom: 2px var(--blueLink) solid;
     color: var(--blueLink);
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+} 
+
+.navbar-right {
+    display: flex;
+    align-items: center;
 }

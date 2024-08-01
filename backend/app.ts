@@ -549,23 +549,28 @@ app.get('/donations', async (req, res) => {
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const donations = await prisma.donation.findMany({
-        where: {
-            availability: "Available"
-        },
-    })
-
     try {
         const [donations, totalCount] = await prisma.$transaction([
             prisma.donation.findMany({
+                where: {
+                    availability: "Available"
+                },
                 include: {
                     foods: true,
-                    donator: true,
+                    donator: {
+                        include: {
+                            person: true
+                        }
+                    },
                 },
                 skip,
                 take: limitNumber,
             }),
-            prisma.donation.count(),
+            prisma.donation.count({
+                where: {
+                    availability: "Available"
+                }
+            }),
         ]);
 
         res.status(200).json({
@@ -577,7 +582,7 @@ app.get('/donations', async (req, res) => {
         console.error('Error fetching donations:', error);
         res.status(500).json({ error: 'Error getting donations', details: error.message });
     }
-});
+})
 
 // Endpoint to get total donations for a specific donator
 app.get('/api/donations/:donatorId/total', async (req, res) => {
@@ -1074,17 +1079,16 @@ interface EventBody {
     emailAddress: string,
     startDate: Date,
     endDate: Date,
-    imageFile: string,
     maxSlots: number,
     attire: string,
     donatorId: number,
+    images: Express.Multer.File,
 }
 
 
-app.post('/events', async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId }: EventBody = req.body;
-    console.log(req.body);
-
+app.post('/events', upload.array('images', 1), async (req, res) => {
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const files = req.files as Express.Multer.File[];
 
     try {
         const newEvent = await prisma.event.create({
@@ -1094,19 +1098,24 @@ app.post('/events', async (req, res) => {
                 fullSummary,
                 phoneNumber,
                 emailAddress,
-                startDate: new Date(startDate), // Convert ISO string to Date object
-                endDate: new Date(endDate),     // Convert ISO string to Date object
-                imageFile: imageFile || '',     // Use empty string if imageFile is null/undefined
-                maxSlots,
+                startDate: new Date(startDate),
+                endDate: new Date(endDate),
+                maxSlots: parseInt(maxSlots),
                 attire,
-                donatorId: Number(donatorId),
+                donatorId: parseInt(donatorId),
+                images: {
+                    create: files.map(file => ({
+                        url: `/public/${file.filename}` // Store the path relative to your public directory
+                    }))
+                }
             },
+            include: {
+                images: true
+            }
         });
 
         res.status(200).json(newEvent);
     } catch (error) {
-        console.error('Error creating event:', error);
-        res.status(500).json({ error: 'Failed to create event' });
         console.error('Error creating event:', error);
         res.status(500).json({ error: 'Failed to create event' });
     }
@@ -1120,14 +1129,17 @@ interface updateEventBody {
     emailAddress: string,
     startDate: Date,
     endDate: Date,
-    imageFile: null,
     maxSlots: number,
     attire: string,
     donatorId: number,
+    images: Express.Multer.File,
+
 }
 app.put('/events/update/:eventId', async (req, res) => {
     const { eventId } = req.params;  // Get eventId from params, not body
     const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId } = req.body;
+    const files = req.files as Express.Multer.File[];
+
 
     try {
         const updatedEvent = await prisma.event.update({
@@ -1140,11 +1152,17 @@ app.put('/events/update/:eventId', async (req, res) => {
                 emailAddress,
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
-                imageFile: "a",
-                // hardcoded^
                 maxSlots,
                 attire,
                 donatorId: Number(donatorId),
+                images: {
+                    create: files.map(file => ({
+                        url: `/public/${file.filename}` // Store the path relative to your public directory
+                    }))
+                }
+            },
+            include: {
+                images: true
             }
         });
         res.status(200).json(updatedEvent);
@@ -1153,11 +1171,16 @@ app.put('/events/update/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to update event' });
     }
 });
+
+
 app.get('/events/:eventId', async (req, res) => {
     const { eventId } = req.params;
     try {
         const event = await prisma.event.findUnique({
             where: { id: Number(eventId) },
+            include: {
+                images: true
+            }
         });
         if (event) {
             res.json(event);
@@ -1170,6 +1193,19 @@ app.get('/events/:eventId', async (req, res) => {
     }
 });
 
+app.get('/events', async (req, res) => {
+    try {
+        const events = await prisma.event.findMany({
+            include: {
+                images: true
+            }
+        });
+        res.json(events);
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ error: 'Failed to fetch events' });
+    }
+});
 app.post('/findeventsfromdonator', async (req, res) => {
     const { donatorId } = req.body
     const donator = await prisma.event.findMany({
@@ -1406,7 +1442,7 @@ app.get('/reviews/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
-        const userId = parseInt(req.query.userId, 10); // Assuming userId is passed as a query parameter
+        const userId = parseInt(req.query.userId, 10);
 
         console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
 
@@ -1433,6 +1469,9 @@ app.get('/reviews/:id', async (req, res) => {
                 likes: {
                     where: { userId: userId }
                 }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
         });
 
@@ -1725,7 +1764,101 @@ app.delete('/replies/:replyId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Create a new post
+app.post('/posts', async (req, res) => {
+    const { content, imageUrl, donatorId } = req.body;
+    try {
+        const newPost = await prisma.post.create({
+            data: {
+                content,
+                imageUrl,
+                donatorId: parseInt(donatorId)
+            }
+        });
+        res.status(201).json(newPost);
+    } catch (error) {
+        console.error('Error creating post:', error);
+        res.status(500).json({ error: 'Failed to create post' });
+    }
+});
 
+// Get all posts
+app.get('/posts', async (req, res) => {
+    try {
+        const posts = await prisma.post.findMany({
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
+
+// Get posts for a specific donator
+app.get('/posts/:donatorId', async (req, res) => {
+    const { donatorId } = req.params;
+    try {
+        const posts = await prisma.post.findMany({
+            where: {
+                donatorId: parseInt(donatorId)
+            },
+            include: {
+                donator: {
+                    include: {
+                        person: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
+
+// Update a post
+app.put('/posts/:id', async (req, res) => {
+    const { id } = req.params;
+    const { content, imageUrl } = req.body;
+    try {
+        const updatedPost = await prisma.post.update({
+            where: { id: parseInt(id) },
+            data: { content, imageUrl }
+        });
+        res.status(200).json(updatedPost);
+    } catch (error) {
+        console.error('Error updating post:', error);
+        res.status(500).json({ error: 'Failed to update post' });
+    }
+});
+
+// Delete a post
+app.delete('/posts/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.post.delete({
+            where: { id: parseInt(id) }
+        });
+        res.status(204).send();
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        res.status(500).json({ error: 'Failed to delete post' });
+    }
+});
 
 
 

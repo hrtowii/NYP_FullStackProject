@@ -91,12 +91,21 @@ model Donator {
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
   reviewCount   Int        @default(0)
-  replies             Reply[]
+  replies       Reply[]
   donationGoal  Int?
   achievement   String?
-
-
+  posts         Post[]
   @@id([id])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  donatorId Int
+  donator   Donator  @relation(fields: [donatorId], references: [id])
 }
 
 
@@ -167,7 +176,7 @@ model ReservationItem {
 }
 
 model Event {
-  id             Int      @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   title          String
   briefSummary   String
   fullSummary    String
@@ -175,9 +184,16 @@ model Event {
   emailAddress   String
   startDate      DateTime
   endDate        DateTime
-  imageFile      String
   maxSlots       Int
   attire         String
   donatorId      Int
-  eventOrganiser Donator  @relation("Events", fields: [donatorId], references: [id])
+  eventOrganiser Donator       @relation("Events", fields: [donatorId], references: [id])
+  images         EventImage[]
+}
+
+model EventImage {
+  id      Int    @id @default(autoincrement())
+  url     String
+  eventId Int
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }

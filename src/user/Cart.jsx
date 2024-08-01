@@ -283,7 +283,7 @@ const Cart = () => {
                     <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
                     <TableCell>{donation.remarks}</TableCell>
                     <TableCell>{donation.location}</TableCell>
-                    <TableCell>{donation.donator.name}</TableCell>
+                    <TableCell>{donation.donator.person.name}</TableCell>
                   </TableRow>
                 ))
               ))}

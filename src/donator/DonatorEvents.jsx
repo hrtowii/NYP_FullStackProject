@@ -23,6 +23,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 
+//image
+import { Box, Modal } from '@mui/material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import CloseIcon from '@mui/icons-material/Close';
+
+
+
+const backendRoute = 'http://localhost:3000';
+
+
 const API_BASE_URL = 'http://localhost:3000';
 
 
@@ -47,7 +57,21 @@ export default function DonatorEvents() {
 
     const [successMessage, setSuccessMessage] = useState('');
 
+    const [enlargedImage, setEnlargedImage] = useState(null);
+
+    // images
+    const handleImageClick = (imageUrl) => {
+        setEnlargedImage(imageUrl);
+    };
+    const handleCloseEnlargedImage = () => {
+        setEnlargedImage(null);
+    };
+
+
+
+
     const navigate = useNavigate();
+
 
     useEffect(() => {
         fetchEvents();
@@ -57,24 +81,10 @@ export default function DonatorEvents() {
 
     const fetchEvents = async () => {
         try {
-            console.log('Fetching events from:', `${API_BASE_URL}/donator/events`);
-            const response = await fetch(`${API_BASE_URL}/donator/events`);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-
+            const response = await fetch(`${API_BASE_URL}/events`);
             if (!response.ok) {
-                const text = await response.text();
-                console.error('Error response body:', text);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const text = await response.text();
-                console.error('Response was not JSON:', text);
-                throw new TypeError("Oops, we haven't got JSON!");
-            }
-
             const data = await response.json();
             setEvents(data);
             setError(null);
@@ -83,7 +93,6 @@ export default function DonatorEvents() {
             setError('Failed to fetch events: ' + error.message);
         }
     };
-
     const handleUpdateClick = (eventId) => {
         navigate(`/donator/updateEvent/${eventId}`);
     };
@@ -180,12 +189,62 @@ export default function DonatorEvents() {
                 {events.map((event) => (
                     <Card key={event.id} sx={{ minWidth: 275, margin: 2 }}>
                         <CardContent>
+
                             <Typography variant="h5" component="div">
                                 {event.title}
                             </Typography>
                             <Typography variant="body2">
                                 {event.briefSummary}
                             </Typography>
+                            {event.images && event.images.length > 0 && (
+                                <Box sx={{ display: 'flex', mt: 2 }}>
+                                    {event.images.map((eventImage, index) => (
+                                        <Box
+                                            key={eventImage.id}
+                                            sx={{
+                                                position: 'relative',
+                                                width: 80,
+                                                height: 80,
+                                                mr: 1,
+                                                cursor: 'pointer',
+                                            }}
+                                            onClick={() => handleImageClick(`${backendRoute}/public/${eventImage.url}`)}
+                                        >
+                                            <img
+                                                src={`${backendRoute}/public/${eventImage.url}`}
+                                                alt={`Event image ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '4px',
+                                                }}
+                                            />
+                                            <Box
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: 'rgba(0, 0, 0, 0.3)',
+                                                    opacity: 0,
+                                                    transition: 'opacity 0.2s',
+                                                    '&:hover': {
+                                                        opacity: 1,
+                                                    },
+                                                }}
+                                            >
+                                                <ZoomInIcon sx={{ color: 'white' }} />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
                         </CardContent>
                         {event.donatorId == userId ?
                             <>
@@ -232,6 +291,27 @@ export default function DonatorEvents() {
                 ))}
             </div>
             {/* Confirmation Dialog */}
+
+            <Dialog
+                open={Boolean(enlargedImage)}
+                onClose={handleCloseEnlargedImage}
+                maxWidth="lg"
+            >
+                <DialogContent>
+                    <img
+                        src={enlargedImage}
+                        alt="Enlarged"
+                        style={{
+                            width: '100%',
+                            border: '2px solid black',
+                            borderRadius: '4px'
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                </DialogActions>
+            </Dialog>
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}

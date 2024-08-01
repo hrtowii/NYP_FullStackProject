@@ -31,11 +31,7 @@ function parseJwt(token) {
 }
 
 const AddEventForm = () => {
-  const [selectedImages, setSelectedImages] = useState([]);
-
-
-  
-    
+  const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
@@ -44,7 +40,6 @@ const AddEventForm = () => {
     phoneNumber: '',
     emailAddress: '',
     dateRange: [null, null],
-    imageFile: '',
     maxSlots: 0,
     attire: '',
   });
@@ -95,7 +90,6 @@ const AddEventForm = () => {
     }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -110,78 +104,68 @@ const AddEventForm = () => {
         throw new Error('Phone number must be exactly 8 digits');
       }
 
-      const eventData = {
-        ...formData,
-        maxSlots: formData.maxSlots, // Already an integer, no need to parse
-        startDate: formData.dateRange[0].toISOString(),
-        endDate: formData.dateRange[1].toISOString(),
-        donatorId: userId,
-      };
+      const eventData = new FormData();
+      eventData.append('title', formData.title);
+      eventData.append('briefSummary', formData.briefSummary);
+      eventData.append('fullSummary', formData.fullSummary);
+      eventData.append('phoneNumber', formData.phoneNumber);
+      eventData.append('emailAddress', formData.emailAddress);
+      eventData.append('startDate', formData.dateRange[0].toISOString());
+      eventData.append('endDate', formData.dateRange[1].toISOString());
+      eventData.append('maxSlots', formData.maxSlots.toString());
+      eventData.append('attire', formData.attire);
+      eventData.append('donatorId', userId.toString());
+
+      if (selectedImage) {
+        eventData.append('images', selectedImage);
+      }
 
       console.log('Submitting form data:', eventData);
       const response = await fetch(`${API_BASE_URL}/events`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventData),
+        body: eventData,
       });
 
-      // Log response status and headers
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      // Check if the response is in JSON format
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const responseData = await response.json();
-        console.log('Response body:', responseData);
-
-        if (!response.ok) {
-          throw new Error(responseData.error || `Server error: ${response.status}`);
-        }
-
-        alert('Event added successfully!');
-        // Reset form
-        setFormData({
-          title: '',
-          briefSummary: '',
-          fullSummary: '',
-          phoneNumber: '',
-          emailAddress: '',
-          dateRange: [null, null],
-          imageFile: '',
-          maxSlots: 0,
-          attire: ''
-        });
-        navigate("/donator/eventAdded");
-      } else {
-        const responseText = await response.text();
-        console.error('Unexpected response format:', responseText);
-        throw new Error('Unexpected response format');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
+
+      const responseData = await response.json();
+      console.log('Response:', responseData);
+
+      toast.success('Event added successfully!');
+      // Reset form and navigate
+      setFormData({
+        title: '',
+        briefSummary: '',
+        fullSummary: '',
+        phoneNumber: '',
+        emailAddress: '',
+        dateRange: [null, null],
+        maxSlots: 0,
+        attire: ''
+      });
+      setSelectedImage(null);
+      navigate("/donator/eventAdded");
     } catch (error) {
       console.error('Error adding event:', error);
       setError(`Failed to add event: ${error.message}`);
+      toast.error(`Failed to add event: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
   //upload image
   const handleImageSelect = (event) => {
-    const files = Array.from(event.target.files);
-    if (files.length > 2) {
-      setSnackbar({ open: true, message: 'You can only upload up to 1 images', severity: 'error' });
-      return;
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedImage(file);
     }
-    setSelectedImages(files);
   };
 
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-  const handleRemoveImage = (index) => {
-    setSelectedImages(prevImages => prevImages.filter((_, i) => i !== index));
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
   };
 
   const { token } = useContext(TokenContext);
@@ -329,28 +313,26 @@ const AddEventForm = () => {
                       accept="image/*"
                       style={{ display: 'none' }}
                       id="raised-button-file"
-                      multiple
                       type="file"
                       onChange={handleImageSelect}
                     />
                     <label htmlFor="raised-button-file">
                       <Button variant="contained" component="span">
-                        Upload Image (Max 1)
+                        Upload Image
                       </Button>
                     </label>
                   </Box>
-                  {selectedImages.length > 0 && (
+                  {selectedImage && (
                     <Box sx={{ mt: 2 }}>
-                      {selectedImages.map((image, index) => (
-                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                          <Typography>{image.name}</Typography>
-                          <IconButton onClick={() => handleRemoveImage(index)}>
-                            <CancelIcon />
-                          </IconButton>
-                        </Box>
-                      ))}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <Typography>{selectedImage.name}</Typography>
+                        <IconButton onClick={handleRemoveImage}>
+                          <CancelIcon />
+                        </IconButton>
+                      </Box>
                     </Box>
                   )}
+
 
                   <div>
                     <Button variant="contained" type="submit" disabled={isLoading} className="add-event-button" color="success">
