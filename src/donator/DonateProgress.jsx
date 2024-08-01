@@ -695,14 +695,14 @@ export default function DonateItem() {
                                             </React.Fragment>
                                         ))}
                                     </List>
-                                    {reviews.length > 5 && (
+                                    {reviews.length > 1 && (
                                         <Box textAlign="center" mt={2}>
                                             <Button
                                                 component={Link}
                                                 to={`/profile/${parseJwt(token).id}`}
                                                 variant="outlined"
                                             >
-                                                See more reviews
+                                                See More
                                             </Button>
                                         </Box>
                                     )}
