@@ -85,7 +85,7 @@ Table Donator {
   reviewCount Int [not null, default: 0]
   replies Reply [not null]
   donationGoal Int
-  achievement String
+  achievement String [default: 'Silver']
   posts Post [not null]
 
   indexes {
