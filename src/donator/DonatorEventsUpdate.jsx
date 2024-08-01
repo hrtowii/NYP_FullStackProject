@@ -27,7 +27,9 @@ const UpdateEventForm = () => {
     emailAddress: '',
     dateRange: [null, null],
     imageFile: '',
-    donatorId: 1, // Assuming a default value, adjust as needed
+    donatorId: '',
+    maxSlots: 0,
+    attire: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +50,8 @@ const UpdateEventForm = () => {
           emailAddress: eventData.emailAddress,
           dateRange: [dayjs(eventData.startDate), dayjs(eventData.endDate)],
           imageFile: eventData.imageFile,
+          maxSlots: eventData.maxSlots,
+          attire: eventData.attire,
           donatorId: eventData.donatorId,
         });
       } catch (error) {
@@ -102,6 +106,19 @@ const UpdateEventForm = () => {
         ...prevData,
         [name]: numericValue,
       }));
+    } else if (name === 'maxSlots') {
+      // Ensure the value is not negative
+      const numericValue = Math.max(0, parseInt(value));
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: numericValue,
+      }));
+    } else if (name === 'attire') {
+      // Limit to 40 characters
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value.slice(0, 40),
+      }));
     } else {
       setFormData((prevData) => ({
         ...prevData,
@@ -147,7 +164,10 @@ const UpdateEventForm = () => {
         startDate: formData.dateRange[0].toISOString(),
         endDate: formData.dateRange[1].toISOString(),
         imageFile: formData.imageFile,
+        maxSlots: formData.maxSlots,
+        attire: formData.attire,
         donatorId: formData.donatorId,
+
       };
 
       console.log('Updating event data:', eventData);
@@ -269,6 +289,7 @@ const UpdateEventForm = () => {
               <div className="right-half">
                 <div>
                   <p id='datelabel'>Date/Period*</p>
+                  <div className="datepickercss">
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DemoContainer components={['DateRangePicker']}>
                       <DateRangePicker
@@ -278,7 +299,39 @@ const UpdateEventForm = () => {
                       />
                     </DemoContainer>
                   </LocalizationProvider>
+                  </div>
                 </div>
+
+                <div className="maxSlots">
+                  <label htmlFor="maxSlots">Maximum Slots*</label>
+                  <input
+                    type="number"
+                    id="maxSlots"
+                    name="maxSlots"
+                    min="0"
+                    value={formData.maxSlots}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <p className="detailsInfo">Enter the maximum number of slots available (minimum 0)</p>
+                </div>
+
+                <div className="attire">
+                  <label htmlFor="attire">Attire<span className="titleInfo">(1-40 Characters)</span></label>
+                  <input
+                    type="text"
+                    id="attire"
+                    name="attire"
+                    placeholder="Top, Bottom, Shoes"
+                    value={formData.attire}
+                    onChange={handleInputChange}
+                    maxLength="40"
+                    required
+                  />
+                  <p className="detailsInfo">Enter the clothing required </p>
+
+                </div>
+
 
                 <div className='flexybuttons'>
                   <div>

@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { NavLink, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -39,6 +40,7 @@ const Reservation = () => {
     const [dateError, setDateError] = useState('');  // Validation state variables
     const [timeError, setTimeError] = useState('');
     const [selectedDonation, setSelectedDonation] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (token) {
@@ -91,7 +93,11 @@ const Reservation = () => {
         }
     };
     // RESCHEDULE RESERVATION
-    
+
+    const handleWriteReview = () => {
+        navigate('/listofdonators')
+    }
+
     const handleReschedule = (reservation, donation) => {
         setSelectedReservation(reservation);
         setSelectedDonation(donation);
@@ -179,7 +185,7 @@ const Reservation = () => {
                     collectionDate: newDate.toISOString().split('T')[0],
                     collectionTimeStart: newTimeStart.toTimeString().slice(0, 5),
                     collectionTimeEnd: newTimeEnd.toTimeString().slice(0, 5),
-                    donationId : selectedDonation.id
+                    donationId: selectedDonation.id
                 }),
             });
             if (res.ok) {
@@ -237,7 +243,7 @@ const Reservation = () => {
 
     const handleCollectClick = async (reservation) => {
         try {
-            const res = await fetch (`${backendRoute}/reservation/${reservation.id}/collect`, {
+            const res = await fetch(`${backendRoute}/reservation/${reservation.id}/collect`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -264,71 +270,75 @@ const Reservation = () => {
         // Check if reservation n these 3 exist first
         const foodName = reservation.reservationItems?.[0]?.food?.name || 'N/A';
         const quantity = reservation.reservationItems?.[0]?.food?.quantity || 'N/A';
-        const imageUrl = reservation.reservationItems?.[0]?.food?.donation?.imageUrl || "/path/to/default-food-image.jpg";
+        const image = reservation.reservationItems?.[0]?.food?.donation?.image || "/path/to/default-food-image.jpg";
 
         return (
-        <div className="reservation-card">
-            <img src={imageUrl} alt="Food" className="food-image" />
-            <div className="reservation-details">
-                <h3>{foodName}</h3>
-                <p>
-                    {new Date(reservation.collectionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-                <p>
-                    {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
+            <div className="reservation-card">
+                <img src={image} alt="Food" className="food-image" />
+                <div className="reservation-details">
+                    <h3>{foodName}</h3>
+                    <p>
+                        {new Date(reservation.collectionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                    <p>
+                        {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
+                        {!isPast && reservation.collectionStatus === 'Uncollected' && (
+                            <span
+                                className="reschedule-link" onClick={() => handleReschedule(reservation, reservation.reservationItems[0]?.food?.donation)}>Reschedule
+                            </span>
+                        )}
+                    </p>
+                    <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
+                        Status: {reservation.collectionStatus}
+                    </p>
+                </div>
+                <div className="reservation-actions">
+                    <div className="reservation-amount">{quantity}kg</div>
                     {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                        <span
-                            className="reschedule-link" onClick={() => handleReschedule(reservation, reservation.reservationItems[0]?.food?.donation)}>Reschedule
-                        </span>
+                        <>
+                            <div className="button-group">
+                                <Button
+                                    className="cancel-btn"
+                                    onClick={() => handleCancelClick(reservation)}
+                                    variant="contained"
+                                    color="error"
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        backgroundColor: '#ff4d4d',
+                                        '&:hover': {
+                                            backgroundColor: '#ff3333',
+                                        },
+                                    }}>Cancel
+                                </Button>
+                                <Button
+                                    className="collect-btn"
+                                    onClick={() => handleCollectClick(reservation)}
+                                    variant="contained"
+                                    color="success"
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        bottom: '10px',
+                                        right: '10px',
+                                        backgroundColor: '#4CAF50',
+                                        '&:hover': {
+                                            backgroundColor: '#45a049',
+                                        },
+                                    }}>Collect
+                                </Button>
+                            </div>
+                        </>
                     )}
-                </p>
-                <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
-                    Status: {reservation.collectionStatus}
-                </p>
+                    {isPast && reservation.collectionStatus === 'Collected' && (
+                        <Button className="review-btn" onClick={handleWriteReview}>Write a review</Button>
+                    )}
+                </div>
             </div>
-            <div className="reservation-amount">{quantity}kg</div>
-            {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                <>
-                <Button
-                    className="cancel-btn"
-                    onClick={() => handleCancelClick(reservation)}
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    sx={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        backgroundColor: '#ff4d4d',
-                        '&:hover': {
-                            backgroundColor: '#ff3333',
-                        },
-                    }}>Cancel
-                </Button>
-                <Button
-                    className="collect-btn"
-                    onClick={() => handleCollectClick(reservation)}
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    sx={{
-                        position: 'absolute',
-                        bottom: '10px',
-                        right: '10px',
-                        backgroundColor: '#4CAF50',
-                        '&:hover': {
-                            backgroundColor: '#45a049',
-                        },
-                    }}>Collect
-                    </Button>
-                </>
-            )}
-            {isPast && reservation.collectionStatus === 'Collected' && (
-                <Button className="review-btn">Write a review</Button>
-            )}
-        </div>
-    );
-};
+        );
+    };
     return (
         <>
             <UserNavbar />
