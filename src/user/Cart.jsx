@@ -251,6 +251,7 @@ const Cart = () => {
                     }}
                   />
                 </TableCell>
+                <TableCell>Image</TableCell>
                 <TableCell>Food</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Quantity</TableCell>
@@ -272,7 +273,6 @@ const Cart = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {food.name}
                       {donation.image && (
                         <img
                           src={donation.image}
@@ -281,6 +281,7 @@ const Cart = () => {
                         />
                       )}
                     </TableCell>
+                    <TableCell>{food.name}</TableCell>
                     <TableCell>{food.type}</TableCell>
                     <TableCell>{food.quantity}</TableCell>
                     <TableCell>{donation.category}</TableCell>
