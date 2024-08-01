@@ -27,8 +27,8 @@ const Cart = () => {
   const [timeError, setTimeError] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
-  const [selectedDonations, setSelectedDonations] = useState([]);
   const [cartItems, setCartItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const { token } = useContext(TokenContext);
 
@@ -38,14 +38,21 @@ const Cart = () => {
   }, []);
 
 
-  const handleItemSelect = (donation) => {
+  const handleItemSelect = (donationId) => {
     const updatedCartItems = cartItems.filter(item => item.id !== donation.id);
     setCartItems(updatedCartItems);
     localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
   };
 
-  const handleItemRemove = (donation) => {
-    const updatedCartItems = cartItems.filter(item => item.id !== donation.id);
+  const handleRemoveSelected = () => {
+    const updatedCartItems = cartItems.filter(item => !selectedItems.includes(item.id));
+    setCartItems(updatedCartItems);
+    setSelectedItems(updatedCartItems.map(item => item.id));
+    localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
+  }
+
+  const handleItemRemove = (donationId) => {
+    const updatedCartItems = cartItems.filter(item => item.id !== donationId);
     setCartItems(updatedCartItems);
     localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
   }
@@ -234,18 +241,16 @@ const Cart = () => {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    indeterminate={selectedDonations.length > 0 && selectedDonations.length < (location.state?.selectedItems?.length || 0)}
-                    checked={selectedDonations.length > 0 && selectedDonations.length === (location.state?.selectedItems?.length || 0)}
+                    indeterminate={cartItems.length > 0 && cartItems.length < cartItems.length}
+                    checked={cartItems.length > 0 && cartItems.length === cartItems.length}
                     onChange={() => {
-                      if (selectedDonations.length === (location.state?.selectedItems?.length || 0)) {
-                        setSelectedDonations([]);
-                      } else if (location.state?.selectedItems) {
-                        setSelectedDonations(location.state.selectedItems);
+                      if (cartItems.length > 0) {
+                        setCartItems([]);
+                        localStorage.setItem('cartItems', JSON.stringify([]));
                       }
                     }}
                   />
                 </TableCell>
-
                 <TableCell>Food</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Quantity</TableCell>
@@ -260,18 +265,17 @@ const Cart = () => {
               {cartItems.map((donation) => (
                 donation.foods.map((food) => (
                   <TableRow key={`${donation.id} - ${food.id}`}>
-                    <TableCell>
+                    <TableCell padding="checkbox">
                       <Checkbox
                         checked={true}
-                        onChange={() => handleItemSelect(donation)}
+                        onChange={() => handleItemRemove(donation.id)}
                       />
                     </TableCell>
-
                     <TableCell>
                       {food.name}
-                      {donation.imageUrl && (
+                      {donation.image && (
                         <img
-                          src={donation.imageUrl}
+                          src={donation.image}
                           alt={food.name}
                           style={{ width: 50, height: 50, marginLeft: 10, objectFit: 'cover' }}
                         />
@@ -348,7 +352,7 @@ const Cart = () => {
             />
           </Grid>
         </Grid>
-
+        
         <Button
           variant="contained"
           onClick={handleReserve}
