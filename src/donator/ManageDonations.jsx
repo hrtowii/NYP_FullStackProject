@@ -25,8 +25,11 @@ import {
   FormHelperText,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import SearchIcon from '@mui/icons-material/Search';
+import CancelIcon from '@mui/icons-material/Cancel';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
@@ -47,6 +50,12 @@ export default function ManageDonations() {
   const [error, setError] = useState(null);
   const { token, updateToken } = useContext(TokenContext);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
 
   const handleCloseEnlargedImage = () => {
     setEnlargedImage(null);
@@ -211,8 +220,31 @@ export default function ManageDonations() {
       }
       return 0;
     };
-    return [...donations].sort(comparator);
-  }, [donations, order, orderBy]);
+
+    const searchFields = (donation) => {
+      const searchableFields = [
+        ...donation.foods.flatMap(food => [
+          food.name,
+          food.type,
+          food.quantity.toString(),
+          new Date(food.expiryDate).toLocaleDateString()
+        ]),
+        donation.category,
+        donation.location,
+        donation.remarks,
+        new Date(donation.deliveryDate).toLocaleDateString(),
+        donation.availability
+      ];
+
+      return searchableFields.some(field =>
+        field && field.toString().toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    };
+
+    return [...donations]
+      .sort(comparator)
+      .filter(searchFields);
+  }, [donations, order, orderBy, searchQuery]);
 
   if (loading) {
     return (
@@ -253,6 +285,24 @@ export default function ManageDonations() {
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
+            <Box sx={{ mb: 3, width: '100%' }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                size="small"
+                placeholder="Search donations by any field..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                  endAdornment: searchQuery && (
+                    <IconButton size="small" onClick={() => setSearchQuery('')}>
+                      <CancelIcon />
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
             {donations.length === 0 ? (
               <Typography align="center" variant="h6" style={{ marginTop: '20px' }}>
                 You have no donations at the moment. Click 'Donate New Item' to make a donation.

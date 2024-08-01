@@ -43,9 +43,16 @@ export default function AdminLanding() {
 
   const eventColumns = [
     { id: 'id', label: 'ID', minWidth: 50 },
-    { id: 'name', label: 'Name', minWidth: 75 },
-    { id: 'date', label: 'Date', minWidth: 100 },
-    { id: 'location', label: 'Location', minWidth: 100 },
+    { id: 'title', label: 'Title', minWidth: 75 },
+    { id: 'fullSummary', label: 'Summary', minWidth: 100 },
+    { id: 'startDate', label: 'Start Date', minWidth: 75, format: (value) => {
+      const date = new Date(value);
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')} - ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    } },
+    { id: 'endDate', label: 'End Date', minWidth: 75, format: (value) => {
+      const date = new Date(value);
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')} - ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    } },
     { id: 'actions', label: 'Actions', minWidth: 100 },
   ];
 
@@ -65,11 +72,40 @@ export default function AdminLanding() {
   const reservationColumns = [
     { id: 'id', label: 'ID', minWidth: 50 },
     { id: 'userId', label: 'User ID', minWidth: 75 },
-    { id: 'eventId', label: 'Event ID', minWidth: 75 },
-    { id: 'status', label: 'Status', minWidth: 100 },
+    { id: 'donationId', label: 'Donation ID', minWidth: 75 },
+    { id: 'collectionDate', label: 'Collection Date', minWidth: 100, format: (value) => {
+      const date = new Date(value);
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+    }},
+    { id: 'collectionTimeStart', label: 'Start Time', minWidth: 75 },
+    { id: 'collectionTimeEnd', label: 'End Time', minWidth: 75 },
+    { id: 'collectionStatus', label: 'Status', minWidth: 100 },
+    { id: 'remarks', label: 'Remarks', minWidth: 100 },
     { id: 'actions', label: 'Actions', minWidth: 100 },
   ];
 
+  const reservationNestedConfig = {
+    key: 'reservationItems',
+    label: 'Reserved Items',
+    columns: [
+      { id: 'foodId', label: 'Food ID', minWidth: 50 },
+      { id: 'foodName', label: 'Food Name', minWidth: 100 },
+      { id: 'quantity', label: 'Quantity', minWidth: 50 },
+      { id: 'foodType', label: 'Type', minWidth: 100 },
+      { 
+        id: 'foodExpiryDate', 
+        label: 'Expiry Date', 
+        minWidth: 100, 
+        format: (value) => {
+          if (value) {
+            const date = new Date(value);
+            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+          }
+          return 'N/A';
+        }
+      },
+    ],
+  };
   const donationNestedConfig = {
     key: 'foods',
     label: 'Foods',
@@ -143,12 +179,27 @@ export default function AdminLanding() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
-      console.log(data)
-      setReservations(data);
+      console.log('Original reservations:', data);
+  
+      const flattenedReservations = data.map(reservation => ({
+        ...reservation,
+        reservationItems: reservation.reservationItems.map(item => ({
+          id: item.id,
+          reservationId: item.reservationId,
+          foodId: item.foodId,
+          quantity: item.quantity,
+          foodName: item.food.name,
+          foodType: item.food.type,
+          foodExpiryDate: item.food.expiryDate
+        }))
+      }));
+  
+      console.log('Flattened reservations:', flattenedReservations);
+      setReservations(flattenedReservations);
     } catch (error) {
       console.error('Error fetching reservations:', error);
     }
-  }
+  };
 
   const handleOpenModal = (row) => {
     setEditData(row);
@@ -433,6 +484,7 @@ export default function AdminLanding() {
           rows={reservations}
           onEdit={handleOpenModal}
           onDelete={handleDelete}
+          nestedConfig={reservationNestedConfig}
         />
       )}
       <Modal
