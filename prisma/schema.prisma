@@ -91,12 +91,21 @@ model Donator {
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
   reviewCount   Int        @default(0)
-  replies             Reply[]
+  replies       Reply[]
   donationGoal  Int?
   achievement   String?
-
-
+  posts         Post[]
   @@id([id])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  donatorId Int
+  donator   Donator  @relation(fields: [donatorId], references: [id])
 }
 
 
@@ -117,7 +126,7 @@ model Donation {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   donatorId    Int
-  donator      Donator       @relation(fields: [donatorId], references: [id])
+  donator      Donator       @relation(fields: [donatorId], references: [id], onDelete: Cascade)
   availability String @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
   reservations Reservation[] // remove for now, to test reservation by itself first
@@ -131,7 +140,7 @@ model Food {
   expiryDate       DateTime
   createdAt        DateTime          @default(now())
   donationId       Int
-  donation         Donation          @relation(fields: [donationId], references: [id])
+  donation         Donation          @relation(fields: [donationId], references: [id], onDelete: Cascade)
   reservationItems ReservationItem[]
 }
 

@@ -245,6 +245,7 @@ export default function ManageDonations() {
       .sort(comparator)
       .filter(searchFields);
   }, [donations, order, orderBy, searchQuery]);
+  
 
   if (loading) {
     return (
