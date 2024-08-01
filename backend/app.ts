@@ -1181,33 +1181,33 @@ app.get('/donator/events', async (req, res) => {
 
 
 // john's image review code
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 const uploadsDir = path.join(__dirname, 'uploads');
 await fs.mkdir(uploadsDir, { recursive: true });
 
 // Update multer configuration
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir)
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname))
-    }
-});
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, uploadsDir)
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, Date.now() + path.extname(file.originalname))
+//     }
+// });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Not an image! Please upload an image.') as any, false);
-        }
-    }
-})
+// const upload = multer({
+//     storage: storage,
+//     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+//     fileFilter: (req, file, cb) => {
+//         if (file.mimetype.startsWith('image/')) {
+//             cb(null, true);
+//         } else {
+//             cb(new Error('Not an image! Please upload an image.') as any, false);
+//         }
+//     }
+// })
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ends here
