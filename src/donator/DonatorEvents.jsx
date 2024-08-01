@@ -28,6 +28,10 @@ import { Box, Modal } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import CloseIcon from '@mui/icons-material/Close';
 
+//popup
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+
 
 
 const backendRoute = 'http://localhost:3000';
@@ -56,6 +60,9 @@ export default function DonatorEvents() {
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
     const [successMessage, setSuccessMessage] = useState('');
+    const [deleteSnackbarOpen, setDeleteSnackbarOpen] = useState(false);
+    const [signUpSnackbarOpen, setSignUpSnackbarOpen] = useState(false);
+    const [signUpMessage, setSignUpMessage] = useState('');
 
     const [enlargedImage, setEnlargedImage] = useState(null);
 
@@ -71,6 +78,16 @@ export default function DonatorEvents() {
 
 
     const navigate = useNavigate();
+    const [selectedEvent, setSelectedEvent] = useState(null);
+
+    const handleReadMore = (event) => {
+        setSelectedEvent(event);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedEvent(null);
+    };
+
 
 
     useEffect(() => {
@@ -108,11 +125,9 @@ export default function DonatorEvents() {
         setOpenDialog(false);
         setEventToDelete(null);
     };
-
     const handleConfirmDelete = async () => {
         if (eventToDelete) {
             try {
-                console.log(`Attempting to delete event with ID: ${eventToDelete.id}`);
                 const response = await fetch(`${API_BASE_URL}/event/${eventToDelete.id}`, {
                     method: 'DELETE',
                     headers: {
@@ -121,31 +136,24 @@ export default function DonatorEvents() {
                     },
                 });
 
-                console.log('Delete response status:', response.status);
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Error response body:', errorText);
                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
 
-                console.log(`Successfully deleted event: ${eventToDelete.title}`);
-
-                // Update the local state
                 setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
-
-                // Close the dialog and show the snackbar
                 handleCloseDialog();
                 setSuccessMessage(`Event "${eventToDelete.title}" has been deleted successfully.`);
-                setOpenSnackbar(true);
+                setDeleteSnackbarOpen(true);
 
             } catch (error) {
                 console.error('Error deleting event:', error);
                 setError('Failed to delete event: ' + error.message);
-                setOpenSnackbar(true);
+                setDeleteSnackbarOpen(true);
             }
         }
     };
+
     const handleCloseSnackbar = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -158,6 +166,35 @@ export default function DonatorEvents() {
         const diffTime = Math.abs(end - start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24) + 1);
         return `${diffDays} Day${diffDays > 1 ? 's' : ''}`;
+    };
+
+    const handleSignUp = async (eventId) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/events/${eventId}/signup`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to sign up');
+            }
+
+            const updatedEvent = await response.json();
+            setEvents(prevEvents => prevEvents.map(event =>
+                event.id === eventId ? updatedEvent : event
+            ));
+            setSignUpMessage('You have successfully signed up for this event!');
+            setSignUpSnackbarOpen(true);
+            setSelectedEvent(updatedEvent); // Update the selected event in the modal
+        } catch (error) {
+            setSignUpMessage(error.message);
+            setSignUpSnackbarOpen(true);
+        }
     };
 
     return (
@@ -187,31 +224,23 @@ export default function DonatorEvents() {
             <hr />
             <div className="events-container">
                 {events.map((event) => (
-                    <Card key={event.id} sx={{ minWidth: 275, margin: 2 }}>
-                        <CardContent>
-
-                            <Typography variant="h5" component="div">
-                                {event.title}
-                            </Typography>
-                            <Typography variant="body2">
-                                {event.briefSummary}
-                            </Typography>
+                    <Card key={event.id} className="event-card">
+                        <div className='displayEventImage'>
                             {event.images && event.images.length > 0 && (
-                                <Box sx={{ display: 'flex', mt: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     {event.images.map((eventImage, index) => (
                                         <Box
                                             key={eventImage.id}
                                             sx={{
                                                 position: 'relative',
-                                                width: 80,
-                                                height: 80,
-                                                mr: 1,
+                                                width: 200,
+                                                height: 200,
                                                 cursor: 'pointer',
                                             }}
-                                            onClick={() => handleImageClick(`${backendRoute}/public/${eventImage.url}`)}
+                                            onClick={() => handleImageClick(`${backendRoute}${eventImage.url}`)}
                                         >
                                             <img
-                                                src={`${backendRoute}/public/${eventImage.url}`}
+                                                src={`${backendRoute}${eventImage.url}`}
                                                 alt={`Event image ${index + 1}`}
                                                 style={{
                                                     width: '100%',
@@ -245,51 +274,130 @@ export default function DonatorEvents() {
                                     ))}
                                 </Box>
                             )}
-                        </CardContent>
-                        {event.donatorId == userId ?
-                            <>
-                                <CardActions>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '25px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px' }}>
-                                            <CalendarTodayIcon style={{ fontSize: '1rem', marginRight: '4px' }} />
-                                            <Typography variant="body2">
-                                                {new Date(event.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} <span> - </span>
-                                                {new Date(event.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                            </Typography>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px' }}>
-                                            <AccessTimeIcon style={{ fontSize: '1rem', marginRight: '4px' }} />
-                                            <Typography variant="body2">
-                                                {calculateDuration(event.startDate, event.endDate)}
-                                            </Typography>
-                                        </div>
-
+                        </div>
+                        <div className="event-content">
+                            <div className='rightSide-title-summary'>
+                                <Typography variant="h5" component="div">
+                                    {event.title}
+                                </Typography>
+                                <Typography variant="body2">
+                                    {event.briefSummary}
+                                </Typography>
+                            </div>
+                            <div className="event-details-and-actions">
+                                <div className="event-details">
+                                    <div className="event-detail">
+                                        <CalendarTodayIcon />
+                                        <Typography variant="body2">
+                                            {new Date(event.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} <span> - </span>
+                                            {new Date(event.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </Typography>
                                     </div>
+                                    <div className="event-detail">
+                                        <AccessTimeIcon />
+                                        <Typography variant="body2">
+                                            {calculateDuration(event.startDate, event.endDate)}
+                                        </Typography>
+                                    </div>
+
+
+                                </div>
+                                <div className="event-actions">
                                     <Button
                                         size="small"
                                         variant="contained"
                                         color="primary"
-                                        startIcon={<EditIcon />}
-                                        onClick={() => handleUpdateClick(event.id)}
+                                        startIcon={<VisibilityIcon />}
+                                        onClick={() => handleReadMore(event)}
                                     >
-                                        Update
+                                        Read More
                                     </Button>
-                                    <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="error"
-                                        startIcon={<DeleteIcon />}
-                                        onClick={() => handleDeleteClick(event)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </CardActions>
-                            </>
-                            : <div></div>
-                        }
+                                    {event.donatorId == userId && (
+                                        <div className="event-action">
+
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                color="primary"
+                                                startIcon={<EditIcon />}
+                                                onClick={() => handleUpdateClick(event.id)}
+                                            >
+                                                Update
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                color="error"
+                                                startIcon={<DeleteIcon />}
+                                                onClick={() => handleDeleteClick(event)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </Card>
                 ))}
             </div>
+            {selectedEvent && (
+                <div className="event-modal">
+                    <div className="modal-content">
+                        <div className="modal-body">
+                            <div className="modal-left">
+                                {selectedEvent.images && selectedEvent.images.length > 0 && (
+                                    <img
+                                        src={`${backendRoute}${selectedEvent.images[0].url}`}
+                                        alt={`Event image`}
+                                    />
+                                )}
+                                <div className="modal-info">
+                                    <div className="modal-info-item">
+                                        <CalendarTodayIcon />
+                                        <span>
+                                            {new Date(selectedEvent.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            {' - '}
+                                            {new Date(selectedEvent.endDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="modal-info-item">
+                                        <AccessibilityNewIcon />
+                                        <span>{selectedEvent.attire}</span>
+                                    </div>
+                                    <div className="modal-info-item">
+                                        <AccessTimeIcon />
+                                        <span>{calculateDuration(selectedEvent.startDate, selectedEvent.endDate)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div className="modal-details">
+                                <h2 className="modal-title">{selectedEvent.title}</h2>
+                                <p className="modal-summary">{selectedEvent.fullSummary}</p>
+
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            
+                            {selectedEvent.donatorId !== userId && (
+                                <Button
+                                    className="modal-signup"
+                                    onClick={() => handleSignUp(selectedEvent.id)}
+                                    disabled={selectedEvent.participants.some(p => p.userId === userId)}
+                                >
+                                    {selectedEvent.participants.some(p => p.userId === userId) ? 'Signed Up' : 'Sign Up'}
+                                </Button>
+                            )}
+                            <Button className="modal-close" onClick={handleCloseModal}>Close</Button>
+                        </div>
+                    </div>
+
+                </div>
+            )}
+
             {/* Confirmation Dialog */}
 
             <Dialog
@@ -335,9 +443,16 @@ export default function DonatorEvents() {
             </Dialog>
 
             {/* Snackbar for successful deletion */}
-            <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-                <MuiAlert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-                    Event deleted successfully!
+            <Snackbar open={deleteSnackbarOpen} autoHideDuration={6000} onClose={() => setDeleteSnackbarOpen(false)}>
+                <MuiAlert onClose={() => setDeleteSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+                    {successMessage}
+                </MuiAlert>
+            </Snackbar>
+
+            {/* signingup */}
+            <Snackbar open={deleteSnackbarOpen} autoHideDuration={6000} onClose={() => setDeleteSnackbarOpen(false)}>
+                <MuiAlert onClose={() => setDeleteSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+                    {successMessage}
                 </MuiAlert>
             </Snackbar>
 

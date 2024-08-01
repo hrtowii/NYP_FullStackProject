@@ -50,9 +50,8 @@ export function DonatorNavbar() {
     <div className='navbar'>
       <div>
       <NavLink to={"/donator"}>Home</NavLink>
-      <NavLink to={"/donator/ManageDonations"}>Manage Donations</NavLink>
       <NavLink to={"/donator/events"}>Manage Events</NavLink>
-      <NavLink to={"/listofdonators"}>Donators (temp)</NavLink>
+      <NavLink to={"/listofdonators"}>Donators</NavLink>
       </div>
       <div className="avatarmenu">
       <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
@@ -74,7 +73,6 @@ export function UserNavbar() {
       <div>
       <NavLink to={"/user/reservation"}>Reservations</NavLink>
       <NavLink to={"/user/fridge"}>Fridge</NavLink>
-      <NavLink to={"/user/cart"}>Cart</NavLink>
       <NavLink to={"/listofdonators"}>Donators</NavLink>
       </div>
       <div className="navbar-right">

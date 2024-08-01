@@ -31,6 +31,9 @@ import Box from '@mui/material/Box';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AddIcon from '@mui/icons-material/Add';
 import { DonatorNavbar } from '../components/Navbar';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
@@ -245,7 +248,7 @@ export default function ManageDonations() {
       .sort(comparator)
       .filter(searchFields);
   }, [donations, order, orderBy, searchQuery]);
-  
+
 
   if (loading) {
     return (
@@ -267,19 +270,72 @@ export default function ManageDonations() {
     <div className="container">
       <DonatorNavbar />
       <div className='contents'>
-        <div className="centered">
-          <div className="action-buttons">
-            <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
-              Manage Donations
-            </Button>
-            <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
-              Track Donation Progress
-            </Button>
-            <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
-              Donate New Item
-            </Button>
-          </div>
+        <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
+          <Box
+            display="flex"
+            flexDirection="row"
+            gap={4}
+            ml={6}
+            mr={6}
+            mb={2}
+            sx={{
+              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Shadow for the outer box
+              padding: 2, // Padding inside the outer box
+              borderRadius: 2, // Rounded corners for the outer box
+              backgroundColor: '#f5f5f5' // Optional: Background color for the outer box
+            }}
+          >
+            <Box textAlign="center" mt={2}>
+              <Button
+                component={NavLink}
+                to="/donator/ManageDonations"
+                sx={{
+                  backgroundColor: '#b3e0ff', // Light blue background for the button
+                  boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                  '&:hover': {
+                    backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                  }
+                }}
+                startIcon={<AssignmentIcon />} // Use the startIcon prop
+              >
+                Manage Donations
+              </Button>
+            </Box>
+            <Box textAlign="center" mt={2}>
+              <Button
+                component={NavLink}
+                to="/donator/DonateProgress"
+                sx={{
+                  backgroundColor: 'white', // White background for the button
+                  boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                  '&:hover': {
+                    backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                  }
+                }}
+                startIcon={<ShowChartIcon />} // Use the startIcon prop
+              >
+                Donator Dashboard
+              </Button>
+            </Box>
+            <Box textAlign="center" mt={2}>
+              <Button
+                component={NavLink}
+                to="/donator/DonateItem"
+                sx={{
+                  backgroundColor: 'white', // White background for the button
+                  boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                  '&:hover': {
+                    backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                  }
+                }}
+                startIcon={<AddIcon />} // Use the startIcon prop
+              >
+                Donate New Item
+              </Button>
+            </Box>
+          </Box>
         </div>
+
 
         <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
           <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>

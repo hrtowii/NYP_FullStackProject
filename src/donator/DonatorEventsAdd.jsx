@@ -41,6 +41,7 @@ const AddEventForm = () => {
     emailAddress: '',
     dateRange: [null, null],
     maxSlots: 0,
+    takenSlots: 0,
     attire: '',
   });
   const [error, setError] = useState('');

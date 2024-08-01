@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { NavLink, useParams } from 'react-router-dom';
+import { NavLink, useParams, Link } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
@@ -22,9 +22,17 @@ import {
     DialogActions,
     TextField,
     Container,
+    Box,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemAvatar,
+    Divider,
 } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import Box from '@mui/material/Box';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AddIcon from '@mui/icons-material/Add';
 import parseJwt from '../utils/parseJwt.jsx'
 
 export default function DonateItem() {
@@ -41,7 +49,7 @@ export default function DonateItem() {
     const [goalError, setGoalError] = useState(null);
     const [achievement, setAchievement] = useState('');
     const [goalAchieved, setGoalAchieved] = useState(false);
-    const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false); // State for the goal achieved dialog
+    const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false);
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [collectedDonations, setCollectedDonations] = useState([]);
     const [uncollectedDonations, setUncollectedDonations] = useState([]);
@@ -93,13 +101,11 @@ export default function DonateItem() {
     }, [token]);
 
     const fetchReviews = useCallback(async () => {
-        const donatorId = parseJwt(token).id
+        const donatorId = parseJwt(token).id;
         if (!donatorId) {
-            setError('No donator ID provided');
-            setLoading(false);
+            console.error('No donator ID available');
             return;
         }
-        console.log('Fetching reviews...');
         try {
             const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
                 method: 'GET',
@@ -111,13 +117,25 @@ export default function DonateItem() {
                 throw new Error('Failed to fetch reviews');
             }
             const data = await response.json();
-            console.log('Reviews fetched:', data);
+            console.log('Fetched reviews:', data);
             setReviews(data);
         } catch (error) {
             console.error('Error fetching reviews:', error);
-            // Handle error (e.g., show an error message to the user)
         }
-    }, [donatorId, token]);
+    }, [token, backendRoute]);
+
+    const getDisplayName = (review) => {
+        if (review.isAnonymous) {
+            const name = review.user?.person?.name || 'Unknown User';
+            return `${name[0]}${'*'.repeat(6)}`;
+        }
+        return review.user?.person?.name || 'Unknown User';
+    };
+
+    const truncateMessage = (message, maxLength = 100) => {
+        if (message.length <= maxLength) return message;
+        return message.substr(0, maxLength) + '...';
+    };
 
     // Fetch total donations
     const fetchTotalDonations = useCallback(async () => {
@@ -228,7 +246,7 @@ export default function DonateItem() {
         fetchDonations();
         fetchReviews();
         fetchTotalDonations();
-        fetchInitialGoal(); // Add the function call
+        fetchInitialGoal();
     }, [fetchDonations, fetchReviews, fetchTotalDonations, fetchInitialGoal]);
 
 
@@ -373,32 +391,186 @@ export default function DonateItem() {
         <div className="container">
             <DonatorNavbar />
             <div className='contents'>
-                <div className="centered">
-                    <div className="action-buttons">
-                        <Button variant="contained" color="primary" component={NavLink} to="/donator/ManageDonations">
-                            Manage Donations
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateProgress">
-                            Track Donation Progress
-                        </Button>
-                        <Button variant="contained" color="secondary" component={NavLink} to="/donator/DonateItem">
-                            Donate New Item
-                        </Button>
-                    </div>
+                <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
+                    <Box
+                        display="flex"
+                        flexDirection="row"
+                        gap={4}
+                        ml={6}
+                        mr={6}
+                        mb={2}
+                        sx={{
+                            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Shadow for the outer box
+                            padding: 2, // Padding inside the outer box
+                            borderRadius: 2, // Rounded corners for the outer box
+                            backgroundColor: '#f5f5f5' // Optional: Background color for the outer box
+                        }}
+                    >
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/ManageDonations"
+                                sx={{
+                                    backgroundColor: 'white', // Light blue background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AssignmentIcon />} // Use the startIcon prop
+                            >
+                                Manage Donations
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateProgress"
+                                sx={{
+                                    backgroundColor: '#b3e0ff', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<ShowChartIcon />} // Use the startIcon prop
+                            >
+                                Donator Dashboard
+                            </Button>
+                        </Box>
+                        <Box textAlign="center" mt={2}>
+                            <Button
+                                component={NavLink}
+                                to="/donator/DonateItem"
+                                sx={{
+                                    backgroundColor: 'white', // White background for the button
+                                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
+                                    '&:hover': {
+                                        backgroundColor: '#f0f0f0' // Slightly different background color on hover
+                                    }
+                                }}
+                                startIcon={<AddIcon />} // Use the startIcon prop
+                            >
+                                Donate New Item
+                            </Button>
+                        </Box>
+                    </Box>
                 </div>
+
+                <Box sx={{backgroundColor: 'lightgrey'}} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
                 <Box justifyContent="center" textAlign="center" mt={2}>
                     <Typography variant="h4" gutterBottom mt={2}>
-                        Your Donations
+                        Current Rank:
                     </Typography>
-                    <Typography variant="h6" gutterBottom mt={1}>
-                        Rank: {achievement}
-                    </Typography>
+                    <Box mt={2} mb={2} textAlign="center">
+                        <Box
+                            display="flex"
+                            flexDirection="row"
+                            flexWrap="wrap"
+                            justifyContent="center"
+                            alignItems="center"
+                            sx={{ gap: 2 }}
+                        >
+                            {achievements.map((achievementItem) => (
+                                <Card
+                                    key={achievementItem.name}
+                                    sx={{
+                                        minWidth: 200,
+                                        bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
+                                        color: achievement === achievementItem.name ? 'black' : 'black',
+                                    }}
+                                >
+                                    <CardContent>
+                                        <Typography variant="h6">{achievementItem.name}</Typography>
+                                        <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Box>
+                    </Box>
                 </Box>
 
+                <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
+                    <Box flex={1} mr={2}>
+                        <Typography variant="h6" gutterBottom>
+                            Progress
+                        </Typography>
+                        <Box
+                            sx={{border: '2px solid black',
+                                borderRadius: 8,
+                            }}>
+
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                height: 15, // Thicker progress bar
+                                borderRadius: 8, // Thicker border radius
+                                border: '3x solid white', // Thicker and light grey border
+                                backgroundColor: 'white', // Light grey background
+                                padding: 0.3
+                            }}
+                        >
+                            <LinearProgress
+                                variant="determinate"
+                                value={(totalDonations / donationGoal) * 100}
+                                sx={{
+                                    height: '100%',
+                                    borderRadius: 'inherit', // Inherit the border radius from the container
+                                    backgroundColor: 'transparent', // Make background transparent to show the border
+                                    '& .MuiLinearProgress-bar': {
+                                        backgroundColor: '#4caf50', // Completed portion color (green)
+                                        borderRadius: 8, // Match the border radius of the container
+                                    },
+                                }}
+                            />
+                        </Box>
+                        </Box>
+                        <Typography variant="body1" mt={2}>
+                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                        </Typography>
+                    </Box>
+                    <Box>
+                        <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
+                            Set New Goal
+                        </Button>
+                        <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
+                            <DialogTitle>Set New Donation Goal</DialogTitle>
+                            <DialogContent>
+                                <TextField
+                                    autoFocus
+                                    margin="dense"
+                                    label="New Donation Goal"
+                                    type="number"
+                                    fullWidth
+                                    value={goalInput}
+                                    onChange={handleGoalChange}
+                                    error={!!goalError}
+                                    helperText={goalError}
+                                />
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={handleCloseGoalModal} color="primary">
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleGoalSubmit} color="primary">
+                                    Submit
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
+                    </Box>
+                </Box>
+                </Box>
+                <Box ml={5}>
+                    <Typography variant="h4" gutterBottom mt={2}>
+                        Your Donations:
+                    </Typography>
+                </Box>
+                
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
+                    
                     <Box width="60%">
                         <Typography variant="h6" gutterBottom>Uncollected</Typography>
-                        <Box bgcolor="error.main" p={2} borderRadius={2}>
+                        <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
                             {uncollectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no uncollected donations.</Alert>
                             ) : (
@@ -483,30 +655,7 @@ export default function DonateItem() {
                             )}
                         </Box>
 
-                        <Typography variant="h6" gutterBottom mt={4}>Progress</Typography>
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                height: 15, // Thicker progress bar
-                                borderRadius: 8, // Thicker border radius
-                                border: '3px solid lightgrey', // Thicker and light grey border
-                                backgroundColor: 'lightgrey', // Light grey background
-                            }}
-                        >
-                            <LinearProgress
-                                variant="determinate"
-                                value={(totalDonations / donationGoal) * 100}
-                                sx={{
-                                    height: '100%',
-                                    borderRadius: 'inherit', // Inherit the border radius from the container
-                                    backgroundColor: 'transparent', // Make background transparent to show the border
-                                    '& .MuiLinearProgress-bar': {
-                                        backgroundColor: '#4caf50', // Completed portion color (green)
-                                        borderRadius: 8, // Match the border radius of the container
-                                    },
-                                }}
-                            />
-                        </Box>
+
 
                         <Dialog
                             open={Boolean(enlargedImage)}
@@ -535,6 +684,9 @@ export default function DonateItem() {
                                 <Typography>
                                     You have achieved your donation goal of {donationGoal} grams!
                                 </Typography>
+                                <Typography>
+                                    Please set your next goal.
+                                </Typography>
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={handleCloseGoalAchievedDialog} color="primary">
@@ -543,14 +695,8 @@ export default function DonateItem() {
                             </DialogActions>
                         </Dialog>
 
-
-
-                        <Typography variant="body1" mt={2}>
-                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                        </Typography>
-
                         <Typography variant="h6" gutterBottom mt={4}>Collected</Typography>
-                        <Box bgcolor="success.main" p={2} borderRadius={2}>
+                        <Box bgcolor="success.main" p={2} borderRadius={2} maxHeight={330} overflow="auto" mb={10}>
                             {collectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no collected donations.</Alert>
                             ) : (
@@ -636,94 +782,67 @@ export default function DonateItem() {
                         </Box>
                     </Box>
 
-                    <Box width="35%" >
-                        <Typography variant="h6" gutterBottom>Your Reviews</Typography>
-                        <Box bgcolor="grey.200" p={2} borderRadius={2}>
+                    <Box width="35%">
+                        <Typography variant="h6" gutterBottom>Recent Reviews</Typography>
+                        <Box bgcolor="grey.200" p={2} borderRadius={2} maxHeight={800} overflow="auto">
                             {reviews.length === 0 ? (
                                 <Alert severity="info">You have no reviews yet.</Alert>
                             ) : (
-                                reviews.map((review) => (
-                                    <Card key={review.id} sx={{ mb: 2 }}>
-                                        <CardContent>
-                                            <Box display="flex" alignItems="center">
-                                                <Avatar sx={{ mr: 2 }}>{'J'}</Avatar>
-                                                <Box>
-                                                    <Typography variant="subtitle1">{review.user?.person?.name || 'Unknown User'}</Typography>
-                                                    <Rating value={review.rating} readOnly size="small" />
-                                                </Box>
-                                            </Box>
-                                            <Typography variant="body2" mt={1}>{review.comment}</Typography>
-                                        </CardContent>
-                                    </Card>
-                                ))
+                                <>
+                                    <List>
+                                        {reviews.slice(0, 5).map((review) => (
+                                            <React.Fragment key={review.id}>
+                                                <ListItem alignItems="flex-start">
+                                                    <ListItemAvatar>
+                                                        <Avatar>{getDisplayName(review)[0]}</Avatar>
+                                                    </ListItemAvatar>
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box>
+                                                                <Typography variant="subtitle1">
+                                                                    {getDisplayName(review)}
+                                                                </Typography>
+                                                                <Rating
+                                                                    name="read-only"
+                                                                    value={review.rating}
+                                                                    readOnly
+                                                                    size="small"
+                                                                />
+                                                            </Box>
+                                                        }
+                                                        secondary={
+                                                            <Typography
+                                                                component="span"
+                                                                variant="body2"
+                                                                color="text.primary"
+                                                                sx={{ display: 'inline', mt: 1 }}
+                                                            >
+                                                                {truncateMessage(review.comment)}
+                                                            </Typography>
+                                                        }
+                                                    />
+                                                </ListItem>
+                                                <Divider variant="inset" component="li" />
+                                            </React.Fragment>
+                                        ))}
+                                    </List>
+                                    {reviews.length > 1 && (
+                                        <Box textAlign="center" mt={2}>
+                                            <Button
+                                                component={Link}
+                                                to={`/profile/${parseJwt(token).id}`}
+                                                variant="outlined"
+                                            >
+                                                See More
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </>
                             )}
                         </Box>
                     </Box>
                 </Box>
 
-                <Box justifyContent="center" textAlign="center" mt={4} mb={5}>
-                    <Typography variant="h4" component="h1">Donation Goal</Typography>
-                    <Typography variant="h6">Current Goal: {donationGoal} grams</Typography>
-                    <Typography variant="h6">Total Donations: {totalDonations} grams</Typography>
-                    <Typography variant="h6">Current rank: {achievement}</Typography>
-
-                    <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
-                        Set New Goal
-                    </Button>
-
-                    <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
-                        <DialogTitle>Set New Donation Goal</DialogTitle>
-                        <DialogContent>
-                            <TextField
-                                autoFocus
-                                margin="dense"
-                                label="New Donation Goal"
-                                type="number"
-                                fullWidth
-                                value={goalInput}
-                                onChange={handleGoalChange}
-                                error={!!goalError}
-                                helperText={goalError}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleCloseGoalModal} color="primary">
-                                Cancel
-                            </Button>
-                            <Button onClick={handleGoalSubmit} color="primary">
-                                Submit
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                </Box>
-
-                <Box mt={4} mb={6} textAlign="center">
-                    <Typography mb={2} variant="h4" component="h1">Donator Rank</Typography>
-                    <Box
-                        display="flex"
-                        flexDirection="row"
-                        flexWrap="wrap"
-                        justifyContent="center"
-                        alignItems="center"
-                        sx={{ gap: 2 }}
-                    >
-                        {achievements.map((achievementItem) => (
-                            <Card
-                                key={achievementItem.name}
-                                sx={{
-                                    minWidth: 200,
-                                    bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
-                                    color: achievement === achievementItem.name ? 'white' : 'black',
-                                }}
-                            >
-                                <CardContent>
-                                    <Typography variant="h6">{achievementItem.name}</Typography>
-                                    <Typography variant="body2">{achievementItem.description}</Typography>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </Box>
-                </Box>
             </div>
         </div>
     );

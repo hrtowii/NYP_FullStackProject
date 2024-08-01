@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
-import { UserNavbar } from './components/Navbar'
+import { UserNavbar, DonatorNavbar } from './components/Navbar'
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import { styled } from '@mui/material/styles';
+import StarIcon from '@mui/icons-material/Star';
 import {
     List,
     ListItem,
@@ -23,6 +25,7 @@ import {
     Box,
     Avatar,
     Divider,
+    ButtonGroup,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -39,6 +42,8 @@ export default function Profile() {
     const userRole = parseJwt(token).role
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
+    const [filteredReviews, setFilteredReviews] = useState([]);
+    const [currentFilter, setCurrentFilter] = useState('all');
     const [likedReviews, setLikedReviews] = useState({});
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
@@ -55,6 +60,25 @@ export default function Profile() {
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
     const [replyToDelete, setReplyToDelete] = useState(null);
+
+    const handleFilterChange = useCallback((filter) => {
+        setCurrentFilter(filter);
+        if (filter === 'all') {
+            setFilteredReviews(reviews);
+        } else {
+            const rating = parseInt(filter);
+            setFilteredReviews(reviews.filter(review => review.rating === rating));
+        }
+    }, [reviews]);
+
+    const StyledRating = styled(Rating)({
+        '& .MuiRating-iconFilled': {
+            color: '#ffb400',
+        },
+        '& .MuiRating-iconHover': {
+            color: '#ffb400',
+        },
+    });
 
     const handleThumbsUp = useCallback(async (reviewId) => {
         try {
@@ -134,7 +158,7 @@ export default function Profile() {
             const data = await response.json();
             console.log('Reviews fetched:', data);
             setReviews(data);
-            // Initialize likedReviews state based on fetched data
+            setFilteredReviews(data); // Initialize filteredReviews with all reviews
             const initialLikedReviews = {};
             data.forEach(review => {
                 initialLikedReviews[review.id] = review.liked || false;
@@ -149,6 +173,10 @@ export default function Profile() {
         fetchReviews();
         fetchDonatorName();
     }, [fetchReviews, fetchDonatorName]);
+
+    useEffect(() => {
+        handleFilterChange(currentFilter);
+    }, [reviews, currentFilter, handleFilterChange]);
 
     const handleDeleteClick = useCallback((reviewId) => {
         console.log('Delete clicked for review:', reviewId);
@@ -404,15 +432,35 @@ export default function Profile() {
 
     return (
         <>
-            <UserNavbar />
+            {userRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
                         {donatorName}'s Reviews
                         {userRole === "donator" && parseInt(donatorId) === userId && " (Myself)"}
                     </Typography>
+                    <Box sx={{ mb: 2 }}>
+                        <ButtonGroup variant="contained" aria-label="rating filter button group">
+                            <Button
+                                onClick={() => handleFilterChange('all')}
+                                color={currentFilter === 'all' ? 'primary' : 'inherit'}
+                            >
+                                All
+                            </Button>
+                            {[5, 4, 3, 2, 1].map((rating) => (
+                                <Button
+                                    key={rating}
+                                    onClick={() => handleFilterChange(rating.toString())}
+                                    color={currentFilter === rating.toString() ? 'primary' : 'inherit'}
+                                    startIcon={<StarIcon style={{ color: '#ffb400' }} />}
+                                >
+                                    {rating}
+                                </Button>
+                            ))}
+                        </ButtonGroup>
+                    </Box>
                     <List>
-                        {reviews.map((review) => (
+                        {filteredReviews.map((review) => (
                             <React.Fragment key={review.id}>
                                 <ListItem alignItems="flex-start" component="div">
                                     <ListItemAvatar>
@@ -427,7 +475,7 @@ export default function Profile() {
                                                         Submitted on {formatDate(review.createdAt)}
                                                     </Typography>
                                                 </Box>
-                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
+                                                <StyledRating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
                                         }
                                         secondary={

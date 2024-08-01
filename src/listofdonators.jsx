@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
-import { UserNavbar } from './components/Navbar'
+import { UserNavbar, DonatorNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
@@ -26,9 +26,13 @@ import {
     Switch,
     FormControlLabel,
     IconButton,
+    ToggleButton,
+    ToggleButtonGroup,
+    Chip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 export default function ListOfDonators() {
     const [error, setError] = useState(null);
@@ -46,6 +50,8 @@ export default function ListOfDonators() {
     const [ratingError, setRatingError] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
+    const [view, setView] = useState('list');
+    
 
     const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
@@ -65,6 +71,16 @@ export default function ListOfDonators() {
         setSearchQuery(event.target.value);
     };
 
+
+    const getAchievementColor = (achievement) => {
+        switch (achievement) {
+            case 'Silver': return 'default';
+            case 'Gold': return 'warning';
+            case 'Diamond': return 'info';
+            case 'Supreme': return 'success';
+            default: return 'default';
+        }
+    };
 
     function stringToColor(string) {
         let hash = 0;
@@ -197,6 +213,11 @@ export default function ListOfDonators() {
                 const aCount = a.donator?.reviewCount || 0;
                 const bCount = b.donator?.reviewCount || 0;
                 return order === 'asc' ? aCount - bCount : bCount - aCount;
+            } else if (orderBy === 'achievement') {
+                const achievementRank = { 'Silver': 1, 'Gold': 2, 'Diamond': 3, 'Supreme': 4 };
+                const aRank = achievementRank[a.donator?.achievement] || 0;
+                const bRank = achievementRank[b.donator?.achievement] || 0;
+                return order === 'asc' ? aRank - bRank : bRank - aRank;
             }
             return 0;
         };
@@ -206,74 +227,235 @@ export default function ListOfDonators() {
             .filter(profile => profile.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [profiles, order, orderBy, searchQuery]);
 
+    const handleViewChange = (event, newView) => {
+        if (newView !== null) {
+            setView(newView);
+        }
+    };
+
+    const leaderboardData = useMemo(() => {
+        return [...profiles]
+            .sort((a, b) => (b.donator?.averageRating || 0) - (a.donator?.averageRating || 0))
+            .slice(0, 10);
+    }, [profiles]);
+    const renderLeaderboard = () => (
+        <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="leaderboard table">
+                <TableHead>
+                    <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                        <TableCell>Rank</TableCell>
+                        <TableCell>Name</TableCell>
+                        <TableCell align="center">Average Rating</TableCell>
+                        <TableCell align="center">Number of Reviews</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {leaderboardData.map((profile, index) => (
+                        <TableRow
+                            key={profile.id}
+                            sx={{
+                                '&:last-child td, &:last-child th': { border: 0 },
+                                backgroundColor: index % 2 === 0 ? 'inherit' : 'action.hover'
+                            }}
+                        >
+                            <TableCell>
+                                {index + 1}
+                                {index < 3 && <EmojiEventsIcon sx={{ ml: 1, color: ['gold', 'silver', 'bronze'][index] }} />}
+                            </TableCell>
+                            <TableCell component="th" scope="row">
+                                <Box display="flex" alignItems="center">
+                                    <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
+                                    
+                                    <Typography color={"blue"}>
+                                        {profile.name}
+                                        {profile.id === userId && " (You)"}
+                                    </Typography>
+                                    
+                                </Box>
+                            </TableCell>
+                            <TableCell align="center">
+                                <Box display="flex" alignItems="center" justifyContent="center">
+                                    <Rating value={Number(profile.donator.averageRating?.toFixed(1)) || 0} readOnly size="small" />
+                                    <Typography variant="body2" sx={{ ml: 1 }}>
+                                        ({profile.donator.averageRating?.toFixed(1) || 'N/A'})
+                                    </Typography>
+                                </Box>
+                            </TableCell>
+                            <TableCell align="center">{profile.donator.reviewCount || 'N/A'}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </TableContainer>
+    );
+
     return (
         <>
-            <UserNavbar />
+            {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <div className="container">
                 <Box sx={{ p: 3 }}>
                     <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
-                        List of Donators
+                        Donators
                     </Typography>
-                    <Box sx={{ mb: 3, width: '100%' }}>
-                        <TextField
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            placeholder="Search donators by name..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            InputProps={{
-                                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-                                endAdornment: searchQuery && (
-                                    <IconButton size="small" onClick={() => setSearchQuery('')}>
-                                        <CancelIcon />
-                                    </IconButton>
-                                ),
-                            }}
-                        />
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                        <ToggleButtonGroup
+                            value={view}
+                            exclusive
+                            onChange={handleViewChange}
+                            aria-label="view selector"
+                        >
+                            <ToggleButton value="list" aria-label="list view">
+                                List
+                            </ToggleButton>
+                            <ToggleButton value="leaderboard" aria-label="leaderboard view">
+                                Leaderboard
+                            </ToggleButton>
+                        </ToggleButtonGroup>
                     </Box>
-                    {error ? (
-                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
-                            <Alert severity="info">{error}</Alert>
-                        </Box>
-                    ) : (
+                    {view === 'list' && (
+                        <>
+                            <Box sx={{ mb: 3, width: '100%' }}>
+                                <TextField
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                    placeholder="Search donators by name..."
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    InputProps={{
+                                        startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                                        endAdornment: searchQuery && (
+                                            <IconButton size="small" onClick={() => setSearchQuery('')}>
+                                                <CancelIcon />
+                                            </IconButton>
+                                        ),
+                                    }}
+                                />
+                            </Box>
+                            {error ? (
+                                <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 200px)">
+                                    <Alert severity="info">{error}</Alert>
+                                </Box>
+                            ) : (
+                                <TableContainer component={Paper}>
+                                    <Table sx={{ minWidth: 650 }} aria-label="donators table">
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                                                <TableCell>#</TableCell>
+                                                <TableCell>
+                                                    <TableSortLabel
+                                                        active={orderBy === 'name'}
+                                                        direction={orderBy === 'name' ? order : 'asc'}
+                                                        onClick={() => handleRequestSort('name')}
+                                                    >
+                                                        Name
+                                                    </TableSortLabel>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <TableSortLabel
+                                                        active={orderBy === 'averageRating'}
+                                                        direction={orderBy === 'averageRating' ? order : 'asc'}
+                                                        onClick={() => handleRequestSort('averageRating')}
+                                                    >
+                                                        Average Rating
+                                                    </TableSortLabel>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <TableSortLabel
+                                                        active={orderBy === 'reviewCount'}
+                                                        direction={orderBy === 'reviewCount' ? order : 'asc'}
+                                                        onClick={() => handleRequestSort('reviewCount')}
+                                                    >
+                                                        Number of Reviews
+                                                    </TableSortLabel>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <TableSortLabel
+                                                        active={orderBy === 'achievement'}
+                                                        direction={orderBy === 'achievement' ? order : 'asc'}
+                                                        onClick={() => handleRequestSort('achievement')}
+                                                    >
+                                                        Rank
+                                                    </TableSortLabel>
+                                                </TableCell>
+                                                <TableCell align="right">Actions</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {sortedAndFilteredProfiles.map((profile, index) => (
+                                                <TableRow
+                                                    key={profile.id}
+                                                    sx={{
+                                                        '&:last-child td, &:last-child th': { border: 0 },
+                                                        backgroundColor: index % 2 === 0 ? 'inherit' : 'action.hover'
+                                                    }}
+                                                >
+                                                    <TableCell>{index + 1}</TableCell>
+                                                    <TableCell component="th" scope="row">
+                                                        <Box display="flex" alignItems="center">
+                                                            <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
+                                                            {profile.name}
+                                                            {profile.id === userId && " (You)"}
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <Box display="flex" alignItems="center" justifyContent="center">
+                                                            <Rating value={Number(profile.donator.averageRating?.toFixed(1)) || 0} readOnly size="small" />
+                                                            <Typography variant="body2" sx={{ ml: 1 }}>
+                                                                ({profile.donator.averageRating?.toFixed(1) || 'N/A'})
+                                                            </Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell align="center">{profile.donator.reviewCount || 'N/A'}</TableCell>
+                                                    <TableCell align="center">
+                                                        <Chip
+                                                            label={profile.donator.achievement || 'N/A'}
+                                                            color={getAchievementColor(profile.donator.achievement)}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        {currentUserRole != "donator" &&
+                                                            <Button
+                                                                variant="contained"
+                                                                color="primary"
+                                                                size="small"
+                                                                sx={{ mr: 1 }}
+                                                                onClick={() => handleOpenModal(profile)}
+                                                            >
+                                                                Add Review
+                                                            </Button>}
+                                                        <Button
+                                                            variant="outlined"
+                                                            color="primary"
+                                                            size="small"
+                                                            onClick={() => handleViewReviews(profile.id)}
+                                                        >
+                                                            View Reviews
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            )}
+                        </>
+                    )}
+                    {view === 'leaderboard' && (
                         <TableContainer component={Paper}>
-                            <Table sx={{ minWidth: 650 }} aria-label="donators table">
+                            <Table sx={{ minWidth: 650 }} aria-label="leaderboard table">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                                        <TableCell>#</TableCell>
-                                        <TableCell>
-                                            <TableSortLabel
-                                                active={orderBy === 'name'}
-                                                direction={orderBy === 'name' ? order : 'asc'}
-                                                onClick={() => handleRequestSort('name')}
-                                            >
-                                                Name
-                                            </TableSortLabel>
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <TableSortLabel
-                                                active={orderBy === 'averageRating'}
-                                                direction={orderBy === 'averageRating' ? order : 'asc'}
-                                                onClick={() => handleRequestSort('averageRating')}
-                                            >
-                                                Average Rating
-                                            </TableSortLabel>
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <TableSortLabel
-                                                active={orderBy === 'reviewCount'}
-                                                direction={orderBy === 'reviewCount' ? order : 'asc'}
-                                                onClick={() => handleRequestSort('reviewCount')}
-                                            >
-                                                Number of Reviews
-                                            </TableSortLabel>
-                                        </TableCell>
-                                        <TableCell align="right">Actions</TableCell>
+                                        <TableCell>Rank</TableCell>
+                                        <TableCell>Name</TableCell>
+                                        <TableCell align="center">Average Rating</TableCell>
+                                        <TableCell align="center">Number of Reviews</TableCell>
+                                        <TableCell align="center">Achievement</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {sortedAndFilteredProfiles.map((profile, index) => (
+                                    {leaderboardData.map((profile, index) => (
                                         <TableRow
                                             key={profile.id}
                                             sx={{
@@ -281,12 +463,15 @@ export default function ListOfDonators() {
                                                 backgroundColor: index % 2 === 0 ? 'inherit' : 'action.hover'
                                             }}
                                         >
-                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>
+                                                {index + 1}
+                                                {index < 3 && <EmojiEventsIcon sx={{ ml: 1, color: ['gold', 'silver', 'bronze'][index] }} />}
+                                            </TableCell>
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                    {profile.name}
-                                                    {profile.id === userId && " (Myself)"}
+                                                        {profile.name}
+                                                        {profile.id === userId && " (You)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
@@ -298,25 +483,12 @@ export default function ListOfDonators() {
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">{profile.donator.reviewCount || 'N/A'}</TableCell>
-                                            <TableCell align="right">
-                                                {currentUserRole != "donator" &&
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        size="small"
-                                                        sx={{ mr: 1 }}
-                                                        onClick={() => handleOpenModal(profile)}
-                                                    >
-                                                        Add Review
-                                                    </Button>}
-                                                <Button
-                                                    variant="outlined"
-                                                    color="primary"
+                                            <TableCell align="center">
+                                                <Chip
+                                                    label={profile.donator.achievement || 'N/A'}
+                                                    color={getAchievementColor(profile.donator.achievement)}
                                                     size="small"
-                                                    onClick={() => handleViewReviews(profile.id)}
-                                                >
-                                                    View Reviews
-                                                </Button>
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))}

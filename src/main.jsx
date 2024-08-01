@@ -23,7 +23,8 @@ import ManageDonations from './donator/ManageDonations.jsx'
 import DonateItem from './donator/DonateItem.jsx'
 import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
 import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
-
+import ResetPasswordRequest from './password-reset/ResetPasswordRequest.jsx'
+import ResetPasswordForm from './password-reset/ResetPasswordForm.jsx'
 import './index.css'
 import {
   createBrowserRouter,
@@ -45,6 +46,15 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />
+  },
+  // MARK: password reset routes
+  {
+    path: "/reset-password-request",
+    element: <ResetPasswordRequest />,
+  },
+  {
+    path: "/reset/:token",
+    element: <ResetPasswordForm />,
   },
   {
     path: "/about",
@@ -93,7 +103,7 @@ const router = createBrowserRouter([
     path: "/user",
     element: (
       <ProtectedRoute allowedRoles={['user', 'admin']}>
-        <UserLanding />
+        <Reservation />
       </ProtectedRoute>
     ),
   },
@@ -123,7 +133,7 @@ const router = createBrowserRouter([
     path: "/donator",
     element: (
       <ProtectedRoute allowedRoles={['donator', 'admin']}>
-        <DonatorLanding />
+        <DonateProgress />
       </ProtectedRoute>
     ),
   },
