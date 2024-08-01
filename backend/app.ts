@@ -1010,10 +1010,6 @@ app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
             return res.status(400).json({ error: 'Invalid rating' });
         }
 
-        if (!comment || comment.trim() === '') {
-            return res.status(400).json({ error: 'Comment is required' });
-        }
-
         const newReview = await prisma.$transaction(async (prisma) => {
             const review = await prisma.review.create({
                 data: {
