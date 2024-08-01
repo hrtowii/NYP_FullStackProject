@@ -740,7 +740,6 @@ app.put('/donations/:id', async (req, res) => {
 
 app.get('/reservations', async (req, res) => {
     try {
-        console.log("Fetching reservations");
         const reservations = await prisma.reservation.findMany({
             include: {
                 reservationItems: {
@@ -760,7 +759,6 @@ app.get('/reservations', async (req, res) => {
         });
         res.json(reservations);
     } catch (error) {
-        console.error('Error fetching reservations:', error);
         res.status(500).json({ error: 'An error occurred while fetching reservations' });
     }
 });
@@ -974,7 +972,6 @@ app.put('/reservation/:id', async (req, res) => {
 
     // Only include collectionStatus if it's provided
     if (collectionStatus !== undefined) {
-        console.log("collection status FOUND")
         updateData.collectionStatus = collectionStatus;
     }
 
