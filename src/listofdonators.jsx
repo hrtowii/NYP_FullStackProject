@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useContext, useMemo } from 're
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
+import {UserFooter, DonatorFooter} from './components/Footer';
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
@@ -294,8 +295,8 @@ export default function ListOfDonators() {
             {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <div className="container">
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
-                        Donators
+                    <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'primary', zIndex: 1, py: 2 }}>
+                        Our Donators
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                         <ToggleButtonGroup
@@ -305,7 +306,7 @@ export default function ListOfDonators() {
                             aria-label="view selector"
                         >
                             <ToggleButton value="list" aria-label="list view">
-                                List
+                                View All
                             </ToggleButton>
                             <ToggleButton value="leaderboard" aria-label="leaderboard view">
                                 Leaderboard
@@ -451,7 +452,7 @@ export default function ListOfDonators() {
                                         <TableCell>Name</TableCell>
                                         <TableCell align="center">Average Rating</TableCell>
                                         <TableCell align="center">Number of Reviews</TableCell>
-                                        <TableCell align="center">Achievement</TableCell>
+                                        <TableCell align="center">Rank</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -604,6 +605,7 @@ export default function ListOfDonators() {
                     </Alert>
                 </Snackbar>
             </div>
+            <UserFooter/>
         </>
     );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar, { UserNavbar } from "../components/Navbar";
 import { NavLink, useNavigate } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
     Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel, TablePagination
@@ -427,6 +428,7 @@ export default function Fridge() {
                     </Box>
                 </>
             </div>
+            <UserFooter/>
         </>
     )
 }

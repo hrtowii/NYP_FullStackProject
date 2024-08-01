@@ -1610,8 +1610,9 @@ app.get('/reviews/:id', async (req, res) => {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
         const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
+        const userRole = req.query.userRole;
 
-        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
+        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}, userRole: ${userRole}`);
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1630,12 +1631,7 @@ app.get('/reviews/:id', async (req, res) => {
                 },
                 reply: true,
                 images: true,
-                _count: {
-                    select: { likes: true }
-                },
-                likes: userId ? {
-                    where: { userId: userId }
-                } : undefined
+                likes: true
             },
             orderBy: {
                 createdAt: 'desc'
@@ -1650,9 +1646,12 @@ app.get('/reviews/:id', async (req, res) => {
                 const name = reviewData.user?.person?.name || 'Anonymous';
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
-            reviewData.likeCount = reviewData._count.likes;
-            reviewData.likedByUser = reviewData.likes && reviewData.likes.length > 0;
-            delete reviewData._count;
+            reviewData.likeCount = reviewData.likes.length;
+            reviewData.likedByUser = reviewData.likes.some(like => 
+                (userRole === 'user' && like.userId === userId) || 
+                (userRole === 'donator' && like.donatorId === userId)
+            );
+            reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
             delete reviewData.likes;
             return reviewData;
         });
@@ -1666,68 +1665,80 @@ app.get('/reviews/:id', async (req, res) => {
 
 app.post('/reviews/:reviewId/like', async (req, res) => {
     const { reviewId } = req.params;
-    const { userId } = req.body;
+    const { userId, userRole } = req.body;
+
+    console.log(`Received like request for reviewId: ${reviewId}, userId: ${userId}, userRole: ${userRole}`);
 
     try {
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_reviewId: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
-            }
+        const review = await prisma.review.findUnique({
+            where: { id: parseInt(reviewId) },
+            include: { likes: true }
         });
+
+        if (!review) {
+            console.log(`Review with id ${reviewId} not found`);
+            return res.status(404).json({ error: "Review not found." });
+        }
+
+        let existingLike;
+        let likeData;
+
+        if (userRole === 'user') {
+            existingLike = review.likes.find(like => like.userId === parseInt(userId));
+            likeData = { userId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else if (userRole === 'donator') {
+            existingLike = review.likes.find(like => like.donatorId === parseInt(userId));
+            likeData = { donatorId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else {
+            return res.status(400).json({ error: "Invalid user role" });
+        }
 
         let updatedReview;
         let message;
         let liked;
 
         if (existingLike) {
-            // Unlike the review
+            console.log(`Unliking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.delete({
-                where: {
-                    userId_reviewId: {
-                        userId: parseInt(userId),
-                        reviewId: parseInt(reviewId)
-                    }
-                }
+                where: { id: existingLike.id }
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { decrement: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review unliked';
             liked = false;
         } else {
-            // Like the review
+            console.log(`Liking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.create({
-                data: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
+                data: likeData
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { increment: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review liked';
             liked = true;
         }
 
+        console.log(`Successfully updated like status for review ${reviewId}`);
         res.status(200).json({
             message: message,
-            likeCount: updatedReview._count.likes,
+            likeCount: updatedReview.likeCount,
             liked: liked
         });
     } catch (error) {
         console.error('Error handling review like:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            message: error.message, 
+            stack: error.stack 
+        });
     }
 });
 

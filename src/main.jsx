@@ -6,6 +6,7 @@ import Signup from './Signup.jsx'
 import Login from './Login.jsx'
 import About from './About.jsx'
 import Review from './review.jsx'
+import Contactus from './Contactus.jsx'
 import Forbidden from './Forbidden.jsx'
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserLanding from "./user/UserLanding.jsx"
@@ -59,6 +60,10 @@ const router = createBrowserRouter([
   {
     path: "/about",
     element: <About />
+  },
+  {
+    path: "/Contactus",
+    element: <Contactus />
   },
   {
     path: "/review",
