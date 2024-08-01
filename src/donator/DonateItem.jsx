@@ -16,7 +16,9 @@ import {
     InputLabel,
     Typography,
     FormHelperText,
+    IconButton,
 } from '@mui/material';
+import CancelIcon from '@mui/icons-material/Cancel';
 import Box from '@mui/material/Box';
 
 const steps = ['Donation Details', 'Confirmation', 'Thank You'];
@@ -39,6 +41,7 @@ export default function DonateItem() {
     const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
     const [shouldNavigate, setShouldNavigate] = useState(false);
     const navigate = useNavigate();
+    const [selectedImages, setSelectedImages] = useState([]);
 
     useEffect(() => {
         let timer;
@@ -54,12 +57,20 @@ export default function DonateItem() {
         }
     }, [shouldNavigate, navigate]);
 
+    const handleRemoveImage = () => {
+        setFormData({ ...formData, image: null });
+        setSelectedImages([]);
+        setErrors({ ...errors, image: "" });
+    };
+
+
+
     const validateForm = () => {
         let tempErrors = {};
         tempErrors.foodName = formData.foodName ? "" : "Food name is required";
         tempErrors.quantity = formData.quantity ? "" : "Quantity is required";
-        if (formData.quantity && !Number.isInteger(Number(formData.quantity))) {
-            tempErrors.quantity = "Quantity must be an integer";
+        if (formData.quantity && (!Number.isInteger(Number(formData.quantity)) || Number(formData.quantity) < 0)) {
+            tempErrors.quantity = "Quantity must be a non-negative integer";
         }
         tempErrors.type = formData.type ? "" : "Type is required";
         tempErrors.category = formData.category ? "" : "Category is required";
@@ -82,8 +93,14 @@ export default function DonateItem() {
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setFormData({ ...formData, image: file });
-            setErrors({ ...errors, image: "" });
+            if (file.type.startsWith('image/')) {
+                setFormData({ ...formData, image: file });
+                setErrors({ ...errors, image: "" });
+                setSelectedImages([file]); // Change this to an array with a single file
+            } else {
+                setFormData({ ...formData, image: null });
+                setErrors({ ...errors, image: "Please select a valid image file" });
+            }
         } else {
             setFormData({ ...formData, image: null });
             setErrors({ ...errors, image: "Please select an image" });
@@ -93,12 +110,15 @@ export default function DonateItem() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         if (name === 'quantity') {
-            // Only allow integer values for quantity
+            // Only allow non-negative integer values for quantity
             const intValue = parseInt(value);
-            if (!isNaN(intValue) && intValue.toString() === value) {
+            if (!isNaN(intValue) && intValue >= 0 && intValue.toString() === value) {
                 setFormData({ ...formData, [name]: intValue.toString() });
+                setErrors({ ...errors, quantity: "" });
             } else if (value === '') {
                 setFormData({ ...formData, [name]: '' });
+            } else {
+                setErrors({ ...errors, quantity: "Quantity must be a non-negative integer" });
             }
         } else {
             setFormData({ ...formData, [name]: value });
@@ -174,7 +194,7 @@ export default function DonateItem() {
                             />
                             <TextField
                                 fullWidth
-                                label="Quantity in g (integer value)"
+                                label="Quantity in g (non-negative integer)"
                                 name="quantity"
                                 value={formData.quantity}
                                 onChange={handleInputChange}
@@ -183,7 +203,7 @@ export default function DonateItem() {
                                 error={!!errors.quantity}
                                 helperText={errors.quantity}
                                 type="number"
-                                inputProps={{ step: 1 }}
+                                inputProps={{ min: 0, step: 1 }}
                             />
                             <TextField
                                 fullWidth
@@ -273,10 +293,23 @@ export default function DonateItem() {
                                 type="file"
                                 accept="image/*"
                                 onChange={handleImageUpload}
-                                style={{ marginTop: '10px' }}
+                                style={{ display: 'none', marginTop: '10px' }}
+                                id="image-upload"
                             />
+                            <label htmlFor="image-upload">
+                                <Button variant="contained" component="span">
+                                    Upload Image
+                                </Button>
+                            </label>
                             {errors.image && <Typography color="error">{errors.image}</Typography>}
-                            {formData.image && <Typography>Selected file: {formData.image.name}</Typography>}
+                            {formData.image && (
+                                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                    <Typography>{formData.image.name}</Typography>
+                                    <IconButton onClick={handleRemoveImage} size="small">
+                                        <CancelIcon />
+                                    </IconButton>
+                                </Box>
+                            )}
                         </div>
                     </div>
                 );
@@ -285,15 +318,15 @@ export default function DonateItem() {
                     <div className="donation-summary">
                         <div className="summary-info">
                             <Typography variant="h6" gutterBottom>Donation Summary</Typography>
-                                <Typography>Food Name: {formData.foodName}</Typography>
-                                <Typography>Quantity: {formData.quantity}</Typography>
-                                <Typography>Type: {formData.type}</Typography>
-                                <Typography>Category: {formData.category}</Typography>
-                                <Typography>Expiry Date: {formData.expiryDate}</Typography>
-                                <Typography>Delivery Date: {formData.deliveryDate}</Typography>
-                                <Typography>Location: {formData.location}</Typography>
-                                {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
-                            
+                            <Typography>Food Name: {formData.foodName}</Typography>
+                            <Typography>Quantity: {formData.quantity}</Typography>
+                            <Typography>Type: {formData.type}</Typography>
+                            <Typography>Category: {formData.category}</Typography>
+                            <Typography>Expiry Date: {formData.expiryDate}</Typography>
+                            <Typography>Delivery Date: {formData.deliveryDate}</Typography>
+                            <Typography>Location: {formData.location}</Typography>
+                            {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
+
                         </div>
                         <div>
                             {formData.image && (
@@ -306,7 +339,7 @@ export default function DonateItem() {
                                 </Typography>
                             )}
                         </div>
-                        
+
                     </div>
                 );
             case 2:
