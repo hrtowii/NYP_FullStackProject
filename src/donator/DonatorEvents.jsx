@@ -30,7 +30,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 
 
-const backendRoute = 'http://localhost:3000'; 
+const backendRoute = 'http://localhost:3000';
 
 
 const API_BASE_URL = 'http://localhost:3000';
@@ -291,6 +291,27 @@ export default function DonatorEvents() {
                 ))}
             </div>
             {/* Confirmation Dialog */}
+
+            <Dialog
+                open={Boolean(enlargedImage)}
+                onClose={handleCloseEnlargedImage}
+                maxWidth="lg"
+            >
+                <DialogContent>
+                    <img
+                        src={enlargedImage}
+                        alt="Enlarged"
+                        style={{
+                            width: '100%',
+                            border: '2px solid black',
+                            borderRadius: '4px'
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                </DialogActions>
+            </Dialog>
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
