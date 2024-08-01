@@ -1,47 +1,109 @@
-.navbar {
+:root {
+    --blueLink: #1976d2;
+    --navbarHeight: 60px;
+    --transitionSpeed: 0.3s;
+  }
+  
+  .navbar {
     display: flex;
     background-color: white;
-    box-shadow: 0px 4px 10px 3px rgba(0,0,0,0.1);
-    height: 60px;
-    padding-left: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: var(--navbarHeight);
+    padding: 0 20px;
     position: sticky;
-    top: 0px;
+    top: 0;
     z-index: 999;
     justify-content: space-between;
-}
-
-.navbar a {
-    display: inline-block;
-    height: 70%;
-    padding: 18px 12px 0px 12px;
+    align-items: center;
+  }
+  
+  .navbar > div {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 15px;
     text-decoration: none;
-    color: black;
+    color: #333;
     font-weight: 600;
-}
-
-.avatarmenu {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-right: 10px;
-}
-
-.navbar a:hover {
+    transition: color var(--transitionSpeed) ease;
+    position: relative;
+  }
+  
+  .navbar a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: var(--blueLink);
+    transition: all var(--transitionSpeed) ease;
+  }
+  
+  .navbar a:hover,
+  .navbar a:focus {
     color: var(--blueLink);
-    transition: linear 0.2s;
-}
-
-.navbar .active {
-    border-bottom: 2px var(--blueLink) solid;
+  }
+  
+  .navbar a:hover::after,
+  .navbar a:focus::after,
+  .navbar a.active::after {
+    width: 100%;
+    left: 0;
+  }
+  
+  .navbar a.active {
     color: var(--blueLink);
-}
-
-.user-actions {
+  }
+  
+  .avatarmenu {
+    margin-left: 15px;
+  }
+  
+  .user-actions {
     display: flex;
     align-items: center;
-} 
-
-.navbar-right {
+  }
+  
+  .navbar-right {
     display: flex;
     align-items: center;
-}
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .navbar {
+      flex-direction: column;
+      height: auto;
+      padding: 10px;
+    }
+  
+    .navbar > div {
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+  
+    .navbar a {
+      padding: 10px;
+    }
+  
+    .navbar-right {
+      justify-content: center;
+    }
+  }
+  
+  /* Add subtle animation for smoother user experience */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .navbar {
+    animation: fadeIn 0.5s ease-in-out;
+  }

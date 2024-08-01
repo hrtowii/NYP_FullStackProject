@@ -398,7 +398,7 @@ export default function DonateItem() {
                                 component={NavLink}
                                 to="/donator/DonateProgress"
                                 sx={{
-                                    backgroundColor: '#b3e0ff', // White background for the button
+                                    backgroundColor: 'white', // White background for the button
                                     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
                                     '&:hover': {
                                         backgroundColor: '#f0f0f0' // Slightly different background color on hover
@@ -406,7 +406,7 @@ export default function DonateItem() {
                                 }}
                                 startIcon={<ShowChartIcon />} // Use the startIcon prop
                             >
-                                Track Donation Progress
+                                Donator Dashboard
                             </Button>
                         </Box>
                         <Box textAlign="center" mt={2}>
@@ -414,7 +414,7 @@ export default function DonateItem() {
                                 component={NavLink}
                                 to="/donator/DonateItem"
                                 sx={{
-                                    backgroundColor: 'white', // White background for the button
+                                    backgroundColor: '#b3e0ff', // White background for the button
                                     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Shadow for the button
                                     '&:hover': {
                                         backgroundColor: '#f0f0f0' // Slightly different background color on hover

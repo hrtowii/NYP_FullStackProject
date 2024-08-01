@@ -477,12 +477,12 @@ export default function DonateItem() {
                                     sx={{
                                         minWidth: 200,
                                         bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
-                                        color: achievement === achievementItem.name ? 'white' : 'black',
+                                        color: achievement === achievementItem.name ? 'black' : 'black',
                                     }}
                                 >
                                     <CardContent>
                                         <Typography variant="h6">{achievementItem.name}</Typography>
-                                        <Typography variant="body2">{achievementItem.description}</Typography>
+                                        <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
                                     </CardContent>
                                 </Card>
                             ))}

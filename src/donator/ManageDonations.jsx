@@ -314,7 +314,7 @@ export default function ManageDonations() {
                 }}
                 startIcon={<ShowChartIcon />} // Use the startIcon prop
               >
-                Track Donation Progress
+                Donator Dashboard
               </Button>
             </Box>
             <Box textAlign="center" mt={2}>
