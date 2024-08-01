@@ -8,6 +8,10 @@ import {
   Snackbar,
   Tab,
   Tabs,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import Box from '@mui/material/Box';
 import { AdminNavbar } from '../components/Navbar';
@@ -106,6 +110,7 @@ export default function AdminLanding() {
       },
     ],
   };
+
   const donationNestedConfig = {
     key: 'foods',
     label: 'Foods',
@@ -211,7 +216,15 @@ export default function AdminLanding() {
   };
 
   const handleInputChange = (event) => {
-    setEditData({ ...editData, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    let updatedValue = value;
+    if (name === 'startDate' || name === 'endDate') {
+      updatedValue = new Date(value).toISOString();
+    }
+    if (name === 'maxSlots') {
+      updatedValue = parseInt(value, 10);
+    }
+    setEditData({ ...editData, [name]: updatedValue });
   };
 
   const handleSave = async () => {
@@ -228,16 +241,24 @@ export default function AdminLanding() {
           endpoint = `donations/${editData.id}`;
           break;
         case 3:
-          endpoint = `reservations/${editData.id}`;
+          endpoint = `reservation/${editData.id}`;
           break;
         default:
           throw new Error('Invalid tab');
       }
+  
+      // Remove any file-related properties from editData
+      const { imageFile, ...dataToSend } = editData;
+
       const response = await fetch(`${backendRoute}/${endpoint}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(editData)
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(dataToSend)
       });
+  
       if (response.ok) {
         switch (activeTab) {
           case 0:
@@ -339,38 +360,115 @@ export default function AdminLanding() {
       case 1:
         return (
           <>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="name"
-              label="Name"
-              name="name"
-              value={editData.name || ''}
-              onChange={handleInputChange}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="date"
-              label="Date"
-              name="date"
-              type="date"
-              value={editData.date || ''}
-              onChange={handleInputChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="location"
-              label="Location"
-              name="location"
-              value={editData.location || ''}
-              onChange={handleInputChange}
-            />
-          </>
+            {editData.images && editData.images.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1">Current Image:</Typography>
+              <img 
+                src={`${backendRoute}${editData.images[0].url}`} 
+                alt="Event" 
+                style={{ maxWidth: '100%', maxHeight: '200px' }}
+              />
+            </Box>
+          )}
+          <input
+            accept="image/*"
+            style={{ display: 'none' }}
+            id="raised-button-file"
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              setEditData({ ...editData, imageFile: file });
+            }}
+          />
+          <label htmlFor="raised-button-file">
+            <Button variant="contained" component="span">
+              {editData.images && editData.images.length > 0 ? 'Change Image' : 'Upload Image'}
+            </Button>
+          </label>
+          <TextField
+            margin="normal"
+            fullWidth
+            id="title"
+            label="Title"
+            name="title"
+            value={editData.title || ''}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="fullSummary"
+            label="Full Summary"
+            name="fullSummary"
+            value={editData.fullSummary || ''}
+            onChange={handleInputChange}
+            multiline
+            rows={4}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="phoneNumber"
+            label="Phone Number"
+            name="phoneNumber"
+            value={editData.phoneNumber || ''}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="emailAddress"
+            label="Email Address"
+            name="emailAddress"
+            value={editData.emailAddress || ''}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="startDate"
+            label="Start Date"
+            name="startDate"
+            type="datetime-local"
+            value={editData.startDate ? editData.startDate.slice(0, 16) : ''}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="endDate"
+            label="End Date"
+            name="endDate"
+            type="datetime-local"
+            value={editData.endDate ? editData.endDate.slice(0, 16) : ''}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="maxSlots"
+            label="Max Slots"
+            name="maxSlots"
+            type="number"
+            value={editData.maxSlots || ''}
+            onChange={handleInputChange}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="attire"
+            label="Attire"
+            name="attire"
+            value={editData.attire || ''}
+            onChange={handleInputChange}
+          />
+        </>
         );
       case 2:
         return (
@@ -407,34 +505,70 @@ export default function AdminLanding() {
       case 3:
         return (
           <>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="userId"
-              label="User ID"
-              name="userId"
-              value={editData.userId || ''}
+          <TextField
+            margin="normal"
+            fullWidth
+            id="collectionDate"
+            label="Collection Date"
+            name="collectionDate"
+            type="date"
+            value={editData.collectionDate ? editData.collectionDate.split('T')[0] : ''}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="collectionTimeStart"
+            label="Collection Start Time"
+            name="collectionTimeStart"
+            type="time"
+            value={editData.collectionTimeStart || ''}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="normal"
+            fullWidth
+            id="collectionTimeEnd"
+            label="Collection End Time"
+            name="collectionTimeEnd"
+            type="time"
+            value={editData.collectionTimeEnd || ''}
+            onChange={handleInputChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="collectionStatus">Collection Status</InputLabel>
+            <Select
+              labelId="collectionStatus"
+              id="collectionStatus"
+              name="collectionStatus"
+              value={editData.collectionStatus || ''}
               onChange={handleInputChange}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="eventId"
-              label="Event ID"
-              name="eventId"
-              value={editData.eventId || ''}
-              onChange={handleInputChange}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="status"
-              label="Status"
-              name="status"
-              value={editData.status || ''}
-              onChange={handleInputChange}
-            />
-          </>
+              label="Collection Status"
+            >
+              <MenuItem value="Uncollected">Uncollected</MenuItem>
+              <MenuItem value="Pending">Pending</MenuItem>
+              <MenuItem value="Collected">Collected</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            margin="normal"
+            fullWidth
+            id="remarks"
+            label="Remarks"
+            name="remarks"
+            value={editData.remarks || ''}
+            onChange={handleInputChange}
+          />
+        </>
         );
       default:
         return null;

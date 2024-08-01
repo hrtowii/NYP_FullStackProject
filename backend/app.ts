@@ -727,8 +727,6 @@ app.get('/reservations', async (req, res) => {
                 }
             }
         });
-        console.log('Current reservations:', reservations);
-        console.log(reservations[0].reservationItems)
         res.json(reservations);
     } catch (error) {
         console.error('Error fetching reservations:', error);
@@ -930,20 +928,31 @@ app.get('/reservation/past/:userId', async (req, res) => {
 // Reschedule Reservation (UPDATE)
 app.put('/reservation/:id', async (req, res) => {
     const { id } = req.params;
-    const { collectionDate, collectionTimeStart, collectionTimeEnd, donationId } = req.body;
+    console.log(req.body)
+    const { collectionDate, collectionTimeStart, collectionTimeEnd, donationId, collectionStatus } = req.body;
+
+    // Prepare the update data
+    const updateData = {
+        collectionDate: new Date(collectionDate),
+        collectionTimeStart,
+        collectionTimeEnd,
+        donation: {
+            connect: { id: parseInt(donationId) }
+        }
+    };
+
+    // Only include collectionStatus if it's provided
+    if (collectionStatus !== undefined) {
+        console.log("collection status FOUND")
+        updateData.collectionStatus = collectionStatus;
+    }
+
     try {
         const updatedReservation = await prisma.reservation.update({
             where: {
                 id: parseInt(id),
             },
-            data: {
-                collectionDate: new Date(collectionDate),
-                collectionTimeStart,
-                collectionTimeEnd,
-                donation: {
-                    connect: { id: parseInt(donationId) }
-                }
-            },
+            data: updateData,
             include: {
                 reservationItems: {
                     include: {
@@ -1136,35 +1145,38 @@ interface updateEventBody {
 
 }
 app.put('/events/update/:eventId', async (req, res) => {
-    const { eventId } = req.params;  // Get eventId from params, not body
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, attire, donatorId } = req.body;
+    const { eventId } = req.params;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
-
     try {
+        let updateData: any = {
+            title,
+            briefSummary,
+            fullSummary,
+            phoneNumber,
+            emailAddress,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            maxSlots,
+            attire,
+            donatorId: Number(donatorId),
+        };
+        if (files && files.length > 0) {
+            updateData.images = {
+                create: files.map(file => ({
+                    url: `/public/${file.filename}`
+                }))
+            };
+        }
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
-            data: {
-                title,
-                briefSummary,
-                fullSummary,
-                phoneNumber,
-                emailAddress,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate),
-                maxSlots,
-                attire,
-                donatorId: Number(donatorId),
-                images: {
-                    create: files.map(file => ({
-                        url: `/public/${file.filename}` // Store the path relative to your public directory
-                    }))
-                }
-            },
+            data: updateData,
             include: {
                 images: true
             }
         });
+
         res.status(200).json(updatedEvent);
     } catch (error) {
         console.error('Error updating event:', error);
