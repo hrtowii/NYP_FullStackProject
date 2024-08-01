@@ -66,6 +66,7 @@ export default function ManageDonations() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log(data)
       setDonations(data.donations);
       setError(null);
     } catch (error) {
@@ -79,6 +80,13 @@ export default function ManageDonations() {
   useEffect(() => {
     fetchDonations();
   }, [fetchDonations]);
+
+  const formatImagePath = (path) => {
+    if (!path) return '';
+    const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
+    console.log('Formatted Image Path:', formattedPath);
+    return path.replace(/\\/g, '/').replace(/^public/, '');
+  };
 
   const handleDeleteClick = (donationId) => {
     setDonationToDelete(donationId);
@@ -230,7 +238,7 @@ export default function ManageDonations() {
           </div>
         </div>
 
-        <Container maxWidth="md">
+        <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
           <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
             <Typography variant="h4" gutterBottom>
               My Donations
@@ -284,9 +292,9 @@ export default function ManageDonations() {
                       donation.foods.map((food) => (
                         <TableRow key={`${donation.id}-${food.id}`}>
                           <TableCell>
-                            {donation.imageUrl && (
+                            {donation.image && (
                               <img
-                                src={donation.imageUrl}
+                                src={`${backendRoute}${formatImagePath(donation.image)}`}
                                 alt={food.name}
                                 style={{ width: 50, height: 50, objectFit: 'cover' }}
                               />

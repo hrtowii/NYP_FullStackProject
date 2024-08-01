@@ -48,6 +48,35 @@ app.use(cors({
     credentials: true
   }));
 
+
+// Configure Multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './public'); // Make sure this directory exists
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Use this function when saving the path to the database
+const formatImagePath = (filename) => {
+    return '/public/' + filename.replace(/\\/g, '/');
+};
+
+export { upload, formatImagePath };
+
+// Convert import.meta.url to __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the "../public" directory
+const publicPath = path.join(__dirname, '../public');
+console.log('Serving static files from:', publicPath);
+app.use('/public', express.static(publicPath));
 app.get('/', (req, res) => {
     res.send('this is homepage')
 })
@@ -355,45 +384,123 @@ app.post('/reset-password/:id', isAdmin, async (req, res) => {
 
 // MARK: Donation CRUD - Andric
 interface donationInterface {
-    foodName: string,
-    quantity: string,
-    expiryDate: string,
-    type: string,
-    category: string,
-    location: string,
-    remarks: string,
-    imageURL: string,
+    foodName: string;
+    quantity: string;
+    expiryDate: string;
+    deliveryDate: string;  // Add this field
+    type: string;
+    category: string;
+    location: string;
+    remarks: string;
+    image: Express.Multer.File;  // Change this to match the file object
 }
-app.post('/donation/:id', async (req, res) => {
+
+app.post('/donation/:id', upload.single('image'), async (req: Request, res: Response) => {
     const id: number = parseInt(req.params.id);
-    let formData: donationInterface = req.body
-    const result = await prisma.donation.create({
-        data: {
-            donator: {
-                connect: {
-                    id: id,
+    let formData: donationInterface = req.body;
+
+    // The uploaded file is available as req.file
+    const imagePath = req.file ? `/public/${req.file.filename}` : null;
+
+    try {
+        const result = await prisma.donation.create({
+            data: {
+                donator: {
+                    connect: {
+                        id: id,
+                    },
+                },
+                category: formData.category,
+                deliveryDate: new Date(formData.deliveryDate),
+                location: formData.location,
+                remarks: formData.remarks,
+                image: imagePath, // Save the path to the image
+                foods: {
+                    create: {
+                        name: formData.foodName,
+                        quantity: parseInt(formData.quantity, 10),
+                        type: formData.type,
+                        expiryDate: new Date(formData.expiryDate),
+                    },
                 },
             },
-            category: formData.category,
-            deliveryDate: new Date(formData.expiryDate),
-            location: formData.location,
-            remarks: formData.remarks,
-            imageUrl: formData.imageURL,
-            foods: {
-                create: {
-                    name: formData.foodName,
-                    quantity: parseInt(formData.quantity, 10),
-                    type: formData.type,
-                    expiryDate: new Date(formData.expiryDate),
-                },
+            include: {
+                foods: true,
             },
-        },
-        include: {
-            foods: true,
-        },
-    });
-    res.status(200).json(result)
-})
+        });
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error creating donation:', error);
+        res.status(500).json({ error: 'Failed to create donation' });
+    }
+});
+
+app.patch('/donators/:donatorId/goal', async (req, res) => {
+    const donatorId = parseInt(req.params.donatorId, 10);
+    const { donationGoal } = req.body;
+
+    try {
+        if (isNaN(donatorId) || donationGoal < 0) {
+            return res.status(400).json({ error: 'Invalid data' });
+        }
+
+        const donator = await prisma.donator.update({
+            where: { id: donatorId },
+            data: { donationGoal },
+        });
+
+        res.json(donator);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update donation goal' });
+    }
+});
+
+app.get('/donators/:id/goal', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const donator = await prisma.donator.findUnique({
+            where: { id: parseInt(id) },
+            select: { donationGoal: true }
+        });
+
+        if (!donator) {
+            return res.status(404).json({ error: 'Donator not found' });
+        }
+
+        res.json({ donationGoal: donator.donationGoal });
+    } catch (error) {
+        console.error('Error fetching donation goal:', error);
+        res.status(500).json({ error: 'Failed to fetch donation goal' });
+    }
+});
+
+app.patch('/donators/:id/achievement', async (req, res) => {
+    const donatorId = parseInt(req.params.id, 10);
+    const { achievement } = req.body;  // Get the achievement from the request body
+
+    // Ensure the achievement is valid
+    const validAchievements = ['Noob', 'Intermediate', 'Pro', 'MrBeast'];
+    if (!validAchievements.includes(achievement)) {
+        return res.status(400).json({ error: 'Invalid achievement value' });
+    }
+
+    try {
+        // Update the achievement in the database
+        const donator = await prisma.donator.update({
+            where: { id: donatorId },
+            data: { achievement }
+        });
+
+        res.json(donator);
+    } catch (error) {
+        console.error('Error updating achievement:', error);
+        res.status(500).json({ error: 'Failed to update achievement' });
+    }
+});
+
+
+
 // View donations with pagination and sorting
 app.get('/donations/:id', async (req, res) => {
     const donorId: number = parseInt(req.params.id);
@@ -418,7 +525,6 @@ app.get('/donations/:id', async (req, res) => {
                 where: { donatorId: donorId }
             }),
         ]);
-
         res.status(200).json({
             donations,
             totalPages: Math.ceil(totalCount / limitNumber),
@@ -466,6 +572,30 @@ app.get('/donations', async (req, res) => {
         res.status(500).json({ error: 'Error getting donations', details: error.message });
     }
 });
+
+// Endpoint to get total donations for a specific donator
+app.get('/api/donations/:donatorId/total', async (req, res) => {
+    const { donatorId } = req.params;
+
+    try {
+        const totalDonations = await prisma.food.aggregate({
+            _sum: {
+                quantity: true,
+            },
+            where: {
+                donation: {
+                    donatorId: parseInt(donatorId, 10),
+                },
+            },
+        });
+
+        res.json({ totalQuantity: totalDonations._sum.quantity || 0 });
+    } catch (error) {
+        console.error('Error fetching total donations:', error);
+        res.status(500).json({ error: 'Failed to fetch total donations' });
+    }
+});
+
 
 app.patch('/donations/:id/availability', async (req, res) => {  // Patch req -> modifies item, instead of updating all
     const { id } = req.params;
@@ -523,14 +653,14 @@ app.delete('/donations/:id', async (req, res) => {
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, category, remarks, imageUrl } = req.body;
+    const { foods, category, remarks, image } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
             data: {
                 category,
                 remarks,
-                imageUrl,
+                image,
                 foods: {
                     updateMany: foods.map((food) => ({
                         where: { id: food.id },
