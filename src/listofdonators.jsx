@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
-import { UserNavbar } from './components/Navbar'
+import { UserNavbar, DonatorNavbar } from './components/Navbar'
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
@@ -287,7 +287,7 @@ export default function ListOfDonators() {
 
     return (
         <>
-            <UserNavbar />
+            {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <div className="container">
                 <Box sx={{ p: 3 }}>
                     <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>

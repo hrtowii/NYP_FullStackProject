@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
-import { UserNavbar } from './components/Navbar'
+import { UserNavbar, DonatorNavbar } from './components/Navbar'
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -404,7 +404,7 @@ export default function Profile() {
 
     return (
         <>
-            <UserNavbar />
+            {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>

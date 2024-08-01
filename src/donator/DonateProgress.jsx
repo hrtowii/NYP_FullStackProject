@@ -435,7 +435,7 @@ export default function DonateItem() {
                                 }}
                                 startIcon={<ShowChartIcon />} // Use the startIcon prop
                             >
-                                Track Donation Progress
+                                Donator Dashboard
                             </Button>
                         </Box>
                         <Box textAlign="center" mt={2}>
@@ -457,10 +457,10 @@ export default function DonateItem() {
                     </Box>
                 </div>
 
-
+                <Box sx={{backgroundColor: 'lightgrey'}} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
                 <Box justifyContent="center" textAlign="center" mt={2}>
                     <Typography variant="h4" gutterBottom mt={2}>
-                        Your Donations
+                        Current Rank:
                     </Typography>
                     <Box mt={2} mb={2} textAlign="center">
                         <Box
@@ -496,12 +496,18 @@ export default function DonateItem() {
                             Progress
                         </Typography>
                         <Box
+                            sx={{border: '2px solid black',
+                                borderRadius: 8,
+                            }}>
+
+                        <Box
                             sx={{
                                 position: 'relative',
                                 height: 15, // Thicker progress bar
                                 borderRadius: 8, // Thicker border radius
-                                border: '3px solid lightgrey', // Thicker and light grey border
-                                backgroundColor: 'lightgrey', // Light grey background
+                                border: '3x solid white', // Thicker and light grey border
+                                backgroundColor: 'white', // Light grey background
+                                padding: 0.3
                             }}
                         >
                             <LinearProgress
@@ -517,6 +523,7 @@ export default function DonateItem() {
                                     },
                                 }}
                             />
+                        </Box>
                         </Box>
                         <Typography variant="body1" mt={2}>
                             {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
@@ -552,9 +559,15 @@ export default function DonateItem() {
                         </Dialog>
                     </Box>
                 </Box>
-
-
+                </Box>
+                <Box ml={5}>
+                    <Typography variant="h4" gutterBottom mt={2}>
+                        Your Donations:
+                    </Typography>
+                </Box>
+                
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
+                    
                     <Box width="60%">
                         <Typography variant="h6" gutterBottom>Uncollected</Typography>
                         <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
@@ -670,6 +683,9 @@ export default function DonateItem() {
                             <DialogContent>
                                 <Typography>
                                     You have achieved your donation goal of {donationGoal} grams!
+                                </Typography>
+                                <Typography>
+                                    Please set your next goal.
                                 </Typography>
                             </DialogContent>
                             <DialogActions>

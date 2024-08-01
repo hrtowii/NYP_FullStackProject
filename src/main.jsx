@@ -93,7 +93,7 @@ const router = createBrowserRouter([
     path: "/user",
     element: (
       <ProtectedRoute allowedRoles={['user', 'admin']}>
-        <UserLanding />
+        <Reservation />
       </ProtectedRoute>
     ),
   },
@@ -123,7 +123,7 @@ const router = createBrowserRouter([
     path: "/donator",
     element: (
       <ProtectedRoute allowedRoles={['donator', 'admin']}>
-        <DonatorLanding />
+        <DonateProgress />
       </ProtectedRoute>
     ),
   },
