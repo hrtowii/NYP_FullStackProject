@@ -10,6 +10,14 @@ body {
 .fridge-container {
     text-align: center;
     margin: 0 auto;
+    /* padding: 0 20px; */
+}
+
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 20px;
 }
 
 .fridge-header {
@@ -19,16 +27,6 @@ body {
     margin-bottom: 20px;
     color: white;
 }
-
-/* .fridge-header {
-    background-color: #2196F3;
-    color: white;
-    height: auto;
-    padding: 40px 20px;
-    margin-bottom: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-} */
 
 .fridge-header h1 {
     margin: 0;
@@ -79,8 +77,28 @@ h2 {
     margin-bottom: 20px;
 }
 
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.table-container {
+    margin: 0 auto;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.buttons-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 0 20px;
+}
+
 .MuiFormControl-root {
     margin-bottom: 20px;
+    margin-right: 10px;
 }
 
 .MuiTableContainer-root {
@@ -94,10 +112,6 @@ h2 {
 
 .MuiTableRow-root:nth-of-type(even) {
     background-color: #f9f9f9;
-}
-
-.MuiTableCell-root {
-    padding: 16px;
 }
 
 .MuiButton-contained {

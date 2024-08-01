@@ -270,11 +270,11 @@ const Reservation = () => {
         // Check if reservation n these 3 exist first
         const foodName = reservation.reservationItems?.[0]?.food?.name || 'N/A';
         const quantity = reservation.reservationItems?.[0]?.food?.quantity || 'N/A';
-        const imageUrl = reservation.reservationItems?.[0]?.food?.donation?.imageUrl || "/path/to/default-food-image.jpg";
+        const image = reservation.reservationItems?.[0]?.food?.donation?.image || "/path/to/default-food-image.jpg";
 
         return (
             <div className="reservation-card">
-                <img src={imageUrl} alt="Food" className="food-image" />
+                <img src={image} alt="Food" className="food-image" />
                 <div className="reservation-details">
                     <h3>{foodName}</h3>
                     <p>

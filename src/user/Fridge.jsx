@@ -3,7 +3,7 @@ import Navbar, { UserNavbar } from "../components/Navbar";
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
-    Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel
+    Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel, TablePagination
 } from '@mui/material';
 import "./Fridge.css"
 import ReactOdometer from 'react-odometerjs';
@@ -17,10 +17,9 @@ const CompactFormControl = styled(FormControl)(({ theme }) => ({
         height: 40,
     },
     '& .MuiInputLabel-root': {
-        transform: 'translate(14px, 12px) scale(1)',
-    },
-    '& .MuiInputLabel-shrink': {
-        transform: 'translate(14px, -6px) scale(0.75)',
+        transform: 'translate(14px, -8px) scale(0.75)',
+        background: '#f5f5f5',
+        padding: '0 13px',
     },
 }));
 
@@ -82,6 +81,8 @@ export default function Fridge() {
     const [filterCategory, setFilterCategory] = useState('all');
     const [filterType, setFilterType] = useState('all');
     const [filterAvailability, setFilterAvailability] = useState('all');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const navigate = useNavigate();
 
 
@@ -214,6 +215,15 @@ export default function Fridge() {
             }
         });
 
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    }
+
 
     if (loading) return <Typography>Loading...</Typography>;
     if (error) return <Typography color="error">{error}</Typography>;
@@ -246,49 +256,49 @@ export default function Fridge() {
                 </div>
 
                 <h2>Fridge</h2>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
-                    <CompactFormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Location</InputLabel>
-                        <CompactSelect value={filterLocation} onChange={(e) => handleFilterChange(e, 'location')}>
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
-                            <MenuItem value="Sengkang">Sengkang</MenuItem>
-                        </CompactSelect>
-                    </CompactFormControl>
-                    <CompactFormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Category</InputLabel>
-                        <CompactSelect value={filterCategory} onChange={(e) => handleFilterChange(e, 'category')}>
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="perishable">Perishable</MenuItem>
-                            <MenuItem value="non-perishable">Non-perishable</MenuItem>
-                            <MenuItem value="canned">Canned</MenuItem>
-                            <MenuItem value="frozen">Frozen</MenuItem>
-                        </CompactSelect>
-                    </CompactFormControl>
-                    <CompactFormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Type</InputLabel>
-                        <CompactSelect value={filterType} onChange={(e) => handleFilterChange(e, 'type')}>
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="meat">Meat</MenuItem>
-                            <MenuItem value="vegetable">Vegetable</MenuItem>
-                            {/* Add more food types as needed */}
-                        </CompactSelect>
-                    </CompactFormControl>
-                    <CompactFormControl sx={{ minWidth: 120 }}>
-                        <InputLabel>Availability</InputLabel>
-                        <CompactSelect value={filterAvailability} onChange={(e) => handleFilterChange(e, 'availability')}>
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="Available">Available</MenuItem>
-                            <MenuItem value="Unavailable">Unavailable</MenuItem>
-                        </CompactSelect>
-                    </CompactFormControl>
+                <Box className="filter-container">
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2, padding: '0 20px' }}>
+                        <CompactFormControl sx={{ minWidth: 120 }}>
+                            <InputLabel>Location</InputLabel>
+                            <CompactSelect value={filterLocation} onChange={(e) => handleFilterChange(e, 'location')}>
+                                <MenuItem value="all">All</MenuItem>
+                                <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
+                                <MenuItem value="Sengkang">Sengkang</MenuItem>
+                            </CompactSelect>
+                        </CompactFormControl>
+                        <CompactFormControl sx={{ minWidth: 120 }}>
+                            <InputLabel>Category</InputLabel>
+                            <CompactSelect value={filterCategory} onChange={(e) => handleFilterChange(e, 'category')}>
+                                <MenuItem value="all">All</MenuItem>
+                                <MenuItem value="perishable">Perishable</MenuItem>
+                                <MenuItem value="non-perishable">Non-perishable</MenuItem>
+                                <MenuItem value="canned">Canned</MenuItem>
+                                <MenuItem value="frozen">Frozen</MenuItem>
+                            </CompactSelect>
+                        </CompactFormControl>
+                        <CompactFormControl sx={{ minWidth: 120 }}>
+                            <InputLabel>Type</InputLabel>
+                            <CompactSelect value={filterType} onChange={(e) => handleFilterChange(e, 'type')}>
+                                <MenuItem value="all">All</MenuItem>
+                                <MenuItem value="meat">Meat</MenuItem>
+                                <MenuItem value="vegetable">Vegetable</MenuItem>
+                                {/* Add more food types as needed */}
+                            </CompactSelect>
+                        </CompactFormControl>
+                        <CompactFormControl sx={{ minWidth: 120 }}>
+                            <InputLabel>Availability</InputLabel>
+                            <CompactSelect value={filterAvailability} onChange={(e) => handleFilterChange(e, 'availability')}>
+                                <MenuItem value="all">All</MenuItem>
+                                <MenuItem value="Available">Available</MenuItem>
+                                <MenuItem value="Unavailable">Unavailable</MenuItem>
+                            </CompactSelect>
+                        </CompactFormControl>
+                    </Box>
                 </Box>
                 {/* Display fridge table */}
-                {filteredAndSortedDonations.length === 0 ? (
-                    <Typography>No donations available at the moment.</Typography>
-                ) : (
-                    <>
-                        <TableContainer component={Paper}>
+                <>
+                    <div className="table-container">
+                        <TableContainer component={Paper} sx={{ margin: '0 20px', marginBottom: '20px' }}>
                             <Table>
                                 <TableHead>
                                     <TableRow>
@@ -330,40 +340,62 @@ export default function Fridge() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {filteredAndSortedDonations.map((donation) => (
-                                        donation.foods.map((food) => (
-                                            <TableRow key={`${donation.id}-${food.id}`}>
-                                                <TableCell>
-                                                    <Checkbox
-                                                        checked={selectedItems.some(item => item.id === donation.id)}
-                                                        onChange={() => handleItemSelect(donation)}
-                                                        disabled={donation.availability !== "Available"}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    {donation.imageUrl && (
-                                                        <img
-                                                            src={donation.imageUrl}
-                                                            style={{ width: 50, height: 50, marginLeft: 10, objectFit: 'cover' }}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>{food.name}</TableCell>
-                                                <TableCell>{food.type}</TableCell>
-                                                <TableCell>{food.quantity}</TableCell>
-                                                <TableCell>{donation.category}</TableCell>
-                                                <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
-                                                <TableCell>{donation.remarks}</TableCell>
-                                                <TableCell>{donation.location}</TableCell>
-                                                <TableCell>{donation.donator.person.name}</TableCell>
-                                                <TableCell>{donation.availability}</TableCell>
-                                            </TableRow>
-                                        ))
-                                    ))}
+                                    {filteredAndSortedDonations.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={11} align="center">
+                                                No donations available at the moment.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredAndSortedDonations
+                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                            .map((donation) => (
+                                                donation.foods.map((food) => (
+                                                    <TableRow key={`${donation.id}-${food.id}`}>
+                                                        <TableCell>
+                                                            <Checkbox
+                                                                checked={selectedItems.some(item => item.id === donation.id)}
+                                                                onChange={() => handleItemSelect(donation)}
+                                                                disabled={donation.availability !== "Available"}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {donation.image && (
+                                                                <img
+                                                                    src={donation.image}
+                                                                    alt="nothing"
+                                                                    style={{ width: 60, height: 60, objectFit: 'cover' }}
+                                                                />
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>{food.name}</TableCell>
+                                                        <TableCell>{food.type}</TableCell>
+                                                        <TableCell>{food.quantity}</TableCell>
+                                                        <TableCell>{donation.category}</TableCell>
+                                                        <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
+                                                        <TableCell>{donation.remarks}</TableCell>
+                                                        <TableCell>{donation.location}</TableCell>
+                                                        <TableCell>{donation.donator.person.name}</TableCell>
+                                                        <TableCell>{donation.availability}</TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ))
+                                        )}
                                 </TableBody>
                             </Table>
                         </TableContainer>
-                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                        <TablePagination
+                            rowsPerPageOptions={[5, 10, 25]}
+                            component="div"
+                            count={filteredAndSortedDonations.length}
+                            rowsPerPage={rowsPerPage}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                        />
+                    </div>
+                    <Box className="buttons-container">
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2, padding: '0 20px 20px' }}>
                             <Button variant="contained" onClick={handleAddToCart} disabled={selectedItems.length === 0}>
                                 Add to Cart
                             </Button>
@@ -371,8 +403,8 @@ export default function Fridge() {
                                 View Cart
                             </Button>
                         </Box>
-                    </>
-                )}
+                    </Box>
+                </>
             </div>
         </>
     )

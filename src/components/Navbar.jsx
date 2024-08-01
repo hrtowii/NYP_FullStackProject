@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom'
 import {TokenContext} from '../utils/TokenContext.jsx'
 import AvatarMenu from './AvatarMenu.jsx'
 import parseJwt from '../utils/parseJwt.jsx'
+import CartIcon from './CartIcon';
 
 
 export default function Navbar() {
@@ -76,12 +77,14 @@ export function UserNavbar() {
       <NavLink to={"/user/cart"}>Cart</NavLink>
       <NavLink to={"/listofdonators"}>Donators</NavLink>
       </div>
+      <div className="navbar-right">
+      <div className="user-actions">
+        <CartIcon />
+      </div>
       <div className="avatarmenu">
       <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
       </div>
-      
-      {/* Navlink to "Reviews" Page */}
-      {/* Navlink to "Events" Page */}
+      </div>
 
     </div>
   )
