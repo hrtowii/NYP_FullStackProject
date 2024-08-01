@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { NavLink, useParams } from 'react-router-dom';
+import { NavLink, useParams, Link } from 'react-router-dom';
 import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
@@ -22,9 +22,14 @@ import {
     DialogActions,
     TextField,
     Container,
+    Box,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemAvatar,
+    Divider,
 } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import Box from '@mui/material/Box';
 import parseJwt from '../utils/parseJwt.jsx'
 
 export default function DonateItem() {
@@ -41,7 +46,7 @@ export default function DonateItem() {
     const [goalError, setGoalError] = useState(null);
     const [achievement, setAchievement] = useState('');
     const [goalAchieved, setGoalAchieved] = useState(false);
-    const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false); // State for the goal achieved dialog
+    const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false);
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [collectedDonations, setCollectedDonations] = useState([]);
     const [uncollectedDonations, setUncollectedDonations] = useState([]);
@@ -93,13 +98,11 @@ export default function DonateItem() {
     }, [token]);
 
     const fetchReviews = useCallback(async () => {
-        const donatorId = parseJwt(token).id
+        const donatorId = parseJwt(token).id;
         if (!donatorId) {
-            setError('No donator ID provided');
-            setLoading(false);
+            console.error('No donator ID available');
             return;
         }
-        console.log('Fetching reviews...');
         try {
             const response = await fetch(`${backendRoute}/reviews/${donatorId}`, {
                 method: 'GET',
@@ -111,13 +114,25 @@ export default function DonateItem() {
                 throw new Error('Failed to fetch reviews');
             }
             const data = await response.json();
-            console.log('Reviews fetched:', data);
+            console.log('Fetched reviews:', data);
             setReviews(data);
         } catch (error) {
             console.error('Error fetching reviews:', error);
-            // Handle error (e.g., show an error message to the user)
         }
-    }, [donatorId, token]);
+    }, [token, backendRoute]);
+
+    const getDisplayName = (review) => {
+        if (review.isAnonymous) {
+            const name = review.user?.person?.name || 'Unknown User';
+            return `${name[0]}${'*'.repeat(6)}`;
+        }
+        return review.user?.person?.name || 'Unknown User';
+    };
+
+    const truncateMessage = (message, maxLength = 100) => {
+        if (message.length <= maxLength) return message;
+        return message.substr(0, maxLength) + '...';
+    };
 
     // Fetch total donations
     const fetchTotalDonations = useCallback(async () => {
@@ -228,7 +243,7 @@ export default function DonateItem() {
         fetchDonations();
         fetchReviews();
         fetchTotalDonations();
-        fetchInitialGoal(); // Add the function call
+        fetchInitialGoal();
     }, [fetchDonations, fetchReviews, fetchTotalDonations, fetchInitialGoal]);
 
 
@@ -398,7 +413,7 @@ export default function DonateItem() {
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
                     <Box width="60%">
                         <Typography variant="h6" gutterBottom>Uncollected</Typography>
-                        <Box bgcolor="error.main" p={2} borderRadius={2}>
+                        <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
                             {uncollectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no uncollected donations.</Alert>
                             ) : (
@@ -550,7 +565,7 @@ export default function DonateItem() {
                         </Typography>
 
                         <Typography variant="h6" gutterBottom mt={4}>Collected</Typography>
-                        <Box bgcolor="success.main" p={2} borderRadius={2}>
+                        <Box bgcolor="success.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
                             {collectedDonations.length === 0 ? (
                                 <Alert severity="info">You have no collected donations.</Alert>
                             ) : (
@@ -636,26 +651,62 @@ export default function DonateItem() {
                         </Box>
                     </Box>
 
-                    <Box width="35%" >
-                        <Typography variant="h6" gutterBottom>Your Reviews</Typography>
-                        <Box bgcolor="grey.200" p={2} borderRadius={2}>
+                    <Box width="35%">
+                        <Typography variant="h6" gutterBottom>Recent Reviews</Typography>
+                        <Box bgcolor="grey.200" p={2} borderRadius={2} maxHeight={800} overflow="auto">
                             {reviews.length === 0 ? (
                                 <Alert severity="info">You have no reviews yet.</Alert>
                             ) : (
-                                reviews.map((review) => (
-                                    <Card key={review.id} sx={{ mb: 2 }}>
-                                        <CardContent>
-                                            <Box display="flex" alignItems="center">
-                                                <Avatar sx={{ mr: 2 }}>{'J'}</Avatar>
-                                                <Box>
-                                                    <Typography variant="subtitle1">{review.user?.person?.name || 'Unknown User'}</Typography>
-                                                    <Rating value={review.rating} readOnly size="small" />
-                                                </Box>
-                                            </Box>
-                                            <Typography variant="body2" mt={1}>{review.comment}</Typography>
-                                        </CardContent>
-                                    </Card>
-                                ))
+                                <>
+                                    <List>
+                                        {reviews.slice(0, 5).map((review) => (
+                                            <React.Fragment key={review.id}>
+                                                <ListItem alignItems="flex-start">
+                                                    <ListItemAvatar>
+                                                        <Avatar>{getDisplayName(review)[0]}</Avatar>
+                                                    </ListItemAvatar>
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box>
+                                                                <Typography variant="subtitle1">
+                                                                    {getDisplayName(review)}
+                                                                </Typography>
+                                                                <Rating
+                                                                    name="read-only"
+                                                                    value={review.rating}
+                                                                    readOnly
+                                                                    size="small"
+                                                                />
+                                                            </Box>
+                                                        }
+                                                        secondary={
+                                                            <Typography
+                                                                component="span"
+                                                                variant="body2"
+                                                                color="text.primary"
+                                                                sx={{ display: 'inline', mt: 1 }}
+                                                            >
+                                                                {truncateMessage(review.comment)}
+                                                            </Typography>
+                                                        }
+                                                    />
+                                                </ListItem>
+                                                <Divider variant="inset" component="li" />
+                                            </React.Fragment>
+                                        ))}
+                                    </List>
+                                    {reviews.length > 5 && (
+                                        <Box textAlign="center" mt={2}>
+                                            <Button
+                                                component={Link}
+                                                to={`/profile/${parseJwt(token).id}`}
+                                                variant="outlined"
+                                            >
+                                                See more reviews
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </>
                             )}
                         </Box>
                     </Box>

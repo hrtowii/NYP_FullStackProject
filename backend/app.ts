@@ -1442,7 +1442,7 @@ app.get('/reviews/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
-        const userId = parseInt(req.query.userId, 10);
+        const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
 
         console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
 
@@ -1466,9 +1466,9 @@ app.get('/reviews/:id', async (req, res) => {
                 _count: {
                     select: { likes: true }
                 },
-                likes: {
+                likes: userId ? {
                     where: { userId: userId }
-                }
+                } : undefined
             },
             orderBy: {
                 createdAt: 'desc'
@@ -1484,7 +1484,7 @@ app.get('/reviews/:id', async (req, res) => {
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
             reviewData.likeCount = reviewData._count.likes;
-            reviewData.likedByUser = reviewData.likes.length > 0;
+            reviewData.likedByUser = reviewData.likes && reviewData.likes.length > 0;
             delete reviewData._count;
             delete reviewData.likes;
             return reviewData;
@@ -1493,8 +1493,7 @@ app.get('/reviews/:id', async (req, res) => {
         res.status(200).json(mappedReviews);
     } catch (error) {
         console.error('Error fetching reviews:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ error: 'Internal server error', details: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
