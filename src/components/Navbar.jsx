@@ -75,6 +75,7 @@ export function UserNavbar() {
       <NavLink to={"/user/reservation"}>Reservations</NavLink>
       <NavLink to={"/user/fridge"}>Fridge</NavLink>
       <NavLink to={"/listofdonators"}>Donators</NavLink>
+      <NavLink to={"/user/events"}>Events</NavLink>
       <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="navbar-right">

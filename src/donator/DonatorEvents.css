@@ -263,3 +263,13 @@
         margin-bottom: 20px;
     }
 }
+.sort-container {
+    margin: 20px 0;
+    text-align: right;
+}
+
+.sort-container select {
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 4px;
+}

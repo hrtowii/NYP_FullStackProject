@@ -148,7 +148,7 @@ const AddEventForm = () => {
         attire: ''
       });
       setSelectedImage(null);
-      navigate("/donator/eventAdded");
+      navigate('/donator/eventAdded', { state: { eventId: responseData.id } });
     } catch (error) {
       console.error('Error adding event:', error);
       setError(`Failed to add event: ${error.message}`);

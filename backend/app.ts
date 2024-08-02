@@ -1251,32 +1251,62 @@ interface updateEventBody {
     images: Express.Multer.File,
 
 }
-app.put('/events/update/:eventId', async (req, res) => {
-    const { eventId } = req.params;  // Get eventId from params, not body
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, takenSlots, attire, donatorId } = req.body;
-    const files = req.files as Express.Multer.File[];
+
+
+
+app.put('/events/update/:eventId', upload.single('images'), async (req, res) => {
+    const { eventId } = req.params;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId, imageUpdated } = req.body;
+    const file = req.file;
 
     try {
+        // Find the current event to get the old image
+        const currentEvent = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { images: true }
+        });
+
+        if (!currentEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updateData: any = {
+            title,
+            briefSummary,
+            fullSummary,
+            phoneNumber,
+            emailAddress,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            maxSlots: parseInt(maxSlots),
+            takenSlots: parseInt(takenSlots),
+            attire,
+            donatorId: parseInt(donatorId),
+        };
+
+        if (imageUpdated === 'true' && file) {
+            // Delete old image file if it exists
+            if (currentEvent.images && currentEvent.images.length > 0) {
+                const oldImagePath = path.join(__dirname, '..', currentEvent.images[0].url);
+                try {
+                    await fs.unlink(oldImagePath);
+                } catch (err) {
+                    console.error('Error deleting old image file:', err);
+                }
+            }
+
+            // Update with new image
+            updateData.images = {
+                deleteMany: {},  // This will delete all existing images for this event
+                create: {
+                    url: `/public/${file.filename}`
+                }
+            };
+        }
+
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
-            data: {
-                title,
-                briefSummary,
-                fullSummary,
-                phoneNumber,
-                emailAddress,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate),
-                maxSlots,
-                takenSlots,
-                attire,
-                donatorId: Number(donatorId),
-                images: {
-                    create: files.map(file => ({
-                        url: `/public/${file.filename}` // Store the path relative to your public directory
-                    }))
-                }
-            },
+            data: updateData,
             include: {
                 images: true
             }
@@ -1288,8 +1318,6 @@ app.put('/events/update/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to update event' });
     }
 });
-
-
 app.get('/events/:eventId', async (req, res) => {
     const { eventId } = req.params;
     try {
