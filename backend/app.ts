@@ -440,6 +440,66 @@ app.post('/createAccounts', async (req, res) => {
             }
         }
     })
+    await prisma.person.create({
+        data: {
+            name: "emma",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "emma@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "olivia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "olivia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "noah",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "noah@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "liam",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "liam@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ava",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "ava@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "sophia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "sophia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
     return res.status(200).json({ success: true });
 })
 
