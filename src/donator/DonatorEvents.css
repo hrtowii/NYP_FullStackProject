@@ -226,6 +226,7 @@ body {
 
 .modal-info {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     gap: 15px;
 }
@@ -237,6 +238,8 @@ body {
     border-radius: 4px;
     padding: 6px 10px;
     font-size: 0.9rem;
+    width: fit-content;
+
 }
 
 .modal-info-item svg {
