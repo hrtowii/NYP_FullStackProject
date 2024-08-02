@@ -13,6 +13,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
 import { useLocation, useNavigate } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 
 
 
@@ -364,6 +365,7 @@ const Cart = () => {
           RESERVE
         </Button>
       </Box>
+      <UserFooter/>
     </>
   );
 };
