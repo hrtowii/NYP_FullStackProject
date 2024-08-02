@@ -26,6 +26,8 @@ import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
 import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
 import ResetPasswordRequest from './password-reset/ResetPasswordRequest.jsx'
 import ResetPasswordForm from './password-reset/ResetPasswordForm.jsx'
+import UserEvents from './user/UserEvents.jsx'
+
 import './index.css'
 import {
   createBrowserRouter,
@@ -131,6 +133,13 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={['user', 'admin']}>
         <Fridge />
+      </ProtectedRoute>)
+  },
+  {
+    path: "/user/events",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <UserEvents />
       </ProtectedRoute>)
   },
   // MARK: Donator protected routes
