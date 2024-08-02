@@ -3,6 +3,7 @@ import '../index.css';
 import '../donator/DonatorEvents.css';
 import { UserNavbar } from '../components/Navbar';
 import Button from '@mui/material/Button';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
@@ -334,6 +335,7 @@ export default function DonatorEvents() {
                     </Button>
                 </Box>
             </Modal>
+            <UserFooter/>
         </>
     );
 }

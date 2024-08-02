@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import '../index.css';
 import './DonatorEvents.css';
 import { DonatorNavbar } from '../components/Navbar';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import Button from '@mui/material/Button';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -455,7 +456,7 @@ export default function DonatorEvents() {
                     {successMessage}
                 </MuiAlert>
             </Snackbar>
-
+            <DonatorFooter/>
         </>
     );
 }
