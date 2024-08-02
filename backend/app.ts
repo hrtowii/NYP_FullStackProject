@@ -17,7 +17,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-
+import Anthropic from '@anthropic-ai/sdk';
+const anthropic = new Anthropic();
 configDotenv()
 const redisClient = createClient({
     // legacyMode: true,
@@ -295,6 +296,76 @@ app.post('/reset-password', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+const faqData = [
+    {
+      question: "What is CommuniFridge?",
+      answer: ""
+    },
+    {
+      question: "How can I donate food?",
+      answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
+    },
+    {
+      question: "Is my personal information safe?",
+      answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
+    },
+    {
+      question: "How can I request food?",
+      answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
+    },
+    {
+      question: "What if I have dietary restrictions?",
+      answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
+    }
+];
+
+app.post('/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+        
+        const faqContext = faqData.map(item => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n');
+        
+        const response = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 600,
+          system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
+    
+    Here's some key information about CommuniFridge:
+    1. It's a local project specific to Singapore.
+    2. It connects food donors with individuals in need.
+    3. It aims to reduce food waste and address food insecurity.
+    
+    Below is a list of frequently asked questions. Use this information as a primary reference, but feel free to expand on these answers if necessary:
+    
+    ${faqContext}
+    
+    When responding to users:
+    1. Prioritize information from the FAQ if it's relevant to the question.
+    2. If the FAQ doesn't cover the topic, provide a helpful response based on the general context of CommuniFridge and its goals.
+    3. Keep your answers focused on food donations, community fridges, and the local context of Singapore.
+    4. Be friendly, empathetic, and encouraging to both potential donors and those seeking food assistance.
+    5. If you're unsure about specific details, it's okay to say so and provide general information about how community fridge projects typically work.
+    6. Encourage users to check the CommuniFridge website or contact the project directly for the most up-to-date and accurate information.`,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: message,
+                },
+              ],
+            },
+          ],
+        });
+        console.log(response)
+        res.json({ response: response.content[0].text });
+    } catch (error) {
+        console.error('Error calling Anthropic API:', error);
+        res.status(500).json({ error: 'An error occurred while processing your request.' });
     }
 });
 

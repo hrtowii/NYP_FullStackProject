@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, Button, Typography, Paper, List, ListItem, ListItemText } from '@mui/material';
 import { Send as SendIcon } from '@mui/icons-material';
-
+import {backendRoute} from '../utils/BackendUrl'
 const faqData = [
   {
     question: "What is CommuniFridge?",
@@ -36,28 +36,50 @@ const ChatBot = () => {
     setInput(e.target.value);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim() === '') return;
 
     const userMessage = { text: input, isBot: false };
     setMessages([...messages, userMessage]);
 
-    const botResponse = getBotResponse(input);
-    setTimeout(() => {
+    try {
+      const botResponse = await getBotResponse(input);
       setMessages(prevMessages => [...prevMessages, { text: botResponse, isBot: true }]);
-    }, 500);
+    } catch (error) {
+      console.error('Error getting bot response:', error);
+      setMessages(prevMessages => [...prevMessages, { text: "I'm sorry, I encountered an error. Please try again later.", isBot: true }]);
+    }
 
     setInput('');
   };
 
-  const getBotResponse = (userInput) => {
+  const getBotResponse = async (userInput) => {
     const lowercaseInput = userInput.toLowerCase();
     for (const faq of faqData) {
       if (lowercaseInput.includes(faq.question.toLowerCase())) {
         return faq.answer;
       }
     }
-    return "I'm sorry, I couldn't find an answer to that question. Please try rephrasing or asking another question from the list above.";
+    try {
+      const response = await fetch(`${backendRoute}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      console.log(data)
+      return data.response;
+    } catch (error) {
+      console.error('Error calling backend API:', error);
+      return "I'm sorry, I couldn't generate a response at the moment. Please try again later or ask another question from the list above.";
+    }
   };
 
   const renderMessage = (message, index) => {
