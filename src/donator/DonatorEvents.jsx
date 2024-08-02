@@ -136,17 +136,23 @@ export default function DonatorEvents() {
                         'Content-Type': 'application/json'
                     },
                 });
-
+    
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
-
+    
                 setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
                 handleCloseDialog();
                 setSuccessMessage(`Event "${eventToDelete.title}" has been deleted successfully.`);
                 setDeleteSnackbarOpen(true);
-
+    
+                // Set a timeout to clear the success message and close the Snackbar
+                setTimeout(() => {
+                    setSuccessMessage('');
+                    setDeleteSnackbarOpen(false);
+                }, 6000); // 6000 milliseconds = 6 seconds
+    
             } catch (error) {
                 console.error('Error deleting event:', error);
                 setError('Failed to delete event: ' + error.message);

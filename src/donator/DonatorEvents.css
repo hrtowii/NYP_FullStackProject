@@ -137,15 +137,13 @@ body {
 
 .event-actions {
     display: flex;
-    gap: 10px;
+    gap: 5px;
     margin: 10px 0;
 }
 
 .event-action {
     display: flex;
-    align-items: center;
     gap: 5px;
-    padding: 8px 12px;
     border-radius: 4px;
     background-color: #f0f0f0;
     transition: background-color 0.3s ease;
@@ -184,9 +182,10 @@ body {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
+    gap: 10px;
 }
 
-.modal-close {
+.modal-close, .modal-signup {
     background: none;
     border: none;
     font-size: 1.5rem;

@@ -79,7 +79,7 @@ const UpdateEventForm = () => {
         [name]: numericValue,
       }));
     } else if (name === 'maxSlots') {
-      const numericValue = Math.max(0, parseInt(value));
+      const numericValue = Math.max(0, Math.min(99, parseInt(value)));
       setFormData((prevData) => ({
         ...prevData,
         [name]: numericValue,
