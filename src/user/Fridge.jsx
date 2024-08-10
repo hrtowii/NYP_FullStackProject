@@ -162,17 +162,17 @@ export default function Fridge() {
     const handleItemSelect = (donation) => {
         if (!cartItems.some(item => item.id === donation.id)) {
             setSelectedItems(prev => {
-              if (prev.some(item => item.id === donation.id)) {
-                return prev.filter(item => item.id !== donation.id);
-              } else if (prev.length < 5) {
-                return [...prev, donation];
-              } else {
-                alert("You can only select up to 5 items.");
-                return prev;
-              }
+                if (prev.some(item => item.id === donation.id)) {
+                    return prev.filter(item => item.id !== donation.id);
+                } else if (prev.length < 5) {
+                    return [...prev, donation];
+                } else {
+                    alert("You can only select up to 5 items.");
+                    return prev;
+                }
             });
-          }
-        };
+        }
+    };
 
     const handleAddToCart = () => {
         const newCartItems = [...cartItems, ...selectedItems];
@@ -394,14 +394,14 @@ export default function Fridge() {
                                                         <TableCell>{donation.location}</TableCell>
                                                         <TableCell>{donation.donator.person.name}</TableCell>
                                                         <TableCell>
-                                                            <span style= {{ color: donation.availability === "Available" ? "green" : "inherit" }}>
+                                                            <span style={{ color: donation.availability === "Available" ? "green" : "inherit" }}>
                                                                 {donation.availability}
                                                             </span>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
                                             ))
-                                        )}
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>

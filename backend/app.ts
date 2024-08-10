@@ -662,34 +662,34 @@ app.get('/donations', async (req, res) => {
 
 app.get('/api/donators/leaderboard', async (req, res) => {
     try {
-      const donators = await prisma.donator.findMany({
-        include: {
-          donations: {
+        const donators = await prisma.donator.findMany({
             include: {
-              foods: true,
+                donations: {
+                    include: {
+                        foods: true,
+                    },
+                },
             },
-          },
-        },
-      });
-  
-      const leaderboard = donators.map(donator => {
-        const totalDonations = donator.donations.reduce((total, donation) => {
-          return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
-        }, 0);
-  
-        return {
-          donatorId: donator.id,
-          name: donator.person.name, // Assuming there's a `name` field in the Person model
-          totalDonations,
-        };
-      }).sort((a, b) => b.totalDonations - a.totalDonations);
-  
-      res.json(leaderboard);
+        });
+
+        const leaderboard = donators.map(donator => {
+            const totalDonations = donator.donations.reduce((total, donation) => {
+                return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
+            }, 0);
+
+            return {
+                donatorId: donator.id,
+                name: donator.person.name, // Assuming there's a `name` field in the Person model
+                totalDonations,
+            };
+        }).sort((a, b) => b.totalDonations - a.totalDonations);
+
+        res.json(leaderboard);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-      res.status(500).json({ error: 'Failed to fetch leaderboard' });
+        console.error('Error fetching leaderboard:', error);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
     }
-  });
+});
 
 // Endpoint to get total donations for a specific donator
 app.get('/api/donations/:donatorId/total', async (req, res) => {
@@ -1334,7 +1334,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
         }
     })
     res.status(200).json(donator)
-    
+
 })
 
 app.delete('/event/:id', async (req, res) => {
@@ -1395,9 +1395,9 @@ app.post('/events/:eventId/signup', async (req, res) => {
                     create: { userId: Number(userId) }
                 }
             },
-            include: { 
+            include: {
                 participants: true,
-                images: true 
+                images: true
             }
         });
         console.log(updatedEvent);
@@ -1406,7 +1406,7 @@ app.post('/events/:eventId/signup', async (req, res) => {
         console.error('Error signing up for event:', error);
         res.status(500).json({ error: 'Failed to sign up for event' });
     }
-    
+
 });
 
 
