@@ -1838,7 +1838,6 @@ app.put('/reviews/:id', async (req, res) => {
     }
 });
 
-
 app.delete('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
     const userId = parseInt(req.body.userId, 10);
@@ -1848,10 +1847,11 @@ app.delete('/reviews/:id', async (req, res) => {
 
         const review = await prisma.review.findUnique({
             where: { id: reviewId },
-            include: {
+            include: { 
                 reply: true,
                 donator: true,
-                images: true
+                images: true,
+                likes: true
             }
         });
 
@@ -1868,7 +1868,15 @@ app.delete('/reviews/:id', async (req, res) => {
         }
 
         await prisma.$transaction(async (prisma) => {
-            // First, delete associated images if they exist
+            // First, delete associated likes
+            if (review.likes.length > 0) {
+                console.log(`Deleting ${review.likes.length} likes for review ${reviewId}`);
+                await prisma.like.deleteMany({
+                    where: { reviewId: reviewId }
+                });
+            }
+
+            // Delete associated images if they exist
             if (review.images.length > 0) {
                 console.log(`Deleting ${review.images.length} images for review ${reviewId}`);
                 await prisma.image.deleteMany({
@@ -1876,7 +1884,7 @@ app.delete('/reviews/:id', async (req, res) => {
                 });
             }
 
-            // Then, delete the associated reply if it exists
+            // Delete the associated reply if it exists
             if (review.reply) {
                 console.log(`Deleting reply ${review.reply.id} for review ${reviewId}`);
                 await prisma.reply.delete({
@@ -1910,8 +1918,8 @@ app.delete('/reviews/:id', async (req, res) => {
             });
         });
 
-        console.log(`Review ${reviewId}, associated reply, and images deleted successfully`);
-        res.status(200).json({ message: 'Review, associated reply, and images deleted successfully' });
+        console.log(`Review ${reviewId}, associated reply, likes, and images deleted successfully`);
+        res.status(200).json({ message: 'Review, associated reply, likes, and images deleted successfully' });
     } catch (error) {
         console.error('Error deleting review:', error);
         console.error('Error stack:', error.stack);
@@ -1919,9 +1927,9 @@ app.delete('/reviews/:id', async (req, res) => {
         if (error.meta) {
             console.error('Prisma error meta:', error.meta);
         }
-        res.status(500).json({
-            error: 'Failed to delete review',
-            details: error.message,
+        res.status(500).json({ 
+            error: 'Failed to delete review', 
+            details: error.message, 
             stack: error.stack,
             meta: error.meta
         });

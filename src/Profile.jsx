@@ -33,7 +33,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { TokenContext } from './utils/TokenContext';
-import {UserFooter, DonatorFooter} from './components/Footer';
+import { UserFooter, DonatorFooter } from './components/Footer';
 import parseJwt from './utils/parseJwt.jsx'
 import { backendRoute } from './utils/BackendUrl.jsx'
 
@@ -202,13 +202,14 @@ export default function Profile() {
                     },
                     body: JSON.stringify({ userId: userId })
                 });
-
+    
                 console.log('Delete response received:', response.status);
-
+    
                 if (response.ok) {
-                    console.log('Review deleted successfully');
+                    const result = await response.json();
+                    console.log('Review deleted successfully:', result);
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
-                    setSnackbar({ open: true, message: 'Review deleted successfully', severity: 'success' });
+                    setSnackbar({ open: true, message: result.message, severity: 'success' });
                 } else {
                     const errorData = await response.json();
                     console.error('Server error details:', errorData);
@@ -224,6 +225,7 @@ export default function Profile() {
             }
         }
     }, [reviewToDelete, fetchReviews, userId, backendRoute]);
+    
     const handleDeleteCancel = useCallback(() => {
         console.log('Delete cancelled');
         setDeleteDialogOpen(false);
@@ -568,6 +570,16 @@ export default function Profile() {
                                                     </Box>
                                                 )}
                                                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                                    {userId === review.userId && (
+                                                        <>
+                                                            <IconButton size="small" onClick={() => handleEditClick(review)}>
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                            <IconButton size="small" onClick={() => handleDeleteClick(review.id)}>
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </>
+                                                    )}
                                                     <IconButton
                                                         onClick={() => handleThumbsUp(review.id)}
                                                         size="small"
@@ -583,7 +595,6 @@ export default function Profile() {
                                                         </Typography>
                                                     )}
                                                 </Box>
-
                                             </>
                                         }
                                     />
@@ -596,19 +607,19 @@ export default function Profile() {
 
                 <Dialog
                     open={deleteDialogOpen}
-                    onClose={handleDeleteCancel}
+                    onClose={() => setDeleteDialogOpen(false)}
                     aria-labelledby="delete-dialog-title"
                     aria-describedby="delete-dialog-description"
                 >
                     <DialogTitle id="delete-dialog-title">{"Confirm Delete"}</DialogTitle>
                     <DialogContent>
                         <DialogContentText id="delete-dialog-description">
-                            Are you sure you want to delete this review?
+                            Are you sure you want to delete this review? This action cannot be undone.
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleDeleteCancel}>Cancel</Button>
-                        <Button onClick={handleDeleteConfirm} autoFocus>
+                        <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleDeleteConfirm} color="error" autoFocus>
                             Delete
                         </Button>
                     </DialogActions>
@@ -616,7 +627,7 @@ export default function Profile() {
 
                 <Dialog
                     open={editDialogOpen}
-                    onClose={handleEditCancel}
+                    onClose={() => setEditDialogOpen(false)}
                     aria-labelledby="edit-dialog-title"
                     aria-describedby="edit-dialog-description"
                 >
@@ -625,7 +636,7 @@ export default function Profile() {
                         <Rating
                             name="rating"
                             value={reviewToEdit ? reviewToEdit.rating : 0}
-                            onChange={(event, newValue) => handleEditChange('rating', newValue)}
+                            onChange={(event, newValue) => setReviewToEdit(prev => ({ ...prev, rating: newValue }))}
                         />
                         <TextField
                             autoFocus
@@ -634,22 +645,23 @@ export default function Profile() {
                             label="Comment"
                             type="text"
                             fullWidth
-                            variant="standard"
+                            multiline
+                            rows={4}
                             value={reviewToEdit ? reviewToEdit.comment : ''}
-                            onChange={(e) => handleEditChange('comment', e.target.value)}
+                            onChange={(e) => setReviewToEdit(prev => ({ ...prev, comment: e.target.value }))}
                         />
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleEditCancel}>Cancel</Button>
-                        <Button onClick={handleEditConfirm} autoFocus>
-                            Save
+                        <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleEditConfirm} color="primary">
+                            Save Changes
                         </Button>
                     </DialogActions>
                 </Dialog>
 
                 <Dialog
                     open={replyDialogOpen}
-                    onClose={handleReplyCancel}
+                    onClose={() => setReplyDialogOpen(false)}
                     aria-labelledby="reply-dialog-title"
                 >
                     <DialogTitle id="reply-dialog-title">Reply to Review</DialogTitle>
@@ -668,7 +680,7 @@ export default function Profile() {
                         />
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleReplyCancel}>Cancel</Button>
+                        <Button onClick={() => setReplyDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleReplyConfirm} disabled={!replyContent.trim()}>
                             Submit Reply
                         </Button>
@@ -723,6 +735,7 @@ export default function Profile() {
                         <Button onClick={handleCloseEnlargedImage}>Close</Button>
                     </DialogActions>
                 </Dialog>
+
                 <Dialog
                     open={deleteReplyDialogOpen}
                     onClose={() => setDeleteReplyDialogOpen(false)}
@@ -746,7 +759,7 @@ export default function Profile() {
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={6000}
-                    onClose={handleSnackbarClose}
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
                     message={snackbar.message}
                 />
             </Container>
@@ -754,6 +767,5 @@ export default function Profile() {
         </>
     );
 }
-
 
 
