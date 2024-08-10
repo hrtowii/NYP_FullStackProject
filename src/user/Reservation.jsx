@@ -6,10 +6,9 @@
 
 
 import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Rating, Box, Avatar, FormControlLabel, Switch, IconButton, Snackbar, Alert } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UserFooter, DonatorFooter } from '../components/Footer';
-import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -20,7 +19,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import parseJwt from '../utils/parseJwt.jsx'
-
+import CancelIcon from '@mui/icons-material/Cancel';
 // Reservation State Variables
 const Reservation = () => {
     const [currentReservations, setCurrentReservations] = useState([]);
@@ -29,19 +28,33 @@ const Reservation = () => {
     const [error, setError] = useState(null);
     const { token } = useContext(TokenContext);
     const [userId, setUserId] = useState(null);
-    const [openReschedule, setOpenReschedule] = useState(false);  // Dialog for rescheduling reservation
+    const [openReschedule, setOpenReschedule] = useState(false);
     const [selectedReservation, setSelectedReservation] = useState(null);
     const [newDate, setNewDate] = useState('');
     const [newTimeStart, setNewTimeStart] = useState('');
     const [newTimeEnd, setNewTimeEnd] = useState('');
-    const [openCancelDialog, setOpenCancelDialog] = useState(false);  // 1st dialog for cancel confirmation
+    const [openCancelDialog, setOpenCancelDialog] = useState(false);
     const [reservationToCancel, setReservationToCancel] = useState(null);
-    const [openSuccessDialog, setOpenSuccessDialog] = useState(false);  // 2nd dialog for cancel confirmation
+    const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [dateError, setDateError] = useState('');  // Validation state variables
+    const [dateError, setDateError] = useState('');
     const [timeError, setTimeError] = useState('');
     const [selectedDonation, setSelectedDonation] = useState(null);
+
+    // New state variables for review functionality
+    const [openReviewModal, setOpenReviewModal] = useState(false);
+    const [selectedDonator, setSelectedDonator] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [ratingError, setRatingError] = useState(false);
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
     const navigate = useNavigate();
+    const currentUserRole = parseJwt(token).role;
+    const currentUserId = parseJwt(token).id;
+    const currentUserName = parseJwt(token).name;
 
     useEffect(() => {
         if (token) {
@@ -266,6 +279,103 @@ const Reservation = () => {
         }
     };
 
+    // John add reviews
+    const handleOpenReviewModal = async (donator) => {
+        try {
+            const response = await fetch(`${backendRoute}/get_donator`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ id: donator.id })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch donator information');
+            }
+
+            const donatorData = await response.json();
+
+            setSelectedDonator({ ...donator, name: donatorData.name });
+            setOpenReviewModal(true);
+        } catch (error) {
+            console.error('Error fetching donator information:', error);
+        }
+    };
+
+    const handleCloseReviewModal = () => {
+        setOpenReviewModal(false);
+        setSelectedDonator(null);
+        setRating(0);
+        setComment('');
+        setRatingError(false);
+        setIsAnonymous(false);
+        setSelectedImages([]);
+    };
+
+    const handleImageSelect = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length > 1) {
+            setSnackbar({ open: true, message: 'You can only upload up to 1 image', severity: 'error' });
+            return;
+        }
+        setSelectedImages(files);
+    };
+
+    const handleRemoveImage = (index) => {
+        setSelectedImages(prevImages => prevImages.filter((_, i) => i !== index));
+    };
+
+    const getDisplayName = (name, isAnonymous) => {
+        if (isAnonymous) {
+            return `${name[0]}${'*'.repeat(8)}`;
+        }
+        return name;
+    };
+
+    const handleSubmitReview = async () => {
+        try {
+            if (!rating || rating < 1 || rating > 5) {
+                setRatingError(true);
+                throw new Error('Please select a rating between 1 and 5');
+            }
+
+            const formData = new FormData();
+            formData.append('rating', rating);
+            formData.append('comment', comment);
+            formData.append('userId', userId);
+            formData.append('isAnonymous', isAnonymous);
+            selectedImages.forEach((image, index) => {
+                formData.append('images', image);
+            });
+
+            const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit review');
+            }
+
+            const responseData = await response.json();
+            console.log('Review submission response:', responseData);
+
+            setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
+            handleCloseReviewModal();
+            fetchReservations();
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
+        }
+    };
+
+
     // INDIVIDUAL RESERVATION CARD
     const ReservationCard = ({ reservation }) => {
         return (
@@ -329,12 +439,12 @@ const Reservation = () => {
                             {reservation.collectionStatus === 'Collected' && (
                                 <Button
                                     className="review-btn"
-                                    onClick={() => handleWriteReview(item)}
+                                    onClick={() => handleOpenReviewModal(item.food.donation.donator)}
                                     variant="contained"
                                     color="primary"
                                     size="small"
                                 >
-                                    Write a review
+                                    Add a review
                                 </Button>
                             )}
                         </div>
@@ -343,135 +453,239 @@ const Reservation = () => {
             </>
         );
     };
-    
-return (
-    <>
-        <UserNavbar />
-        <div className="reservation-page">
-            <div className="reservation-header">
-                <h1>Reservations</h1>
-                <p>To ensure a smooth experience for everyone, please remember to collect your reservations on time.
-                    Timely pickups help us serve you better and maintain availability for other customers. Thank you for your cooperation!</p>
-            </div>
-            {isLoading ? (
-                <p>Loading reservations...</p>
-            ) : error ? (
-                <p className="error-message">{error}</p>
-            ) : (
-                <div className="reservation-sections">
-                    <div className="reservation-section">
-                        <h2>Your Current Reservations:</h2>
-                        {currentReservations.length > 0 ? (
-                            currentReservations.map(reservation => (
-                                <ReservationCard key={reservation.id} reservation={reservation} isPast={false} />
-                            ))
-                        ) : (
-                            <p>No current reservations.</p>
-                        )}
-                    </div>
-                    <div className="reservation-section">
-                        <h2>Your Past Reservations:</h2>
-                        {pastReservations.length > 0 ? (
-                            pastReservations.map(reservation => (
-                                <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
-                            ))
-                        ) : (
-                            <p>No past reservations.</p>
-                        )}
-                    </div>
+
+    return (
+        <>
+            <UserNavbar />
+            <div className="reservation-page">
+                <div className="reservation-header">
+                    <h1>Reservations</h1>
+                    <p>To ensure a smooth experience for everyone, please remember to collect your reservations on time.
+                        Timely pickups help us serve you better and maintain availability for other customers. Thank you for your cooperation!</p>
                 </div>
-            )}
-        </div>
-        {/* RESCHEDULE DIALOG */}
-        <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
-            <DialogTitle>Reschedule Reservation</DialogTitle>
-            <DialogContent>
-                {selectedReservation && (
-                    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <LocalizationProvider dateAdapter={AdapterDateFns}>
-                            <DatePicker
-                                label="Collection Date"
-                                value={newDate}
-                                onChange={(date) => {
-                                    setNewDate(date);
-                                    validateDate(date);
-                                }}
-                                renderInput={(params) => <TextField {...params} fullWidth error={!!dateError} helperText={dateError} />}
-                                minDate={new Date()}  // Disable past dates
-                            />
-                            <TimePicker
-                                label="Collection Start Time"
-                                value={newTimeStart}
-                                onChange={(time) => {
-                                    const restrictedTime = enforceTimeRestrictions(time);
-                                    setNewTimeStart(restrictedTime);
-                                    validateTimes(restrictedTime, newTimeEnd);
-                                }}
-                                renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
-                            />
-                            <TimePicker
-                                label="Collection End Time"
-                                value={newTimeEnd}
-                                onChange={(time) => {
-                                    const restrictedTime = enforceTimeRestrictions(time);
-                                    setNewTimeEnd(restrictedTime);
-                                    validateTimes(newTimeStart, restrictedTime);
-                                }}
-                                renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
-                            />
-                        </LocalizationProvider>
-                    </Box>
+                {isLoading ? (
+                    <p>Loading reservations...</p>
+                ) : error ? (
+                    <p className="error-message">{error}</p>
+                ) : (
+                    <div className="reservation-sections">
+                        <div className="reservation-section">
+                            <h2>Your Current Reservations:</h2>
+                            {currentReservations.length > 0 ? (
+                                currentReservations.map(reservation => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={false} />
+                                ))
+                            ) : (
+                                <p>No current reservations.</p>
+                            )}
+                        </div>
+                        <div className="reservation-section">
+                            <h2>Your Past Reservations:</h2>
+                            {pastReservations.length > 0 ? (
+                                pastReservations.map(reservation => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
+                                ))
+                            ) : (
+                                <p>No past reservations.</p>
+                            )}
+                        </div>
+                    </div>
                 )}
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpenReschedule(false)}>Cancel</Button>
-                <Button
-                    onClick={handleRescheduleSubmit}
-                    color="primary"
-                    variant="contained"
-                    disabled={!!dateError || !!timeError}
-                    sx={{ '&:hover': { backgroundColor: 'darkblue', } }}>Confirm
-                </Button>
-            </DialogActions>
-        </Dialog>
-        {/* CANCELLATION DIALOG */}
-        <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
-            <DialogTitle>
-                <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '8px', color: '#FFA500' }}>⚠️</span>
-                    Removal Confirmation
-                </Typography>
-            </DialogTitle>
-            <DialogContent>
-                <Typography>
-                    Are you sure you want to cancel your reservation?
-                </Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpenCancelDialog(false)}>No</Button>
-                <Button onClick={handleCancelConfirm} color="primary" variant="contained">
-                    Yes
-                </Button>
-            </DialogActions>
-        </Dialog>
-        <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
-            <DialogTitle>
-                <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
-                    <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
-                    Reservation Removed
-                </Typography>
-            </DialogTitle>
-            <DialogContent>
-                <Typography>{successMessage}</Typography>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpenSuccessDialog(false)} color="primary" variant="contained">
-                    OK
-                </Button>
-            </DialogActions>
-        </Dialog>
-        <UserFooter />
-    </>
-);
+            </div>
+
+            {/* RESCHEDULE DIALOG */}
+            <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
+                <DialogTitle>Reschedule Reservation</DialogTitle>
+                <DialogContent>
+                    {selectedReservation && (
+                        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                <DatePicker
+                                    label="Collection Date"
+                                    value={newDate}
+                                    onChange={(date) => {
+                                        setNewDate(date);
+                                        validateDate(date);
+                                    }}
+                                    renderInput={(params) => <TextField {...params} fullWidth error={!!dateError} helperText={dateError} />}
+                                    minDate={new Date()}
+                                />
+                                <TimePicker
+                                    label="Collection Start Time"
+                                    value={newTimeStart}
+                                    onChange={(time) => {
+                                        const restrictedTime = enforceTimeRestrictions(time);
+                                        setNewTimeStart(restrictedTime);
+                                        validateTimes(restrictedTime, newTimeEnd);
+                                    }}
+                                    renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
+                                />
+                                <TimePicker
+                                    label="Collection End Time"
+                                    value={newTimeEnd}
+                                    onChange={(time) => {
+                                        const restrictedTime = enforceTimeRestrictions(time);
+                                        setNewTimeEnd(restrictedTime);
+                                        validateTimes(newTimeStart, restrictedTime);
+                                    }}
+                                    renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
+                                />
+                            </LocalizationProvider>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenReschedule(false)}>Cancel</Button>
+                    <Button
+                        onClick={handleRescheduleSubmit}
+                        color="primary"
+                        variant="contained"
+                        disabled={!!dateError || !!timeError}
+                        sx={{ '&:hover': { backgroundColor: 'darkblue', } }}>Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* CANCELLATION DIALOG */}
+            <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
+                <DialogTitle>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '8px', color: '#FFA500' }}>⚠️</span>
+                        Removal Confirmation
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to cancel your reservation?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenCancelDialog(false)}>No</Button>
+                    <Button onClick={handleCancelConfirm} color="primary" variant="contained">
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
+                <DialogTitle>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                        <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
+                        Reservation Removed
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>{successMessage}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenSuccessDialog(false)} color="primary" variant="contained">
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* REVIEW MODAL */}
+            <Dialog
+                open={openReviewModal}
+                onClose={handleCloseReviewModal}
+                aria-labelledby="add-review-modal"
+                aria-describedby="modal-to-add-review-for-donator"
+            >
+                <DialogTitle>
+                    <DialogTitle>
+                        Write review for {selectedDonator?.name || `Donator #${selectedDonator?.id}` || 'Unknown Donator'}
+                    </DialogTitle>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography component="legend">Rating *</Typography>
+                        <Rating
+                            name="rating"
+                            value={rating}
+                            onChange={(event, newValue) => {
+                                setRating(newValue);
+                                setRatingError(false);
+                            }}
+                        />
+                        {ratingError && (
+                            <Typography color="error" variant="caption" display="block" sx={{ mt: 1 }}>
+                                Please select a rating
+                            </Typography>
+                        )}
+                        <TextField
+                            fullWidth
+                            label="Comment (optional)"
+                            multiline
+                            rows={4}
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            sx={{ mt: 2 }}
+                        />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    name="anonymous"
+                                />
+                            }
+                            label="Submit anonymously"
+                            sx={{ mt: 2 }}
+                        />
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                            Your username will be shown as: {getDisplayName(currentUserName, isAnonymous)}
+                        </Typography>
+                        <Box sx={{ mt: 2 }}>
+                            <input
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                id="raised-button-file"
+                                multiple
+                                type="file"
+                                onChange={handleImageSelect}
+                            />
+                            <label htmlFor="raised-button-file">
+                                <Button variant="contained" component="span">
+                                    Upload Image (Max 1)
+                                </Button>
+                            </label>
+                        </Box>
+                        {selectedImages.length > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                                {selectedImages.map((image, index) => (
+                                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                        <Typography>{image.name}</Typography>
+                                        <IconButton onClick={() => handleRemoveImage(index)}>
+                                            <CancelIcon />
+                                        </IconButton>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseReviewModal}>Cancel</Button>
+                    <Button onClick={handleSubmitReview} variant="contained" color="primary">
+                        Submit Review
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+
+            <UserFooter />
+        </>
+    );
 };
 export default Reservation;

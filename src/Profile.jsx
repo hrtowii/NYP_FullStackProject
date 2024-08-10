@@ -37,6 +37,73 @@ import { UserFooter, DonatorFooter } from './components/Footer';
 import parseJwt from './utils/parseJwt.jsx'
 import { backendRoute } from './utils/BackendUrl.jsx'
 
+// Styled components
+const StyledContainer = styled(Container)(({ theme }) => ({
+    backgroundColor: '#f5f5f5',
+    fontFamily: 'Roboto, sans-serif',
+    paddingTop: theme.spacing(3),
+    paddingBottom: theme.spacing(3),
+}));
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    backgroundColor: '#ffffff',
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    padding: theme.spacing(3),
+    marginBottom: theme.spacing(5),
+}));
+
+const StyledButtonGroup = styled(ButtonGroup)(({ theme }) => ({
+    marginBottom: theme.spacing(3),
+    '& .MuiButton-root': {
+        textTransform: 'none',
+        fontWeight: 400,
+    },
+}));
+
+const StyledListItem = styled(ListItem)(({ theme }) => ({
+    padding: theme.spacing(2, 0),
+    '&:not(:last-child)': {
+        borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+}));
+
+const StyledAvatar = styled(Avatar)(({ theme }) => ({
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+}));
+
+const StyledRating = styled(Rating)(({ theme }) => ({
+    marginTop: theme.spacing(1),
+    '& .MuiRating-iconFilled': {
+        color: '#ffb400',
+    },
+}));
+
+const ImagePreview = styled(Box)(({ theme }) => ({
+    display: 'inline-block',
+    marginRight: theme.spacing(1),
+    marginTop: theme.spacing(1.5),
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+    overflow: 'hidden',
+    transition: 'transform 0.2s',
+    '&:hover': {
+        transform: 'scale(1.05)',
+    },
+}));
+
+const ReplySection = styled(Box)(({ theme }) => ({
+    backgroundColor: theme.palette.grey[100],
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1.5),
+    marginTop: theme.spacing(2),
+}));
+
+const StyledFooter = styled(Box)(({ theme }) => ({
+    paddingTop: theme.spacing(3),
+}));
+
 export default function Profile() {
     const { token } = useContext(TokenContext);
     const userId = parseJwt(token).id
@@ -441,38 +508,36 @@ export default function Profile() {
     return (
         <>
             {userRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
-            <Container maxWidth="md">
-                <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
-                    <Typography variant="h4" gutterBottom>
+            <StyledContainer maxWidth="md">
+                <StyledPaper elevation={3}>
+                    <Typography variant="h4" gutterBottom sx={{ color: '#333', fontWeight: 500 }}>
                         {donatorName}'s Reviews
                         {userRole === "donator" && parseInt(donatorId) === userId && " (Myself)"}
                     </Typography>
-                    <Box sx={{ mb: 2 }}>
-                        <ButtonGroup variant="contained" aria-label="rating filter button group">
+                    <StyledButtonGroup variant="contained" aria-label="rating filter button group">
+                        <Button
+                            onClick={() => handleFilterChange('all')}
+                            color={currentFilter === 'all' ? 'primary' : 'inherit'}
+                        >
+                            All
+                        </Button>
+                        {[5, 4, 3, 2, 1].map((rating) => (
                             <Button
-                                onClick={() => handleFilterChange('all')}
-                                color={currentFilter === 'all' ? 'primary' : 'inherit'}
+                                key={rating}
+                                onClick={() => handleFilterChange(rating.toString())}
+                                color={currentFilter === rating.toString() ? 'primary' : 'inherit'}
+                                startIcon={<StarIcon style={{ color: '#ffb400' }} />}
                             >
-                                All
+                                {rating}
                             </Button>
-                            {[5, 4, 3, 2, 1].map((rating) => (
-                                <Button
-                                    key={rating}
-                                    onClick={() => handleFilterChange(rating.toString())}
-                                    color={currentFilter === rating.toString() ? 'primary' : 'inherit'}
-                                    startIcon={<StarIcon style={{ color: '#ffb400' }} />}
-                                >
-                                    {rating}
-                                </Button>
-                            ))}
-                        </ButtonGroup>
-                    </Box>
+                        ))}
+                    </StyledButtonGroup>
                     <List>
                         {filteredReviews.map((review) => (
                             <React.Fragment key={review.id}>
-                                <ListItem alignItems="flex-start" component="div">
+                                <StyledListItem alignItems="flex-start" component="div">
                                     <ListItemAvatar>
-                                        <Avatar>{getDisplayName(review)[0]}</Avatar>
+                                        <StyledAvatar>{getDisplayName(review)[0]}</StyledAvatar>
                                     </ListItemAvatar>
                                     <ListItemText
                                         primary={
@@ -488,55 +553,26 @@ export default function Profile() {
                                         }
                                         secondary={
                                             <>
-                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1 }}>
+                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1.5, color: '#555' }}>
                                                     {review.comment}
                                                 </Typography>
                                                 {review.images && review.images.length > 0 && (
                                                     <Box sx={{ display: 'flex', mt: 2 }}>
                                                         {review.images.map((image, index) => (
-                                                            <Box
+                                                            <ImagePreview
                                                                 key={index}
-                                                                sx={{
-                                                                    position: 'relative',
-                                                                    width: 80,
-                                                                    height: 80,
-                                                                    mr: 1,
-                                                                    cursor: 'pointer',
-                                                                }}
                                                                 onClick={() => handleImageClick(`${backendRoute}/uploads/${image.url}`)}
                                                             >
                                                                 <Box
                                                                     sx={{
-                                                                        width: '100%',
-                                                                        height: '100%',
+                                                                        width: 80,
+                                                                        height: 80,
                                                                         backgroundImage: `url(${backendRoute}/uploads/${image.url})`,
                                                                         backgroundSize: 'cover',
                                                                         backgroundPosition: 'center',
-                                                                        border: '1px solid #ddd',
-                                                                        borderRadius: '4px',
                                                                     }}
                                                                 />
-                                                                <Box
-                                                                    sx={{
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        width: '100%',
-                                                                        height: '100%',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        background: 'rgba(0, 0, 0, 0.3)',
-                                                                        opacity: 0,
-                                                                        transition: 'opacity 0.2s',
-                                                                        '&:hover': {
-                                                                            opacity: 1,
-                                                                        },
-                                                                    }}
-                                                                >
-                                                                    <ZoomInIcon sx={{ color: 'white' }} />
-                                                                </Box>
-                                                            </Box>
+                                                            </ImagePreview>
                                                         ))}
                                                     </Box>
                                                 )}
@@ -545,13 +581,13 @@ export default function Profile() {
                                                         size="small"
                                                         startIcon={<ReplyIcon />}
                                                         onClick={() => handleReplyClick(review)}
-                                                        sx={{ mt: 1 }}
+                                                        sx={{ mt: 1.5 }}
                                                     >
                                                         Reply
                                                     </Button>
                                                 )}
                                                 {review.reply && (
-                                                    <Box sx={{ mt: 2, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+                                                    <ReplySection>
                                                         <Typography variant="subtitle2">Donator's Reply:</Typography>
                                                         <Typography variant="body2">{review.reply.content}</Typography>
                                                         <Typography variant="caption" display="block" sx={{ mt: 1 }}>
@@ -567,15 +603,15 @@ export default function Profile() {
                                                                 </IconButton>
                                                             </Box>
                                                         )}
-                                                    </Box>
+                                                    </ReplySection>
                                                 )}
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1.5 }}>
                                                     {userId === review.userId && (
                                                         <>
-                                                            <IconButton size="small" onClick={() => handleEditClick(review)}>
+                                                            <IconButton size="small" onClick={() => handleEditClick(review)} sx={{ mr: 1 }}>
                                                                 <EditIcon fontSize="small" />
                                                             </IconButton>
-                                                            <IconButton size="small" onClick={() => handleDeleteClick(review.id)}>
+                                                            <IconButton size="small" onClick={() => handleDeleteClick(review.id)} sx={{ mr: 1 }}>
                                                                 <DeleteIcon fontSize="small" />
                                                             </IconButton>
                                                         </>
@@ -583,14 +619,15 @@ export default function Profile() {
                                                     <IconButton
                                                         onClick={() => handleThumbsUp(review.id)}
                                                         size="small"
+                                                        sx={{ mr: 1 }}
                                                     >
                                                         <ThumbUpIcon color={review.likedByUser ? 'primary' : 'inherit'} />
                                                     </IconButton>
-                                                    <Typography variant="body2">
+                                                    <Typography variant="body2" sx={{ mr: 2 }}>
                                                         {review.likeCount} likes
                                                     </Typography>
                                                     {review.likedByDonator && (
-                                                        <Typography variant="body2" color="primary" sx={{ ml: 2 }}>
+                                                        <Typography variant="body2" color="primary">
                                                             Liked by donator
                                                         </Typography>
                                                     )}
@@ -598,13 +635,12 @@ export default function Profile() {
                                             </>
                                         }
                                     />
-                                </ListItem>
-                                <Divider variant="inset" component="li" />
+                                </StyledListItem>
                             </React.Fragment>
                         ))}
                     </List>
-                </Paper>
-
+                </StyledPaper>
+    
                 <Dialog
                     open={deleteDialogOpen}
                     onClose={() => setDeleteDialogOpen(false)}
@@ -624,7 +660,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={editDialogOpen}
                     onClose={() => setEditDialogOpen(false)}
@@ -658,7 +694,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={replyDialogOpen}
                     onClose={() => setReplyDialogOpen(false)}
@@ -686,7 +722,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={editReplyDialogOpen}
                     onClose={() => setEditReplyDialogOpen(false)}
@@ -714,7 +750,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={Boolean(enlargedImage)}
                     onClose={handleCloseEnlargedImage}
@@ -735,7 +771,7 @@ export default function Profile() {
                         <Button onClick={handleCloseEnlargedImage}>Close</Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={deleteReplyDialogOpen}
                     onClose={() => setDeleteReplyDialogOpen(false)}
@@ -755,15 +791,17 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={6000}
                     onClose={() => setSnackbar({ ...snackbar, open: false })}
                     message={snackbar.message}
                 />
-            </Container>
-            {userRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
+            </StyledContainer>
+            <StyledFooter>
+                {userRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
+            </StyledFooter>
         </>
     );
 }
