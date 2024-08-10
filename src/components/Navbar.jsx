@@ -1,8 +1,8 @@
-import React, {useContext} from 'react'
+import React, { useContext } from 'react'
 import "./Navbar.css"
 import "../index.css"
 import { NavLink } from 'react-router-dom'
-import {TokenContext} from '../utils/TokenContext.jsx'
+import { TokenContext } from '../utils/TokenContext.jsx'
 import AvatarMenu from './AvatarMenu.jsx'
 import parseJwt from '../utils/parseJwt.jsx'
 import CartIcon from './CartIcon';
@@ -28,11 +28,11 @@ export default function Navbar() {
       </div>
       {isLoggedIn && (
         <div className="avatarmenu">
-          <AvatarMenu 
-            currentUserRole={currentUserRole} 
-            currentUserId={currentUserId} 
-            currentUserName={currentUserName} 
-            updateToken={updateToken} 
+          <AvatarMenu
+            currentUserRole={currentUserRole}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
+            updateToken={updateToken}
           />
         </div>
       )}
@@ -55,9 +55,9 @@ export function DonatorNavbar() {
       <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="avatarmenu">
-      <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
+        <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
       </div>
-      
+
     </div>
   )
 }
@@ -79,12 +79,12 @@ export function UserNavbar() {
       <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="navbar-right">
-      <div className="user-actions">
-        <CartIcon />
-      </div>
-      <div className="avatarmenu">
-      <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
-      </div>
+        <div className="user-actions">
+          <CartIcon />
+        </div>
+        <div className="avatarmenu">
+          <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
+        </div>
       </div>
 
     </div>
@@ -100,14 +100,13 @@ export function AdminNavbar() {
   return (
     <div className='navbar'>
       <div>
-      <NavLink to={"/admin"}>Admin</NavLink>
-      <NavLink to={"/donator"}>Donator</NavLink>
-      <NavLink to={"/user"}>User</NavLink>
+        <NavLink to={"/admin"}>Admin</NavLink>
+        <NavLink to={"/donator"}>Donator</NavLink>
+        <NavLink to={"/user"}>User</NavLink>
       </div>
       <div className="avatarmenu">
-      <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
+        <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
       </div>
     </div>
   )
 }
-

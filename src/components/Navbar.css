@@ -61,9 +61,9 @@
     color: var(--blueLink);
   }
   
-  .avatarmenu {
-    margin-left: 15px;
-  }
+/* .avatarmenu {
+margin-left: 15px;
+} */
   
   .user-actions {
     display: flex;

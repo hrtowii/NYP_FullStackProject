@@ -17,7 +17,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-
+import Anthropic from '@anthropic-ai/sdk';
+const anthropic = new Anthropic();
 configDotenv()
 const redisClient = createClient({
     // legacyMode: true,
@@ -298,6 +299,76 @@ app.post('/reset-password', async (req, res) => {
     }
 });
 
+const faqData = [
+    {
+      question: "What is CommuniFridge?",
+      answer: ""
+    },
+    {
+      question: "How can I donate food?",
+      answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
+    },
+    {
+      question: "Is my personal information safe?",
+      answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
+    },
+    {
+      question: "How can I request food?",
+      answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
+    },
+    {
+      question: "What if I have dietary restrictions?",
+      answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
+    }
+];
+
+app.post('/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+        
+        const faqContext = faqData.map(item => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n');
+        
+        const response = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 600,
+          system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
+    
+    Here's some key information about CommuniFridge:
+    1. It's a local project specific to Singapore.
+    2. It connects food donors with individuals in need.
+    3. It aims to reduce food waste and address food insecurity.
+    
+    Below is a list of frequently asked questions. Use this information as a primary reference, but feel free to expand on these answers if necessary:
+    
+    ${faqContext}
+    
+    When responding to users:
+    1. Prioritize information from the FAQ if it's relevant to the question.
+    2. If the FAQ doesn't cover the topic, provide a helpful response based on the general context of CommuniFridge and its goals.
+    3. Keep your answers focused on food donations, community fridges, and the local context of Singapore.
+    4. Be friendly, empathetic, and encouraging to both potential donors and those seeking food assistance.
+    5. If you're unsure about specific details, it's okay to say so and provide general information about how community fridge projects typically work.
+    6. Encourage users to check the CommuniFridge website or contact the project directly for the most up-to-date and accurate information.`,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: message,
+                },
+              ],
+            },
+          ],
+        });
+        console.log(response)
+        res.json({ response: response.content[0].text });
+    } catch (error) {
+        console.error('Error calling Anthropic API:', error);
+        res.status(500).json({ error: 'An error occurred while processing your request.' });
+    }
+});
+
 //MARK: Admin functions
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
@@ -365,6 +436,66 @@ app.post('/createAccounts', async (req, res) => {
             hashedPassword: await bcrypt.hash("123", 12),
             email: "lucasleong1000@gmail.com",
             ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "emma",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "emma@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "olivia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "olivia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "noah",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "noah@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "liam",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "liam@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ava",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "ava@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "sophia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "sophia@example.com",
+            ["donator"]: {
                 create: {}
             }
         }
@@ -662,34 +793,34 @@ app.get('/donations', async (req, res) => {
 
 app.get('/api/donators/leaderboard', async (req, res) => {
     try {
-      const donators = await prisma.donator.findMany({
-        include: {
-          donations: {
+        const donators = await prisma.donator.findMany({
             include: {
-              foods: true,
+                donations: {
+                    include: {
+                        foods: true,
+                    },
+                },
             },
-          },
-        },
-      });
-  
-      const leaderboard = donators.map(donator => {
-        const totalDonations = donator.donations.reduce((total, donation) => {
-          return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
-        }, 0);
-  
-        return {
-          donatorId: donator.id,
-          name: donator.person.name, // Assuming there's a `name` field in the Person model
-          totalDonations,
-        };
-      }).sort((a, b) => b.totalDonations - a.totalDonations);
-  
-      res.json(leaderboard);
+        });
+
+        const leaderboard = donators.map(donator => {
+            const totalDonations = donator.donations.reduce((total, donation) => {
+                return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
+            }, 0);
+
+            return {
+                donatorId: donator.id,
+                name: donator.person.name, // Assuming there's a `name` field in the Person model
+                totalDonations,
+            };
+        }).sort((a, b) => b.totalDonations - a.totalDonations);
+
+        res.json(leaderboard);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-      res.status(500).json({ error: 'Failed to fetch leaderboard' });
+        console.error('Error fetching leaderboard:', error);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
     }
-  });
+});
 
 // Endpoint to get total donations for a specific donator
 app.get('/api/donations/:donatorId/total', async (req, res) => {
@@ -1362,7 +1493,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
         }
     })
     res.status(200).json(donator)
-    
+
 })
 
 app.delete('/event/:id', async (req, res) => {
@@ -1423,9 +1554,9 @@ app.post('/events/:eventId/signup', async (req, res) => {
                     create: { userId: Number(userId) }
                 }
             },
-            include: { 
+            include: {
                 participants: true,
-                images: true 
+                images: true
             }
         });
         console.log(updatedEvent);
@@ -1434,7 +1565,7 @@ app.post('/events/:eventId/signup', async (req, res) => {
         console.error('Error signing up for event:', error);
         res.status(500).json({ error: 'Failed to sign up for event' });
     }
-    
+
 });
 
 

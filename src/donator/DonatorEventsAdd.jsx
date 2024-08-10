@@ -58,7 +58,7 @@ const AddEventForm = () => {
       }));
     } else if (name === 'maxSlots') {
       // Ensure the value is not negative
-      const numericValue = Math.max(0, parseInt(value));
+      const numericValue = Math.max(0, Math.min(99, parseInt(value)));
       setFormData((prevData) => ({
         ...prevData,
         [name]: numericValue,
@@ -284,11 +284,12 @@ const AddEventForm = () => {
                     id="maxSlots"
                     name="maxSlots"
                     min="0"
+                    max="99"
                     value={formData.maxSlots}
                     onChange={handleInputChange}
                     required
                   />
-                  <p className="detailsInfo">Enter the maximum number of slots available (minimum 0)</p>
+                  <p className="detailsInfo">Enter the maximum number of slots available (minimum 0, max 99)</p>
                 </div>
 
                 <div className="attire">
