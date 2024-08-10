@@ -195,7 +195,7 @@ body {
     text-transform: uppercase;
 }
 
-.MuiButton-root.collect-btn {
+.MuiButton-root.collect-btn, .collect-btn p {
     background-color: green;
     font-size: 12px;
     height: 30px;

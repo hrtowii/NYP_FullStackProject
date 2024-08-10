@@ -301,37 +301,37 @@ app.post('/reset-password', async (req, res) => {
 
 const faqData = [
     {
-      question: "What is CommuniFridge?",
-      answer: ""
+        question: "What is CommuniFridge?",
+        answer: ""
     },
     {
-      question: "How can I donate food?",
-      answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
+        question: "How can I donate food?",
+        answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
     },
     {
-      question: "Is my personal information safe?",
-      answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
+        question: "Is my personal information safe?",
+        answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
     },
     {
-      question: "How can I request food?",
-      answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
+        question: "How can I request food?",
+        answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
     },
     {
-      question: "What if I have dietary restrictions?",
-      answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
+        question: "What if I have dietary restrictions?",
+        answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
     }
 ];
 
 app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
-        
+
         const faqContext = faqData.map(item => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n');
-        
+
         const response = await anthropic.messages.create({
-          model: "claude-3-haiku-20240307",
-          max_tokens: 600,
-          system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
+            model: "claude-3-haiku-20240307",
+            max_tokens: 600,
+            system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
     
     Here's some key information about CommuniFridge:
     1. It's a local project specific to Singapore.
@@ -349,17 +349,17 @@ app.post('/chat', async (req, res) => {
     4. Be friendly, empathetic, and encouraging to both potential donors and those seeking food assistance.
     5. If you're unsure about specific details, it's okay to say so and provide general information about how community fridge projects typically work.
     6. Encourage users to check the CommuniFridge website or contact the project directly for the most up-to-date and accurate information.`,
-          messages: [
-            {
-              role: "user",
-              content: [
+            messages: [
                 {
-                  type: "text",
-                  text: message,
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: message,
+                        },
+                    ],
                 },
-              ],
-            },
-          ],
+            ],
         });
         console.log(response)
         res.json({ response: response.content[0].text });
@@ -1030,10 +1030,8 @@ app.post('/reservation/:id', async (req, res) => {
     console.log('Request body:', req.body);
 
 
-    // const id: number = parseInt(req.params.id)
     const userId: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
-    let donationId = formData.cartItems[0].id;
     console.log('Received reservation data:', req.body);
     try {
         // Check if User exists
@@ -1044,50 +1042,47 @@ app.post('/reservation/:id', async (req, res) => {
             return res.status(400).json({ error: `User with id ${userId} not found` });
         }
 
-        donationId = parseInt(donationId.toString(), 10);
+        const newReservations = await Promise.all(formData.cartItems.map(async (item) => {  // 'Promise.all' create multiple reservations at the same time
+            const donationId = parseInt(item.id.toString(), 10);
 
-        const newReservation = await prisma.reservation.create({
-            data: {
-                user: {
-                    connect: { id: userId }
-                },
-                collectionDate: new Date(formData.collectionDate),
-                collectionTimeStart: formData.collectionTimeStart,
-                collectionTimeEnd: formData.collectionTimeEnd,
-                collectionStatus: 'Uncollected',
-                remarks: formData.remarks,
-                donation: {
-                    connect: { id: donationId }
-                },
-                reservationItems: {
-                    create: formData.cartItems.flatMap(item =>
-                        item.foods.map(food => ({
+            return prisma.reservation.create({
+                data: {
+                    user: {
+                        connect: { id: userId }
+                    },
+                    collectionDate: new Date(formData.collectionDate),
+                    collectionTimeStart: formData.collectionTimeStart,
+                    collectionTimeEnd: formData.collectionTimeEnd,
+                    collectionStatus: 'Uncollected',
+                    remarks: formData.remarks,
+                    donation: {
+                        connect: { id: donationId }
+                    },
+                    reservationItems: {
+                        create: item.foods.map(food => ({
                             food: { connect: { id: food.id } },
                             quantity: food.quantity
                         }))
-                    )
-                }
-            },
-            include: {
-                reservationItems: {
-                    include: {
-                        food: true
                     }
                 },
-                donation: {
-                    include: {
-                        foods: true
-                    }
+                include: {
+                    reservationItems: {
+                        include: {
+                            food: true
+                        }
+                    },
+                    user: true
                 },
-                user: true
-            },
-        });
-        res.status(201).json(newReservation);
+            });
+        }));
+
+        res.status(201).json(newReservations);
     } catch (error) {
-        console.error('Error creating reservation:', error);
-        res.status(500).json({ error: 'Unable to create reservation', details: error.message });
+        console.error('Error creating reservaton:', error);
+        res.status(500).json({ error: 'Failed to create reservation', details: error.message });
     }
 });
+
 
 // Get Current Reservation
 app.get('/reservation/current/:userId', async (req, res) => {
@@ -1806,8 +1801,8 @@ app.get('/reviews/:id', async (req, res) => {
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
             reviewData.likeCount = reviewData.likes.length;
-            reviewData.likedByUser = reviewData.likes.some(like => 
-                (userRole === 'user' && like.userId === userId) || 
+            reviewData.likedByUser = reviewData.likes.some(like =>
+                (userRole === 'user' && like.userId === userId) ||
                 (userRole === 'donator' && like.donatorId === userId)
             );
             reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
@@ -1893,10 +1888,10 @@ app.post('/reviews/:reviewId/like', async (req, res) => {
     } catch (error) {
         console.error('Error handling review like:', error);
         console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            error: 'Internal server error', 
-            message: error.message, 
-            stack: error.stack 
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message,
+            stack: error.stack
         });
     }
 });

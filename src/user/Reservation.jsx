@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -267,207 +267,211 @@ const Reservation = () => {
     };
 
     // INDIVIDUAL RESERVATION CARD
-    const ReservationCard = ({ reservation, isPast }) => {
-        // Check if reservation n these 3 exist first
-        const foodName = reservation.reservationItems?.[0]?.food?.name || 'N/A';
-        const quantity = reservation.reservationItems?.[0]?.food?.quantity || 'N/A';
-        const image = reservation.reservationItems?.[0]?.food?.donation?.image || "/path/to/default-food-image.jpg";
-
+    const ReservationCard = ({ reservation }) => {
         return (
-            <div className="reservation-card">
-                <img src={image} alt="Food" className="food-image" />
-                <div className="reservation-details">
-                    <h3>{foodName}</h3>
-                    <p>
-                        {new Date(reservation.collectionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                    <p>
-                        {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
-                        {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                            <span
-                                className="reschedule-link" onClick={() => handleReschedule(reservation, reservation.reservationItems[0]?.food?.donation)}>Reschedule
-                            </span>
-                        )}
-                    </p>
-                    <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
-                        Status: {reservation.collectionStatus}
-                    </p>
-                </div>
-                <div className="reservation-actions">
-                    <div className="reservation-amount">{quantity}kg</div>
-                    {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                        <>
-                            <div className="button-group">
-                                <Button
-                                    className="cancel-btn"
-                                    onClick={() => handleCancelClick(reservation)}
-                                    variant="contained"
-                                    color="error"
-                                    size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        top: '10px',
-                                        right: '10px',
-                                        backgroundColor: '#ff4d4d',
-                                        '&:hover': {
-                                            backgroundColor: '#ff3333',
-                                        },
-                                    }}>Cancel
-                                </Button>
-                                <Button
-                                    className="collect-btn"
-                                    onClick={() => handleCollectClick(reservation)}
-                                    variant="contained"
-                                    color="success"
-                                    size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: '10px',
-                                        right: '10px',
-                                        backgroundColor: '#4CAF50',
-                                        '&:hover': {
-                                            backgroundColor: '#45a049',
-                                        },
-                                    }}>Collect
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                    {isPast && reservation.collectionStatus === 'Collected' && (
-                        <Button className="review-btn" onClick={handleWriteReview}>Write a review</Button>
-                    )}
-                </div>
-            </div>
-        );
-    };
-    return (
-        <>
-            <UserNavbar />
-            <div className="reservation-page">
-                <div className="reservation-header">
-                    <h1>Reservations</h1>
-                    <p>To ensure a smooth experience for everyone, please remember to collect your reservations on time.
-                        Timely pickups help us serve you better and maintain availability for other customers. Thank you for your cooperation!</p>
-                </div>
-                {isLoading ? (
-                    <p>Loading reservations...</p>
-                ) : error ? (
-                    <p className="error-message">{error}</p>
-                ) : (
-                    <div className="reservation-sections">
-                        <div className="reservation-section">
-                            <h2>Your Current Reservations:</h2>
-                            {currentReservations.length > 0 ? (
-                                currentReservations.map(reservation => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={false} />
-                                ))
-                            ) : (
-                                <p>No current reservations.</p>
-                            )}
+            <>
+                {reservation.reservationItems.map((item, index) => (
+                    <div key={`${reservation.id}-${index}`} className="reservation-card">
+                        <img
+                            src={item.food.donation?.image || "/path/to/default-food-image.jpg"}
+                            alt={item.food.name}
+                            className="food-image"
+                        />
+                        <div className="reservation-details">
+                            <h3>{item.food.name}</h3>
+                            <p>
+                                {new Date(reservation.collectionDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </p>
+                            <p>
+                                {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
+                                {reservation.collectionStatus === 'Uncollected' && (
+                                    <span
+                                        className="reschedule-link"
+                                        onClick={() => handleReschedule(reservation, item.food.donation)}
+                                    >
+                                        Reschedule
+                                    </span>
+                                )}
+                            </p>
+                            <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
+                                Status: {reservation.collectionStatus}
+                            </p>
                         </div>
-                        <div className="reservation-section">
-                            <h2>Your Past Reservations:</h2>
-                            {pastReservations.length > 0 ? (
-                                pastReservations.map(reservation => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
-                                ))
-                            ) : (
-                                <p>No past reservations.</p>
+                        <div className="reservation-actions">
+                            <div className="reservation-amount">{item.quantity}g</div>
+                            {reservation.collectionStatus === 'Uncollected' && (
+                                <div className="button-group">
+                                    <Button
+                                        className="cancel-btn"
+                                        onClick={() => handleCancelClick(reservation, item)}
+                                        variant="contained"
+                                        color="error"
+                                        size="small"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        className="collect-btn"
+                                        onClick={() => handleCollectClick(reservation, item)}
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                    >
+                                        Collected
+                                    </Button>
+                                </div>
+                            )}
+                            {reservation.collectionStatus === 'Collected' && (
+                                <Button
+                                    className="review-btn"
+                                    onClick={() => handleWriteReview(item)}
+                                    variant="contained"
+                                    color="primary"
+                                    size="small"
+                                >
+                                    Write a review
+                                </Button>
                             )}
                         </div>
                     </div>
-                )}
+                ))}
+            </>
+        );
+    };
+    
+return (
+    <>
+        <UserNavbar />
+        <div className="reservation-page">
+            <div className="reservation-header">
+                <h1>Reservations</h1>
+                <p>To ensure a smooth experience for everyone, please remember to collect your reservations on time.
+                    Timely pickups help us serve you better and maintain availability for other customers. Thank you for your cooperation!</p>
             </div>
-            {/* RESCHEDULE DIALOG */}
-            <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
-                <DialogTitle>Reschedule Reservation</DialogTitle>
-                <DialogContent>
-                    {selectedReservation && (
-                        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                                <DatePicker
-                                    label="Collection Date"
-                                    value={newDate}
-                                    onChange={(date) => {
-                                        setNewDate(date);
-                                        validateDate(date);
-                                    }}
-                                    renderInput={(params) => <TextField {...params} fullWidth error={!!dateError} helperText={dateError} />}
-                                    minDate={new Date()}  // Disable past dates
-                                />
-                                <TimePicker
-                                    label="Collection Start Time"
-                                    value={newTimeStart}
-                                    onChange={(time) => {
-                                        const restrictedTime = enforceTimeRestrictions(time);
-                                        setNewTimeStart(restrictedTime);
-                                        validateTimes(restrictedTime, newTimeEnd);
-                                    }}
-                                    renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
-                                />
-                                <TimePicker
-                                    label="Collection End Time"
-                                    value={newTimeEnd}
-                                    onChange={(time) => {
-                                        const restrictedTime = enforceTimeRestrictions(time);
-                                        setNewTimeEnd(restrictedTime);
-                                        validateTimes(newTimeStart, restrictedTime);
-                                    }}
-                                    renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
-                                />
-                            </LocalizationProvider>
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenReschedule(false)}>Cancel</Button>
-                    <Button
-                        onClick={handleRescheduleSubmit}
-                        color="primary"
-                        variant="contained"
-                        disabled={!!dateError || !!timeError}
-                        sx={{ '&:hover': { backgroundColor: 'darkblue', } }}>Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            {/* CANCELLATION DIALOG */}
-            <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
-                <DialogTitle>
-                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{ marginRight: '8px', color: '#FFA500' }}>⚠️</span>
-                        Removal Confirmation
-                    </Typography>
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Are you sure you want to cancel your reservation?
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenCancelDialog(false)}>No</Button>
-                    <Button onClick={handleCancelConfirm} color="primary" variant="contained">
-                        Yes
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
-                <DialogTitle>
-                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
-                        <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
-                        Reservation Removed
-                    </Typography>
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>{successMessage}</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenSuccessDialog(false)} color="primary" variant="contained">
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <UserFooter/>
-        </>
-    );
+            {isLoading ? (
+                <p>Loading reservations...</p>
+            ) : error ? (
+                <p className="error-message">{error}</p>
+            ) : (
+                <div className="reservation-sections">
+                    <div className="reservation-section">
+                        <h2>Your Current Reservations:</h2>
+                        {currentReservations.length > 0 ? (
+                            currentReservations.map(reservation => (
+                                <ReservationCard key={reservation.id} reservation={reservation} isPast={false} />
+                            ))
+                        ) : (
+                            <p>No current reservations.</p>
+                        )}
+                    </div>
+                    <div className="reservation-section">
+                        <h2>Your Past Reservations:</h2>
+                        {pastReservations.length > 0 ? (
+                            pastReservations.map(reservation => (
+                                <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
+                            ))
+                        ) : (
+                            <p>No past reservations.</p>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+        {/* RESCHEDULE DIALOG */}
+        <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
+            <DialogTitle>Reschedule Reservation</DialogTitle>
+            <DialogContent>
+                {selectedReservation && (
+                    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                                label="Collection Date"
+                                value={newDate}
+                                onChange={(date) => {
+                                    setNewDate(date);
+                                    validateDate(date);
+                                }}
+                                renderInput={(params) => <TextField {...params} fullWidth error={!!dateError} helperText={dateError} />}
+                                minDate={new Date()}  // Disable past dates
+                            />
+                            <TimePicker
+                                label="Collection Start Time"
+                                value={newTimeStart}
+                                onChange={(time) => {
+                                    const restrictedTime = enforceTimeRestrictions(time);
+                                    setNewTimeStart(restrictedTime);
+                                    validateTimes(restrictedTime, newTimeEnd);
+                                }}
+                                renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
+                            />
+                            <TimePicker
+                                label="Collection End Time"
+                                value={newTimeEnd}
+                                onChange={(time) => {
+                                    const restrictedTime = enforceTimeRestrictions(time);
+                                    setNewTimeEnd(restrictedTime);
+                                    validateTimes(newTimeStart, restrictedTime);
+                                }}
+                                renderInput={(params) => <TextField {...params} fullWidth error={!!timeError} helperText={timeError} />}
+                            />
+                        </LocalizationProvider>
+                    </Box>
+                )}
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpenReschedule(false)}>Cancel</Button>
+                <Button
+                    onClick={handleRescheduleSubmit}
+                    color="primary"
+                    variant="contained"
+                    disabled={!!dateError || !!timeError}
+                    sx={{ '&:hover': { backgroundColor: 'darkblue', } }}>Confirm
+                </Button>
+            </DialogActions>
+        </Dialog>
+        {/* CANCELLATION DIALOG */}
+        <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
+            <DialogTitle>
+                <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '8px', color: '#FFA500' }}>⚠️</span>
+                    Removal Confirmation
+                </Typography>
+            </DialogTitle>
+            <DialogContent>
+                <Typography>
+                    Are you sure you want to cancel your reservation?
+                </Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpenCancelDialog(false)}>No</Button>
+                <Button onClick={handleCancelConfirm} color="primary" variant="contained">
+                    Yes
+                </Button>
+            </DialogActions>
+        </Dialog>
+        <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
+            <DialogTitle>
+                <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                    <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
+                    Reservation Removed
+                </Typography>
+            </DialogTitle>
+            <DialogContent>
+                <Typography>{successMessage}</Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpenSuccessDialog(false)} color="primary" variant="contained">
+                    OK
+                </Button>
+            </DialogActions>
+        </Dialog>
+        <UserFooter />
+    </>
+);
 };
 export default Reservation;

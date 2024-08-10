@@ -338,7 +338,7 @@ export default function Fridge() {
                                                 direction={orderBy === 'quantity' ? order : 'asc'}
                                                 onClick={() => handleRequestSort('quantity')}
                                             >
-                                                Quantity (kg)
+                                                Quantity (g)
                                             </TableSortLabel>
                                         </TableCell>
                                         <TableCell>Category</TableCell>
