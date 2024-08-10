@@ -35,6 +35,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import AddIcon from '@mui/icons-material/Add';
 import { DonatorNavbar } from '../components/Navbar';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
@@ -605,6 +606,7 @@ export default function ManageDonations() {
           </DialogActions>
         </Dialog>
       </div>
+      <DonatorFooter/>
     </div>
   );
 }

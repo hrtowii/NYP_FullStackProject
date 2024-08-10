@@ -1,4 +1,11 @@
-/* Existing styles */
+/* Base styles */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Image container and overlay */
 .image-container {
     position: relative;
     width: 100%;
@@ -7,6 +14,7 @@
 .full-width-image {
     width: 100%;
     height: auto;
+    display: block;
 }
 
 .overlay {
@@ -14,12 +22,12 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 95%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.5);
     text-align: center;
 }
 
@@ -29,51 +37,66 @@
 }
 
 .title {
-    font-size: 6rem;
+    font-size: clamp(2rem, 5vw, 6rem);
     font-weight: 700;
 }
 
 .description {
-    font-size: 2rem;
+    font-size: clamp(1rem, 2vw, 2rem);
     font-weight: 400;
     margin-top: 0.5rem;
     max-width: 70%;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
 }
 
+/* Button styles */
 .middle-container {
     display: flex;
     justify-content: center;
-    padding-block: 10px;
+    padding: 20px 0;
 }
 
 .buttonicon {
-    padding-right: 5px;
-    display: flex;
+    display: inline-flex;
+    align-items: center;
+    padding-right: 10px;
 }
 
-/* New styles for event layout */
+/* Event layout */
 .events-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .event-card {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    width: 90%;
+    width: 100%;
     margin: 20px 0;
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
 }
 
 .displayEventImage {
-    flex: 0 0 auto;
+    flex: 0 0 200px;
     margin-right: 20px;
+}
+
+.displayEventImage img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
 }
 
 .event-content {
@@ -96,8 +119,7 @@
 .event-details {
     display: flex;
     gap: 15px;
-    margin-top: 5%;
-    margin-bottom: 10px;
+    margin: 10px 0;
 }
 
 .event-detail {
@@ -105,69 +127,40 @@
     align-items: center;
     border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 4px 8px;
+    padding: 6px 10px;
+    font-size: 0.9rem;
 }
 
 .event-detail svg {
-    font-size: 1rem;
-    margin-right: 4px;
+    margin-right: 6px;
 }
 
 .event-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 5%;
-    margin-bottom: 10px;
-
+    gap: 5px;
+    margin: 10px 0;
 }
+
 .event-action {
     display: flex;
-    gap : 10px ;
+    gap: 5px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    transition: background-color 0.3s ease;
 }
 
-@media (max-width: 768px) {
-    .event-card {
-        flex-direction: column;
-        width: 95%;
-    }
-
-    .displayEventImage {
-        margin-right: 0;
-        margin-bottom: 20px;
-    }
-
-    .event-details-and-actions {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .event-actions {
-        margin-top: 10px;
-    }
+.event-action:hover {
+    background-color: #e0e0e0;
 }
+
+/* Modal styles */
 .event-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-
-/*Pop up */
-
-.event-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -176,38 +169,39 @@
 
 .modal-content {
     background-color: white;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
     width: 90%;
-    height: 60%;
-    max-width: 1500px;
-    max-height: 100vh;
+    max-width: 900px;
+    max-height: 90vh;
     overflow-y: auto;
+    position: relative;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    max-height: 60vh;
-    bottom: 10px;
-    padding-top: 13%;
+    margin-top: 20px;
+    gap: 10px;
 }
 
-.modal-close {
+.modal-close, .modal-signup {
     background: none;
+    border: none;
     font-size: 1.5rem;
     cursor: pointer;
-
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
 
 .modal-body {
     display: flex;
-    flex-wrap: wrap;
+    gap: 30px;
 }
 
 .modal-left {
     flex: 0 0 300px;
-    margin-right: 40px;
 }
 
 .modal-left img {
@@ -219,12 +213,11 @@
 
 .modal-details {
     flex: 1;
-    min-width: 300px;
 }
 
 .modal-title {
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .modal-summary {
@@ -233,10 +226,9 @@
 
 .modal-info {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     gap: 15px;
-    margin-top: 20px;
-    flex-direction: column;
 }
 
 .modal-info-item {
@@ -244,22 +236,53 @@
     align-items: center;
     border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 4px 8px;
-    max-width: fit-content;
-    
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    width: fit-content;
+
 }
 
 .modal-info-item svg {
-    margin-right: 5px;
+    margin-right: 6px;
 }
 
+/* Sort container */
+.sort-container {
+    margin: 20px 0;
+    text-align: right;
+}
+
+.sort-container select {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
+    .event-card {
+        flex-direction: column;
+    }
+
+    .displayEventImage {
+        margin-right: 0;
+        margin-bottom: 20px;
+        flex: 0 0 auto;
+    }
+
+    .event-details-and-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .modal-body {
         flex-direction: column;
     }
 
     .modal-left {
-        margin-right: 0;
         margin-bottom: 20px;
     }
 }

@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.25.0",
     "@mui/icons-material": "^5.16.6",
     "@mui/material": "^5.15.20",
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",

@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import Box from '@mui/material/Box';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -465,6 +466,7 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <UserFooter/>
         </>
     );
 };

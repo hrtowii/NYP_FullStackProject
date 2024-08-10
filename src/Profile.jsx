@@ -33,6 +33,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { TokenContext } from './utils/TokenContext';
+import {UserFooter, DonatorFooter} from './components/Footer';
 import parseJwt from './utils/parseJwt.jsx'
 import { backendRoute } from './utils/BackendUrl.jsx'
 
@@ -61,6 +62,7 @@ export default function Profile() {
     const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
     const [replyToDelete, setReplyToDelete] = useState(null);
 
+
     const handleFilterChange = useCallback((filter) => {
         setCurrentFilter(filter);
         if (filter === 'all') {
@@ -88,14 +90,14 @@ export default function Profile() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ userId })
+                body: JSON.stringify({ userId, userRole })
             });
 
             if (response.ok) {
                 const { message, likeCount, liked } = await response.json();
                 setReviews(prevReviews => prevReviews.map(review =>
                     review.id === reviewId
-                        ? { ...review, likeCount: likeCount }
+                        ? { ...review, likeCount: likeCount, likedByUser: liked }
                         : review
                 ));
                 setLikedReviews(prev => ({
@@ -104,13 +106,17 @@ export default function Profile() {
                 }));
                 setSnackbar({ open: true, message: message, severity: 'success' });
             } else {
-                throw new Error('Failed to update like');
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                throw new Error(`Failed to update like: ${errorData.message}`);
             }
         } catch (error) {
             console.error('Error updating like:', error);
+            console.error('Error details:', error.message);
             setSnackbar({ open: true, message: 'Failed to update like. Please try again.', severity: 'error' });
         }
-    }, [token, userId, backendRoute]);
+    }, [token, userId, userRole, backendRoute]);
+
 
     const handleImageClick = (imageUrl) => {
         setEnlargedImage(imageUrl);
@@ -143,7 +149,7 @@ export default function Profile() {
     const fetchReviews = useCallback(async () => {
         console.log('Fetching reviews...');
         try {
-            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}`, {
+            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}&userRole=${userRole}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -158,16 +164,16 @@ export default function Profile() {
             const data = await response.json();
             console.log('Reviews fetched:', data);
             setReviews(data);
-            setFilteredReviews(data); // Initialize filteredReviews with all reviews
+            setFilteredReviews(data);
             const initialLikedReviews = {};
             data.forEach(review => {
-                initialLikedReviews[review.id] = review.liked || false;
+                initialLikedReviews[review.id] = review.likedByUser || false;
             });
             setLikedReviews(initialLikedReviews);
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [donatorId, userId, token, backendRoute]);
+    }, [donatorId, userId, userRole, token, backendRoute]);
 
     useEffect(() => {
         fetchReviews();
@@ -561,6 +567,22 @@ export default function Profile() {
                                                         )}
                                                     </Box>
                                                 )}
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                                    <IconButton
+                                                        onClick={() => handleThumbsUp(review.id)}
+                                                        size="small"
+                                                    >
+                                                        <ThumbUpIcon color={review.likedByUser ? 'primary' : 'inherit'} />
+                                                    </IconButton>
+                                                    <Typography variant="body2">
+                                                        {review.likeCount} likes
+                                                    </Typography>
+                                                    {review.likedByDonator && (
+                                                        <Typography variant="body2" color="primary" sx={{ ml: 2 }}>
+                                                            Liked by donator
+                                                        </Typography>
+                                                    )}
+                                                </Box>
 
                                             </>
                                         }
@@ -728,6 +750,7 @@ export default function Profile() {
                     message={snackbar.message}
                 />
             </Container>
+            {userRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
         </>
     );
 }

@@ -18,7 +18,7 @@ export default function Navbar() {
     <div className='navbar'>
       <div>
         <NavLink to={"/"}>Home</NavLink>
-        <NavLink to={"/about"}>About Us</NavLink>
+        {/* <NavLink to={"/about"}>About Us</NavLink> */}
         {!isLoggedIn ? (
           <>
             <NavLink to={"/signup"}>Sign Up</NavLink>
@@ -49,9 +49,10 @@ export function DonatorNavbar() {
   return (
     <div className='navbar'>
       <div>
-        <NavLink to={"/donator"}>Home</NavLink>
-        <NavLink to={"/donator/events"}>Manage Events</NavLink>
-        <NavLink to={"/listofdonators"}>Donators</NavLink>
+      <NavLink to={"/donator"}>Dashboard</NavLink>
+      <NavLink to={"/donator/events"}>Manage Events</NavLink>
+      <NavLink to={"/listofdonators"}>Donators</NavLink>
+      <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="avatarmenu">
         <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
@@ -71,9 +72,11 @@ export function UserNavbar() {
     <div className='navbar'>
       {/* Navlink to "User Home" */}
       <div>
-        <NavLink to={"/user/reservation"}>Reservations</NavLink>
-        <NavLink to={"/user/fridge"}>Fridge</NavLink>
-        <NavLink to={"/listofdonators"}>Donators</NavLink>
+      <NavLink to={"/user/reservation"}>Reservations</NavLink>
+      <NavLink to={"/user/fridge"}>Fridge</NavLink>
+      <NavLink to={"/user/events"}>Events</NavLink>
+      <NavLink to={"/listofdonators"}>Donators</NavLink>
+      <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="navbar-right">
         <div className="user-actions">

@@ -17,7 +17,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-
+import Anthropic from '@anthropic-ai/sdk';
+const anthropic = new Anthropic();
 configDotenv()
 const redisClient = createClient({
     // legacyMode: true,
@@ -298,6 +299,76 @@ app.post('/reset-password', async (req, res) => {
     }
 });
 
+const faqData = [
+    {
+      question: "What is CommuniFridge?",
+      answer: ""
+    },
+    {
+      question: "How can I donate food?",
+      answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
+    },
+    {
+      question: "Is my personal information safe?",
+      answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
+    },
+    {
+      question: "How can I request food?",
+      answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
+    },
+    {
+      question: "What if I have dietary restrictions?",
+      answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
+    }
+];
+
+app.post('/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+        
+        const faqContext = faqData.map(item => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n');
+        
+        const response = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 600,
+          system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
+    
+    Here's some key information about CommuniFridge:
+    1. It's a local project specific to Singapore.
+    2. It connects food donors with individuals in need.
+    3. It aims to reduce food waste and address food insecurity.
+    
+    Below is a list of frequently asked questions. Use this information as a primary reference, but feel free to expand on these answers if necessary:
+    
+    ${faqContext}
+    
+    When responding to users:
+    1. Prioritize information from the FAQ if it's relevant to the question.
+    2. If the FAQ doesn't cover the topic, provide a helpful response based on the general context of CommuniFridge and its goals.
+    3. Keep your answers focused on food donations, community fridges, and the local context of Singapore.
+    4. Be friendly, empathetic, and encouraging to both potential donors and those seeking food assistance.
+    5. If you're unsure about specific details, it's okay to say so and provide general information about how community fridge projects typically work.
+    6. Encourage users to check the CommuniFridge website or contact the project directly for the most up-to-date and accurate information.`,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: message,
+                },
+              ],
+            },
+          ],
+        });
+        console.log(response)
+        res.json({ response: response.content[0].text });
+    } catch (error) {
+        console.error('Error calling Anthropic API:', error);
+        res.status(500).json({ error: 'An error occurred while processing your request.' });
+    }
+});
+
 //MARK: Admin functions
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
@@ -365,6 +436,66 @@ app.post('/createAccounts', async (req, res) => {
             hashedPassword: await bcrypt.hash("123", 12),
             email: "lucasleong1000@gmail.com",
             ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "emma",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "emma@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "olivia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "olivia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "noah",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "noah@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "liam",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "liam@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ava",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "ava@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "sophia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "sophia@example.com",
+            ["donator"]: {
                 create: {}
             }
         }
@@ -1251,32 +1382,62 @@ interface updateEventBody {
     images: Express.Multer.File,
 
 }
-app.put('/events/update/:eventId', async (req, res) => {
-    const { eventId } = req.params;  // Get eventId from params, not body
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, imageFile, maxSlots, takenSlots, attire, donatorId } = req.body;
-    const files = req.files as Express.Multer.File[];
+
+
+
+app.put('/events/update/:eventId', upload.single('images'), async (req, res) => {
+    const { eventId } = req.params;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId, imageUpdated } = req.body;
+    const file = req.file;
 
     try {
+        // Find the current event to get the old image
+        const currentEvent = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { images: true }
+        });
+
+        if (!currentEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updateData: any = {
+            title,
+            briefSummary,
+            fullSummary,
+            phoneNumber,
+            emailAddress,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            maxSlots: parseInt(maxSlots),
+            takenSlots: parseInt(takenSlots),
+            attire,
+            donatorId: parseInt(donatorId),
+        };
+
+        if (imageUpdated === 'true' && file) {
+            // Delete old image file if it exists
+            if (currentEvent.images && currentEvent.images.length > 0) {
+                const oldImagePath = path.join(__dirname, '..', currentEvent.images[0].url);
+                try {
+                    await fs.unlink(oldImagePath);
+                } catch (err) {
+                    console.error('Error deleting old image file:', err);
+                }
+            }
+
+            // Update with new image
+            updateData.images = {
+                deleteMany: {},  // This will delete all existing images for this event
+                create: {
+                    url: `/public/${file.filename}`
+                }
+            };
+        }
+
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
-            data: {
-                title,
-                briefSummary,
-                fullSummary,
-                phoneNumber,
-                emailAddress,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate),
-                maxSlots,
-                takenSlots,
-                attire,
-                donatorId: Number(donatorId),
-                images: {
-                    create: files.map(file => ({
-                        url: `/public/${file.filename}` // Store the path relative to your public directory
-                    }))
-                }
-            },
+            data: updateData,
             include: {
                 images: true
             }
@@ -1288,8 +1449,6 @@ app.put('/events/update/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to update event' });
     }
 });
-
-
 app.get('/events/:eventId', async (req, res) => {
     const { eventId } = req.params;
     try {
@@ -1610,8 +1769,9 @@ app.get('/reviews/:id', async (req, res) => {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
         const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
+        const userRole = req.query.userRole;
 
-        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
+        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}, userRole: ${userRole}`);
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1630,12 +1790,7 @@ app.get('/reviews/:id', async (req, res) => {
                 },
                 reply: true,
                 images: true,
-                _count: {
-                    select: { likes: true }
-                },
-                likes: userId ? {
-                    where: { userId: userId }
-                } : undefined
+                likes: true
             },
             orderBy: {
                 createdAt: 'desc'
@@ -1650,9 +1805,12 @@ app.get('/reviews/:id', async (req, res) => {
                 const name = reviewData.user?.person?.name || 'Anonymous';
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
-            reviewData.likeCount = reviewData._count.likes;
-            reviewData.likedByUser = reviewData.likes && reviewData.likes.length > 0;
-            delete reviewData._count;
+            reviewData.likeCount = reviewData.likes.length;
+            reviewData.likedByUser = reviewData.likes.some(like => 
+                (userRole === 'user' && like.userId === userId) || 
+                (userRole === 'donator' && like.donatorId === userId)
+            );
+            reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
             delete reviewData.likes;
             return reviewData;
         });
@@ -1666,68 +1824,80 @@ app.get('/reviews/:id', async (req, res) => {
 
 app.post('/reviews/:reviewId/like', async (req, res) => {
     const { reviewId } = req.params;
-    const { userId } = req.body;
+    const { userId, userRole } = req.body;
+
+    console.log(`Received like request for reviewId: ${reviewId}, userId: ${userId}, userRole: ${userRole}`);
 
     try {
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_reviewId: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
-            }
+        const review = await prisma.review.findUnique({
+            where: { id: parseInt(reviewId) },
+            include: { likes: true }
         });
+
+        if (!review) {
+            console.log(`Review with id ${reviewId} not found`);
+            return res.status(404).json({ error: "Review not found." });
+        }
+
+        let existingLike;
+        let likeData;
+
+        if (userRole === 'user') {
+            existingLike = review.likes.find(like => like.userId === parseInt(userId));
+            likeData = { userId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else if (userRole === 'donator') {
+            existingLike = review.likes.find(like => like.donatorId === parseInt(userId));
+            likeData = { donatorId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else {
+            return res.status(400).json({ error: "Invalid user role" });
+        }
 
         let updatedReview;
         let message;
         let liked;
 
         if (existingLike) {
-            // Unlike the review
+            console.log(`Unliking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.delete({
-                where: {
-                    userId_reviewId: {
-                        userId: parseInt(userId),
-                        reviewId: parseInt(reviewId)
-                    }
-                }
+                where: { id: existingLike.id }
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { decrement: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review unliked';
             liked = false;
         } else {
-            // Like the review
+            console.log(`Liking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.create({
-                data: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
+                data: likeData
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { increment: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review liked';
             liked = true;
         }
 
+        console.log(`Successfully updated like status for review ${reviewId}`);
         res.status(200).json({
             message: message,
-            likeCount: updatedReview._count.likes,
+            likeCount: updatedReview.likeCount,
             liked: liked
         });
     } catch (error) {
         console.error('Error handling review like:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            message: error.message, 
+            stack: error.stack 
+        });
     }
 });
 

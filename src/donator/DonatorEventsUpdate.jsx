@@ -5,19 +5,26 @@ import { LocalizationProvider } from '@mui/x-date-pickers-pro/LocalizationProvid
 import { AdapterDayjs } from '@mui/x-date-pickers-pro/AdapterDayjs';
 import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker';
 import { useNavigate, useParams } from 'react-router-dom';
-import Button from '@mui/material/Button';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import CheckIcon from '@mui/icons-material/Check';
+import 'react-toastify/dist/ReactToastify.css';
 import './DonatorEventsAdd.css'
-
 import dayjs from 'dayjs';
+import {
+  Button,
+  Box,
+  Typography,
+  IconButton,
+} from '@mui/material';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 const API_BASE_URL = 'http://localhost:3000';
 
 const UpdateEventForm = () => {
   const navigate = useNavigate();
   const { eventId } = useParams();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageUpdated, setImageUpdated] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -26,10 +33,10 @@ const UpdateEventForm = () => {
     phoneNumber: '',
     emailAddress: '',
     dateRange: [null, null],
-    imageFile: '',
-    donatorId: '',
     maxSlots: 0,
+    takenSlots: '',
     attire: '',
+    donatorId: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,8 +56,8 @@ const UpdateEventForm = () => {
           phoneNumber: eventData.phoneNumber,
           emailAddress: eventData.emailAddress,
           dateRange: [dayjs(eventData.startDate), dayjs(eventData.endDate)],
-          imageFile: eventData.imageFile,
           maxSlots: eventData.maxSlots,
+          takenSlots: eventData.takenSlots,
           attire: eventData.attire,
           donatorId: eventData.donatorId,
         });
@@ -63,41 +70,6 @@ const UpdateEventForm = () => {
     fetchEventData();
   }, [eventId]);
 
-  const onFileChange = (e) => {
-    let file = e.target.files[0];
-    if (file) {
-      if (file.size > 1024 * 1024) {
-        toast.error('Maximum file size is 1MB');
-        return;
-      }
-      let formData = new FormData();
-      formData.append('file', file);
-
-      fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-      })
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error('Upload failed');
-          }
-          return res.json();
-        })
-        .then((data) => {
-          console.log(data);
-          toast.success('File uploaded successfully');
-          setFormData(prevData => ({
-            ...prevData,
-            imageFile: data.filename
-          }));
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          toast.error('Failed to upload file');
-        });
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'phoneNumber') {
@@ -107,14 +79,12 @@ const UpdateEventForm = () => {
         [name]: numericValue,
       }));
     } else if (name === 'maxSlots') {
-      // Ensure the value is not negative
-      const numericValue = Math.max(0, parseInt(value));
+      const numericValue = Math.max(0, Math.min(99, parseInt(value)));
       setFormData((prevData) => ({
         ...prevData,
         [name]: numericValue,
       }));
     } else if (name === 'attire') {
-      // Limit to 40 characters
       setFormData((prevData) => ({
         ...prevData,
         [name]: value.slice(0, 40),
@@ -141,6 +111,18 @@ const UpdateEventForm = () => {
     }));
   };
 
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      setImageUpdated(true);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -155,42 +137,40 @@ const UpdateEventForm = () => {
         throw new Error('Phone number must be exactly 8 digits');
       }
 
-      const eventData = {
-        title: formData.title,
-        briefSummary: formData.briefSummary,
-        fullSummary: formData.fullSummary,
-        phoneNumber: formData.phoneNumber,
-        emailAddress: formData.emailAddress,
-        startDate: formData.dateRange[0].toISOString(),
-        endDate: formData.dateRange[1].toISOString(),
-        imageFile: formData.imageFile,
-        maxSlots: formData.maxSlots,
-        attire: formData.attire,
-        donatorId: formData.donatorId,
+      const eventData = new FormData();
+      eventData.append('title', formData.title);
+      eventData.append('briefSummary', formData.briefSummary);
+      eventData.append('fullSummary', formData.fullSummary);
+      eventData.append('phoneNumber', formData.phoneNumber);
+      eventData.append('emailAddress', formData.emailAddress);
+      eventData.append('startDate', formData.dateRange[0].toISOString());
+      eventData.append('endDate', formData.dateRange[1].toISOString());
+      eventData.append('maxSlots', formData.maxSlots.toString());
+      eventData.append('takenSlots', formData.takenSlots.toString());
+      eventData.append('attire', formData.attire);
+      eventData.append('donatorId', formData.donatorId.toString());
 
-      };
+      if (imageUpdated) {
+        eventData.append('images', selectedImage);
+      }
+      eventData.append('imageUpdated', imageUpdated.toString());
 
-      console.log('Updating event data:', eventData);
+      console.log('Updating event data:', Object.fromEntries(eventData));
       const response = await fetch(`${API_BASE_URL}/events/update/${eventId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventData),
+        body: eventData,
       });
 
-      const responseText = await response.text();
-      console.log('Full response:', responseText);
-
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}. Response: ${responseText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
-      const updatedEvent = JSON.parse(responseText);
-      console.log('Updated event:', updatedEvent);
+      const responseData = await response.json();
+      console.log('Updated event:', responseData);
 
       toast.success('Event updated successfully!');
-      navigate("/donator/events");
+      navigate("/donator/eventAdded");
     } catch (error) {
       console.error('Error updating event:', error);
       setError(`Failed to update event: ${error.message}`);
@@ -199,21 +179,18 @@ const UpdateEventForm = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <>
       <div className="donator-events-add-page">
-
         <DonatorNavbar />
-
         <div className="form-container">
           <h2>Update Event</h2>
-          <div class="stepper-wrapper">
-            <div class="stepper-item completed">
-              <div class="step-counter"><CheckIcon></CheckIcon></div>
+          <div className="stepper-wrapper">
+            <div className="stepper-item completed">
+              <div className="step-counter"><CheckIcon /></div>
             </div>
-            <div class="stepper-item active">
-              <div class="step-counter"></div>
+            <div className="stepper-item active">
+              <div className="step-counter"></div>
             </div>
           </div>
           {error && <div style={{ color: 'red' }}>{error}</div>}
@@ -290,15 +267,15 @@ const UpdateEventForm = () => {
                 <div>
                   <p id='datelabel'>Date/Period*</p>
                   <div className="datepickercss">
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DemoContainer components={['DateRangePicker']}>
-                      <DateRangePicker
-                        value={formData.dateRange}
-                        onChange={handleDateRangeChange}
-                        minDate={dayjs()} // Set minimum date to today
-                      />
-                    </DemoContainer>
-                  </LocalizationProvider>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DemoContainer components={['DateRangePicker']}>
+                        <DateRangePicker
+                          value={formData.dateRange}
+                          onChange={handleDateRangeChange}
+                          minDate={dayjs()} // Set minimum date to today
+                        />
+                      </DemoContainer>
+                    </LocalizationProvider>
                   </div>
                 </div>
 
@@ -334,13 +311,30 @@ const UpdateEventForm = () => {
 
 
                 <div className='flexybuttons'>
-                  <div>
-                    <Button variant="contained" component="label" className="file-upload-button">
-                      Upload New Image
-                      <input hidden accept="image/*" multiple type="file" onChange={onFileChange} />
-                    </Button>
-                    {formData.imageFile && <span>Current image: {formData.imageFile}</span>}
-                  </div>
+                  <Box sx={{ mt: 2 }}>
+                    <input
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      id="raised-button-file"
+                      type="file"
+                      onChange={handleImageSelect}
+                    />
+                    <label htmlFor="raised-button-file">
+                      <Button variant="contained" component="span">
+                        Upload New Image
+                      </Button>
+                    </label>
+                  </Box>
+                  {selectedImage && (
+                    <Box sx={{ mt: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <Typography>{selectedImage.name}</Typography>
+                        <IconButton onClick={handleRemoveImage}>
+                          <CancelIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
 
                   <div>
                     <Button variant="contained" type="submit" disabled={isLoading} className="update-event-button" color="primary">
