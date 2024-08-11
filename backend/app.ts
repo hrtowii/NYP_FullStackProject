@@ -422,6 +422,26 @@ app.post('/createAccounts', async (req, res) => {
     })
     await prisma.person.create({
         data: {
+            name: "Johnavon Tan",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "johnavontan23@gmail.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "jon",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "johnavontan100@gmail.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
             name: "iruss",
             hashedPassword: await bcrypt.hash("123", 12),
             email: "230446k@gmail.com",
