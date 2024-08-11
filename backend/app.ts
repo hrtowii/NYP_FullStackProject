@@ -954,7 +954,7 @@ app.delete('/donations/:id', async (req, res) => {
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, category, remarks, image } = req.body;
+    const { foods, category, remarks, image, location} = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
@@ -962,6 +962,7 @@ app.put('/donations/:id', async (req, res) => {
                 category,
                 remarks,
                 image,
+                location,
                 foods: {
                     updateMany: foods.map((food) => ({
                         where: { id: food.id },

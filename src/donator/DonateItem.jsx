@@ -18,6 +18,12 @@ import {
     Typography,
     FormHelperText,
     IconButton,
+    Grid,
+    Paper,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -289,6 +295,8 @@ export default function DonateItem() {
                                     <MenuItem value="">Select Location</MenuItem>
                                     <MenuItem value="Ang Mo Kio">Ang Mo Kio</MenuItem>
                                     <MenuItem value="Sengkang">Sengkang</MenuItem>
+                                    <MenuItem value="Yio Chu Kang">Yio Chu Kang</MenuItem>
+                                    <MenuItem value="Jurong">Jurong</MenuItem>
                                 </Select>
                                 <FormHelperText>{errors.location}</FormHelperText>
                             </FormControl>
@@ -317,34 +325,47 @@ export default function DonateItem() {
                         </div>
                     </div>
                 );
-            case 1:
+                case 1:
                 return (
-                    <div className="donation-summary">
-                        <div className="summary-info">
-                            <Typography variant="h6" gutterBottom>Donation Summary</Typography>
-                            <Typography>Food Name: {formData.foodName}</Typography>
-                            <Typography>Quantity: {formData.quantity}</Typography>
-                            <Typography>Type: {formData.type}</Typography>
-                            <Typography>Category: {formData.category}</Typography>
-                            <Typography>Expiry Date: {formData.expiryDate}</Typography>
-                            <Typography>Delivery Date: {formData.deliveryDate}</Typography>
-                            <Typography>Location: {formData.location}</Typography>
-                            {formData.remarks && <Typography>Remarks: {formData.remarks}</Typography>}
-
-                        </div>
-                        <div>
+                    <Paper elevation={3} sx={{ padding: 3, marginTop: 2 }}>
+                        <Typography variant="h5" gutterBottom fontWeight="bold">Donation Summary</Typography>
+                        <Grid container spacing={2} alignItems="flex-start">
                             {formData.image && (
-                                <Typography variant="body2" color="textSecondary" style={{ marginBottom: '10px' }}>
+                                <Grid item xs={12} md={4}>
+                                    <Typography variant="h6" gutterBottom fontWeight="bold">Uploaded Image</Typography>
                                     <img
                                         src={URL.createObjectURL(formData.image)}
                                         alt="Uploaded food"
-                                        style={{ maxWidth: '100%', maxHeight: '200px' }}
+                                        style={{ 
+                                            width: '100%', 
+                                            height: 'auto', 
+                                            maxHeight: '300px', 
+                                            maxWidth: '400px',
+                                            objectFit: 'contain', 
+                                        }}
                                     />
-                                </Typography>
+                                </Grid>
                             )}
-                        </div>
-
-                    </div>
+                            <Grid item xs={12} md={formData.image ? 4 : 6}>
+                                <Typography variant="h6" gutterBottom fontWeight="bold">Food Information</Typography>
+                                <Box display="flex" flexDirection="column">
+                                    <Typography noWrap><strong>Food Name:</strong> {formData.foodName}</Typography>
+                                    <Typography noWrap><strong>Quantity:</strong> {formData.quantity} g</Typography>
+                                    <Typography noWrap><strong>Type:</strong> {formData.type}</Typography>
+                                    <Typography noWrap><strong>Category:</strong> {formData.category}</Typography>
+                                    {formData.remarks && <Typography noWrap><strong>Remarks:</strong> {formData.remarks}</Typography>}
+                                </Box>
+                            </Grid>
+                            <Grid item xs={12} md={formData.image ? 4 : 6}>
+                                <Typography variant="h6" gutterBottom fontWeight="bold">Delivery Details</Typography>
+                                <Box display="flex" flexDirection="column">
+                                    <Typography noWrap><strong>Expiry Date:</strong> {formData.expiryDate}</Typography>
+                                    <Typography noWrap><strong>Delivery Date:</strong> {formData.deliveryDate}</Typography>
+                                    <Typography noWrap><strong>Location:</strong> {formData.location}</Typography>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Paper>
                 );
             case 2:
                 return (
@@ -362,7 +383,7 @@ export default function DonateItem() {
     return (
         <div className="container">
             <DonatorNavbar />
-            <div className='contents'>
+            <div className='contents' style={{backgroundColor: '#f0f8f1' }}>
                 <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
                     <Box
                         display="flex"
@@ -451,14 +472,25 @@ export default function DonateItem() {
                     </div>
                 </div>
 
-                {showConfirmDialog && (
-                    <div className="confirm-dialog">
-                        <Typography variant="h6" gutterBottom>Confirm Donation</Typography>
+                <Dialog
+                    open={showConfirmDialog}
+                    onClose={() => setShowConfirmDialog(false)}
+                    aria-labelledby="confirm-dialog-title"
+                    aria-describedby="confirm-dialog-description"
+                >
+                    <DialogTitle id="confirm-dialog-title">Confirm Donation</DialogTitle>
+                    <DialogContent id="confirm-dialog-description">
                         <Typography>Are you sure you want to submit this donation?</Typography>
-                        <Button onClick={() => setShowConfirmDialog(false)} variant="outlined" style={{ marginRight: '10px' }}>Cancel</Button>
-                        <Button onClick={handleConfirm} variant="contained" color="primary">Confirm</Button>
-                    </div>
-                )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setShowConfirmDialog(false)} color="primary">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleConfirm} color="primary" variant="contained">
+                            Confirm
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 {snackbar.show && (
                     <div className={`snackbar ${snackbar.type}`}>
