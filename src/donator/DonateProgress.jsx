@@ -92,10 +92,10 @@ const DonationCard = ({ donation, food, handleImageClick, backendRoute, formatIm
                     </Grid>
                     <Grid item xs>
                         <Box>
-                            <Typography 
-                                variant="h5" 
-                                gutterBottom 
-                                sx={{ 
+                            <Typography
+                                variant="h5"
+                                gutterBottom
+                                sx={{
                                     fontWeight: 'bold',
                                     fontSize: '1.5rem',
                                     mb: 2
@@ -105,15 +105,15 @@ const DonationCard = ({ donation, food, handleImageClick, backendRoute, formatIm
                             </Typography>
                             <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
                                 <Chip icon={<ScaleIcon />} label={`${food.quantity} g`} size="small" color="primary" />
-                                <Chip 
-                                    icon={<EventIcon />} 
-                                    label={isReserved ? formatDate(donation.reservations[0].collectionDate) : "Unreserved"} 
-                                    size="small" 
+                                <Chip
+                                    icon={<EventIcon />}
+                                    label={isReserved ? formatDate(donation.reservations[0].collectionDate) : "Unreserved"}
+                                    size="small"
                                 />
-                                <Chip 
-                                    icon={<AccessTimeIcon />} 
-                                    label={isReserved ? `${donation.reservations[0].collectionTimeStart} - ${donation.reservations[0].collectionTimeEnd}` : "Unreserved"} 
-                                    size="small" 
+                                <Chip
+                                    icon={<AccessTimeIcon />}
+                                    label={isReserved ? `${donation.reservations[0].collectionTimeStart} - ${donation.reservations[0].collectionTimeEnd}` : "Unreserved"}
+                                    size="small"
                                 />
                             </Box>
                             <Typography variant="body2" color="text.secondary">
@@ -400,25 +400,19 @@ export default function DonateItem() {
     }, [totalDonations, achievement, determineAchievement, updateAchievement]);
 
     useEffect(() => {
-        if (totalDonations > previousTotalDonations && totalDonations >= donationGoal && !goalAchieved) {
-            setGoalAchieved(true);
-            setGoalAchievedDialogOpen(true);
+        if (totalDonations >= donationGoal) {
+            console.log('Goal achieved!');
+            // We don't need to set any state here anymore
         }
         setPreviousTotalDonations(totalDonations);
-    }, [totalDonations, donationGoal, goalAchieved, previousTotalDonations]);
+    }, [totalDonations, donationGoal, previousTotalDonations]);
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
-        setGoalAchievedDialogOpen(false); // Close the goal achieved dialog
-        setGoalAchieved(false); // Reset goal achieved state when opening the modal
     };
 
     const handleCloseGoalModal = () => {
         setOpenGoalModal(false);
-    };
-
-    const handleCloseGoalAchievedDialog = () => {
-        setGoalAchievedDialogOpen(false);
     };
 
     const handleGoalChange = (event) => {
@@ -647,9 +641,16 @@ export default function DonateItem() {
                                     />
                                 </Box>
                             </Box>
-                            <Typography variant="body1" mt={2}>
-                                {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                            </Typography>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+                                <Typography variant="body1">
+                                    {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                                </Typography>
+                                {totalDonations >= donationGoal && (
+                                    <Typography variant="body2" color="primary">
+                                        Goal achieved! Set a new goal?
+                                    </Typography>
+                                )}
+                            </Box>
                         </Box>
                         <Box>
                             <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
@@ -690,7 +691,7 @@ export default function DonateItem() {
 
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
 
-                <Box width="60%">
+                    <Box width="60%">
                         <DonationSection
                             title="Unreserved Donations"
                             donations={unreservedDonations}
@@ -721,54 +722,26 @@ export default function DonateItem() {
                     </Box>
 
 
-                        <Dialog
-                            open={Boolean(enlargedImage)}
-                            onClose={handleCloseEnlargedImage}
-                            maxWidth="lg"
-                        >
-                            <DialogContent>
-                                <img
-                                    src={enlargedImage}
-                                    alt="Enlarged"
-                                    style={{
-                                        width: '100%',
-                                        border: '2px solid black',
-                                        borderRadius: '4px'
-                                    }}
-                                />
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseEnlargedImage}>Close</Button>
-                            </DialogActions>
-                        </Dialog>
-
-                        <Dialog
-                            open={goalAchievedDialogOpen}
-                            onClose={handleCloseGoalAchievedDialog}
-                        >
-                            <DialogTitle>Congratulations!</DialogTitle>
-                            <DialogContent>
-                                <Typography>
-                                    You have achieved your donation goal of {donationGoal} grams!
-                                </Typography>
-                                <Typography>
-                                    Your current total donations: {totalDonations} grams.
-                                </Typography>
-                                <Typography>
-                                    Would you like to set a new goal?
-                                </Typography>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseGoalAchievedDialog} color="primary">
-                                    Close
-                                </Button>
-                                <Button onClick={handleOpenGoalModal} color="primary">
-                                    Set New Goal
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
-
-                        
+                    <Dialog
+                        open={Boolean(enlargedImage)}
+                        onClose={handleCloseEnlargedImage}
+                        maxWidth="lg"
+                    >
+                        <DialogContent>
+                            <img
+                                src={enlargedImage}
+                                alt="Enlarged"
+                                style={{
+                                    width: '100%',
+                                    border: '2px solid black',
+                                    borderRadius: '4px'
+                                }}
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                        </DialogActions>
+                    </Dialog>
 
                     <Box width="35%">
                         <Typography variant="h6" gutterBottom>Recent Reviews</Typography>
@@ -830,7 +803,7 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
-                <Dialog
+                {/* <Dialog
                     open={goalAchievedDialogOpen}
                     onClose={handleCloseGoalAchievedDialog}
                 >
@@ -854,7 +827,7 @@ export default function DonateItem() {
                             Set New Goal
                         </Button>
                     </DialogActions>
-                </Dialog>
+                </Dialog> */}
             </div>
             <DonatorFooter />
         </div>

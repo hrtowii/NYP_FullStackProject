@@ -362,7 +362,7 @@ export default function ManageDonations() {
 
 
         <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
-          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px', marginBottom:"30px"}}>
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
@@ -431,7 +431,7 @@ export default function ManageDonations() {
                   <TableBody>
                     {sortedDonations.flatMap((donation) =>
                       donation.foods.map((food) => (
-                        <TableRow key={`${donation.id}-${food.id}`}>
+                        <TableRow key={`${donation.id}-${food.id}`} >
                           <TableCell>
                             {donation.image && (
                               <Box

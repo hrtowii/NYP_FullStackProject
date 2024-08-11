@@ -91,7 +91,15 @@ export function DonatorFooter() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <Box component="footer" sx={{ bgcolor: '#2ecc71', color: 'primary.contrastText', py: 6 }}>
+        <Box 
+            component="footer" 
+            sx={{ 
+                bgcolor: '#2ecc71', // Set the background color here
+                color: 'primary.contrastText', 
+                py: 6,
+                mt: 'auto' // This pushes the footer to the bottom if there's not enough content
+            }}
+        >
             <Container maxWidth="lg">
                 <Grid container spacing={4}>
                     <Grid item xs={12} sm={6} md={3}>
@@ -137,4 +145,5 @@ export function DonatorFooter() {
         </Box>
     );
 }
+
 
