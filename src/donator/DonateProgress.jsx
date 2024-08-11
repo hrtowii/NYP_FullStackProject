@@ -44,6 +44,7 @@ export default function DonateItem() {
     const [reviews, setReviews] = useState([]);
     const [donationGoal, setDonationGoal] = useState(1000);
     const [totalDonations, setTotalDonations] = useState(0);
+    const [previousTotalDonations, setPreviousTotalDonations] = useState(0);
     const [openGoalModal, setOpenGoalModal] = useState(false);
     const [goalInput, setGoalInput] = useState('');
     const [goalError, setGoalError] = useState(null);
@@ -193,15 +194,10 @@ export default function DonateItem() {
 
 
     const determineAchievement = useCallback((totalQuantity) => {
-        if (totalQuantity >= 10000) {
-            return 'Supreme';
-        } else if (totalQuantity >= 5000) {
-            return 'Diamond';
-        } else if (totalQuantity >= 1000) {
-            return 'Gold';
-        } else {
-            return 'Silver';
-        }
+        if (totalQuantity >= 10000) return 'Supreme';
+        if (totalQuantity >= 5000) return 'Diamond';
+        if (totalQuantity >= 1000) return 'Gold';
+        return 'Silver';
     }, []);
 
     const updateAchievement = useCallback(async (newAchievement) => {
@@ -226,11 +222,12 @@ export default function DonateItem() {
 
             const data = await response.json();
             console.log('Achievement updated successfully:', data);
+            setAchievement(newAchievement);
         } catch (error) {
             console.error('Error updating achievement:', error);
             setError('Failed to update achievement. Please try again later.');
         }
-    }, [token]);
+    }, [token, backendRoute, setError]);
 
     const handleDonationGoal = async () => {
         const donatorId = parseJwt(token).id;
@@ -277,31 +274,23 @@ export default function DonateItem() {
     }, [fetchDonations, fetchReviews, fetchTotalDonations, fetchInitialGoal]);
 
     useEffect(() => {
-        console.log('Donation goal changed:', donationGoal);
         const newAchievement = determineAchievement(totalDonations);
-        setAchievement(newAchievement);
-        updateAchievement(newAchievement);
-
-        if (totalDonations >= donationGoal && !goalAchieved) {
-            setGoalAchieved(true);
-            setGoalAchievedDialogOpen(true);
+        if (newAchievement !== achievement) {
+            updateAchievement(newAchievement);
         }
-    }, [totalDonations, donationGoal, goalAchieved, determineAchievement, updateAchievement]);
+    }, [totalDonations, achievement, determineAchievement, updateAchievement]);
 
     useEffect(() => {
-        console.log('Checking goal achievement:', { totalDonations, donationGoal });
-        if (totalDonations >= donationGoal && donationGoal > 0) {
-            console.log('Goal achieved!');
+        if (totalDonations > previousTotalDonations && totalDonations >= donationGoal && !goalAchieved) {
             setGoalAchieved(true);
             setGoalAchievedDialogOpen(true);
-        } else {
-            console.log('Goal not yet achieved');
-            setGoalAchieved(false);
         }
-    }, [totalDonations, donationGoal]);
+        setPreviousTotalDonations(totalDonations);
+    }, [totalDonations, donationGoal, goalAchieved, previousTotalDonations]);
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
+        setGoalAchieved(false); // Reset goal achieved state when opening the modal
     };
 
     const handleCloseGoalModal = () => {
@@ -378,8 +367,8 @@ export default function DonateItem() {
 
     const achievements = [
         { name: 'Silver', description: 'Donated less than 1000 grams' },
-        { name: 'Gold', description: 'Donated less than 5000 grams' },
-        { name: 'Diamond', description: 'Donated less than 10000 grams' },
+        { name: 'Gold', description: 'Donated more than 1000 grams' },
+        { name: 'Diamond', description: 'Donated more than 5000 grams' },
         { name: 'Supreme', description: 'Donated 10000 grams or more' },
     ];
 
@@ -952,28 +941,28 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
-                <Dialog open={openSetInitialGoalModal} onClose={() => setOpenSetInitialGoalModal(false)}>
-                    <DialogTitle>Set Your Donation Goal</DialogTitle>
+                <Dialog
+                    open={goalAchievedDialogOpen}
+                    onClose={handleCloseGoalAchievedDialog}
+                >
+                    <DialogTitle>Congratulations!</DialogTitle>
                     <DialogContent>
-                        <Typography>You haven't set a donation goal yet. Would you like to set one now?</Typography>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Donation Goal"
-                            type="number"
-                            fullWidth
-                            value={goalInput}
-                            onChange={handleGoalChange}
-                            error={!!goalError}
-                            helperText={goalError}
-                        />
+                        <Typography>
+                            You have achieved your donation goal of {donationGoal} grams!
+                        </Typography>
+                        <Typography>
+                            Your current total donations: {totalDonations} grams.
+                        </Typography>
+                        <Typography>
+                            Would you like to set a new goal?
+                        </Typography>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setOpenSetInitialGoalModal(false)} color="primary">
-                            Not Now
+                        <Button onClick={handleCloseGoalAchievedDialog} color="primary">
+                            Close
                         </Button>
-                        <Button onClick={handleSetInitialGoal} color="primary">
-                            Set Goal
+                        <Button onClick={handleOpenGoalModal} color="primary">
+                            Set New Goal
                         </Button>
                     </DialogActions>
                 </Dialog>
