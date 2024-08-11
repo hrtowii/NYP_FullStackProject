@@ -30,11 +30,58 @@ import {
     ToggleButton,
     ToggleButtonGroup,
     Chip,
+    createTheme,
+    ThemeProvider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { Leaf, Recycle, Globe } from 'lucide-react';
+
+// Create a custom theme
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#2ecc71',
+            light: '#4cd137',
+            dark: '#27ae60',
+        },
+        secondary: {
+            main: '#f1f8e9',
+            light: '#f9faf5',
+            dark: '#dcedc8',
+        },
+        background: {
+            default: '#f1f8e9',
+            paper: '#ffffff',
+        },
+    },
+    components: {
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: '#ffffff',
+                },
+            },
+        },
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 20,
+                },
+            },
+        },
+        MuiTableCell: {
+            styleOverrides: {
+                head: {
+                    backgroundColor: '#e8f5e9',
+                    color: '#2e7d32',
+                    fontWeight: 'bold',
+                },
+            },
+        },
+    },
+});
 
 const SustainabilityDonatorBanner = () => {
     return (
@@ -46,7 +93,8 @@ const SustainabilityDonatorBanner = () => {
                 padding: 3,
                 marginBottom: 4,
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                borderRadius: 4,
             }}
         >
             <Box sx={{ position: 'relative', zIndex: 1 }}>
@@ -291,10 +339,20 @@ export default function ListOfDonators() {
             setView(newView);
         }
     };
-
+    const getAchievementRank = (achievement) => {
+        const ranks = { 'Silver': 1, 'Gold': 2, 'Diamond': 3, 'Supreme': 4 };
+        return ranks[achievement] || 0;
+    };
     const leaderboardData = useMemo(() => {
         return [...profiles]
-            .sort((a, b) => (b.donator?.averageRating || 0) - (a.donator?.averageRating || 0))
+            .sort((a, b) => {
+                // First, sort by achievement rank (highest to lowest)
+                const rankDiff = getAchievementRank(b.donator?.achievement) - getAchievementRank(a.donator?.achievement);
+                if (rankDiff !== 0) return rankDiff;
+                
+                // If ranks are the same, sort by average rating
+                return (b.donator?.averageRating || 0) - (a.donator?.averageRating || 0);
+            })
             .slice(0, 10);
     }, [profiles]);
     const renderLeaderboard = () => (
@@ -304,6 +362,7 @@ export default function ListOfDonators() {
                     <TableRow sx={{ backgroundColor: 'action.hover' }}>
                         <TableCell>Rank</TableCell>
                         <TableCell>Name</TableCell>
+                        <TableCell align="center">Achievement</TableCell>
                         <TableCell align="center">Average Rating</TableCell>
                         <TableCell align="center">Number of Reviews</TableCell>
                     </TableRow>
@@ -324,13 +383,18 @@ export default function ListOfDonators() {
                             <TableCell component="th" scope="row">
                                 <Box display="flex" alignItems="center">
                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-
-                                    <Typography color={"blue"}>
+                                    <Typography>
                                         {profile.name}
                                         {profile.id === userId && " (You)"}
                                     </Typography>
-
                                 </Box>
+                            </TableCell>
+                            <TableCell align="center">
+                                <Chip
+                                    label={profile.donator.achievement || 'N/A'}
+                                    color={getAchievementColor(profile.donator.achievement)}
+                                    size="small"
+                                />
                             </TableCell>
                             <TableCell align="center">
                                 <Box display="flex" alignItems="center" justifyContent="center">
@@ -349,7 +413,7 @@ export default function ListOfDonators() {
     );
 
     return (
-        <>
+        <ThemeProvider theme={theme}>
             {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <div className="container">
                 <Box sx={{ p: 3, bgcolor: '#f0f8f1' }}> {/* Light green background */}
@@ -662,6 +726,6 @@ export default function ListOfDonators() {
                 </Snackbar>
             </div>
             <UserFooter />
-        </>
+        </ThemeProvider>
     );
 }

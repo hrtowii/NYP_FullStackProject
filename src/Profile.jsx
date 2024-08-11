@@ -69,16 +69,11 @@ const StyledListItem = styled(ListItem)(({ theme }) => ({
 }));
 
 const StyledAvatar = styled(Avatar)(({ theme }) => ({
-    backgroundColor: theme.palette.primary.main,
-    color: theme.palette.primary.contrastText,
+    backgroundColor: '#90EE90', // Light green
+    color: theme.palette.getContrastText('#90EE90'),
 }));
 
-const StyledRating = styled(Rating)(({ theme }) => ({
-    marginTop: theme.spacing(1),
-    '& .MuiRating-iconFilled': {
-        color: '#ffb400',
-    },
-}));
+
 
 const ImagePreview = styled(Box)(({ theme }) => ({
     display: 'inline-block',
@@ -94,7 +89,7 @@ const ImagePreview = styled(Box)(({ theme }) => ({
 }));
 
 const ReplySection = styled(Box)(({ theme }) => ({
-    backgroundColor: theme.palette.grey[100],
+    backgroundColor: '#F0FFF0', // Very light green
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(1.5),
     marginTop: theme.spacing(2),
@@ -140,14 +135,7 @@ export default function Profile() {
         }
     }, [reviews]);
 
-    const StyledRating = styled(Rating)({
-        '& .MuiRating-iconFilled': {
-            color: '#ffb400',
-        },
-        '& .MuiRating-iconHover': {
-            color: '#ffb400',
-        },
-    });
+
 
     const handleThumbsUp = useCallback(async (reviewId) => {
         try {
@@ -502,7 +490,6 @@ export default function Profile() {
         const date = new Date(dateString);
         return format(date, 'dd/MM/yyyy HH:mm');
     };
-    
 
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 
@@ -518,7 +505,7 @@ export default function Profile() {
                     <StyledButtonGroup variant="contained" aria-label="rating filter button group">
                         <Button
                             onClick={() => handleFilterChange('all')}
-                            color={currentFilter === 'all' ? 'primary' : 'inherit'}
+                            color={currentFilter === 'all' ? 'success' : 'inherit'}
                         >
                             All
                         </Button>
@@ -526,8 +513,8 @@ export default function Profile() {
                             <Button
                                 key={rating}
                                 onClick={() => handleFilterChange(rating.toString())}
-                                color={currentFilter === rating.toString() ? 'primary' : 'inherit'}
-                                startIcon={<StarIcon style={{ color: '#ffb400' }} />}
+                                color={currentFilter === rating.toString() ? 'success' : 'inherit'}
+                                startIcon={<StarIcon style={{ color: '#faaf00' }} />}
                             >
                                 {rating}
                             </Button>
@@ -549,7 +536,7 @@ export default function Profile() {
                                                         Submitted on {formatDate(review.createdAt)}
                                                     </Typography>
                                                 </Box>
-                                                <StyledRating name="read-only" value={review.rating} readOnly size="small" />
+                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
                                         }
                                         secondary={
@@ -622,13 +609,13 @@ export default function Profile() {
                                                         size="small"
                                                         sx={{ mr: 1 }}
                                                     >
-                                                        <ThumbUpIcon color={review.likedByUser ? 'primary' : 'inherit'} />
+                                                        <ThumbUpIcon color={review.likedByUser ? 'success' : 'inherit'} />
                                                     </IconButton>
                                                     <Typography variant="body2" sx={{ mr: 2 }}>
                                                         {review.likeCount} likes
                                                     </Typography>
                                                     {review.likedByDonator && (
-                                                        <Typography variant="body2" color="primary">
+                                                        <Typography variant="body2" color="success.main">
                                                             Liked by donator
                                                         </Typography>
                                                     )}
