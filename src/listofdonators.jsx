@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext, useMemo } from 're
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
-import {UserFooter, DonatorFooter} from './components/Footer';
+import { UserFooter, DonatorFooter } from './components/Footer';
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
@@ -37,58 +37,58 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { Leaf, Recycle, Globe } from 'lucide-react';
 
 const SustainabilityDonatorBanner = () => {
-  return (
-    <Paper 
-      elevation={3}
-      sx={{
-        background: 'linear-gradient(90deg, #2ecc71, #27ae60)',
-        color: 'white',
-        padding: 3,
-        marginBottom: 4,
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
-          Our Eco-Conscious Donators
-        </Typography>
-        <Typography variant="subtitle1" align="center">
-          Together, we're nurturing a greener future
-        </Typography>
-      </Box>
-      
-      <Box sx={{ 
-        position: 'absolute', 
-        top: -20, 
-        left: -20, 
-        opacity: 0.2,
-        transform: 'rotate(-15deg)'
-      }}>
-        <Leaf size={100} />
-      </Box>
-      
-      <Box sx={{ 
-        position: 'absolute', 
-        bottom: -20, 
-        right: -20, 
-        opacity: 0.2,
-        transform: 'rotate(15deg)'
-      }}>
-        <Recycle size={100} />
-      </Box>
-      
-      <Box sx={{ 
-        position: 'absolute', 
-        top: '50%', 
-        left: '50%', 
-        opacity: 0.1,
-        transform: 'translate(-50%, -50%)'
-      }}>
-        <Globe size={150} />
-      </Box>
-    </Paper>
-  );
+    return (
+        <Paper
+            elevation={3}
+            sx={{
+                background: 'linear-gradient(90deg, #2ecc71, #27ae60)',
+                color: 'white',
+                padding: 3,
+                marginBottom: 4,
+                position: 'relative',
+                overflow: 'hidden'
+            }}
+        >
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
+                    Our Eco-Conscious Donators
+                </Typography>
+                <Typography variant="subtitle1" align="center">
+                    Together, we're nurturing a greener future
+                </Typography>
+            </Box>
+
+            <Box sx={{
+                position: 'absolute',
+                top: -20,
+                left: -20,
+                opacity: 0.2,
+                transform: 'rotate(-15deg)'
+            }}>
+                <Leaf size={100} />
+            </Box>
+
+            <Box sx={{
+                position: 'absolute',
+                bottom: -20,
+                right: -20,
+                opacity: 0.2,
+                transform: 'rotate(15deg)'
+            }}>
+                <Recycle size={100} />
+            </Box>
+
+            <Box sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                opacity: 0.1,
+                transform: 'translate(-50%, -50%)'
+            }}>
+                <Globe size={150} />
+            </Box>
+        </Paper>
+    );
 };
 
 export default function ListOfDonators() {
@@ -108,12 +108,13 @@ export default function ListOfDonators() {
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
     const [view, setView] = useState('list');
-    
+
 
     const currentUserRole = parseJwt(token).role
     const currentUserId = parseJwt(token).id
     const currentUserName = parseJwt(token).name;
     const userId = parseJwt(token).id;
+
 
     const handleImageSelect = (event) => {
         const files = Array.from(event.target.files);
@@ -322,12 +323,12 @@ export default function ListOfDonators() {
                             <TableCell component="th" scope="row">
                                 <Box display="flex" alignItems="center">
                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                    
+
                                     <Typography color={"blue"}>
                                         {profile.name}
                                         {profile.id === userId && " (You)"}
                                     </Typography>
-                                    
+
                                 </Box>
                             </TableCell>
                             <TableCell align="center">
@@ -525,8 +526,8 @@ export default function ListOfDonators() {
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                        {profile.name}
-                                                        {profile.id === userId && " (You)"}
+                                                    {profile.name}
+                                                    {profile.id === userId && " (You)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
@@ -659,7 +660,7 @@ export default function ListOfDonators() {
                     </Alert>
                 </Snackbar>
             </div>
-            <UserFooter/>
+            <UserFooter />
         </>
     );
 }

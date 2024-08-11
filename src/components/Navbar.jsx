@@ -7,7 +7,6 @@ import AvatarMenu from './AvatarMenu.jsx'
 import parseJwt from '../utils/parseJwt.jsx'
 import CartIcon from './CartIcon';
 
-
 export default function Navbar() {
   const { token, updateToken } = useContext(TokenContext);
   const isLoggedIn = token !== null;
@@ -17,8 +16,8 @@ export default function Navbar() {
   return (
     <div className='navbar'>
       <div>
+        <span className="navbar-logo">🍃 FridgeShare</span>
         <NavLink to={"/"}>Home</NavLink>
-        {/* <NavLink to={"/about"}>About Us</NavLink> */}
         {!isLoggedIn ? (
           <>
             <NavLink to={"/signup"}>Sign Up</NavLink>
@@ -49,15 +48,15 @@ export function DonatorNavbar() {
   return (
     <div className='navbar'>
       <div>
-      <NavLink to={"/donator"}>Dashboard</NavLink>
-      <NavLink to={"/donator/events"}>Manage Events</NavLink>
-      <NavLink to={"/listofdonators"}>Donators</NavLink>
-      <NavLink to={"/contactus"}>Contact Us</NavLink>
+        <span className="navbar-logo">🍃 FridgeShare</span>
+        <NavLink to={"/donator"}>Dashboard</NavLink>
+        <NavLink to={"/donator/events"}>Manage Events</NavLink>
+        <NavLink to={"/listofdonators"}>Donators</NavLink>
+        <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="avatarmenu">
         <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
       </div>
-
     </div>
   )
 }
@@ -70,13 +69,13 @@ export function UserNavbar() {
   const currentUserId = isLoggedIn ? parseJwt(token).id : null;
   return (
     <div className='navbar'>
-      {/* Navlink to "User Home" */}
       <div>
-      <NavLink to={"/user/reservation"}>Reservations</NavLink>
-      <NavLink to={"/user/fridge"}>Fridge</NavLink>
-      <NavLink to={"/user/events"}>Events</NavLink>
-      <NavLink to={"/listofdonators"}>Donators</NavLink>
-      <NavLink to={"/contactus"}>Contact Us</NavLink>
+        <span className="navbar-logo">🍃 FridgeShare</span>
+        <NavLink to={"/user/reservation"}>Reservations</NavLink>
+        <NavLink to={"/user/fridge"}>Fridge</NavLink>
+        <NavLink to={"/user/events"}>Events</NavLink>
+        <NavLink to={"/listofdonators"}>Donators</NavLink>
+        <NavLink to={"/contactus"}>Contact Us</NavLink>
       </div>
       <div className="navbar-right">
         <div className="user-actions">
@@ -86,7 +85,6 @@ export function UserNavbar() {
           <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
         </div>
       </div>
-
     </div>
   )
 }
@@ -100,6 +98,7 @@ export function AdminNavbar() {
   return (
     <div className='navbar'>
       <div>
+        <span className="navbar-logo">🍃 FridgeShare</span>
         <NavLink to={"/admin"}>Admin</NavLink>
         <NavLink to={"/donator"}>Donator</NavLink>
         <NavLink to={"/user"}>User</NavLink>
