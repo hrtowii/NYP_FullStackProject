@@ -6,9 +6,9 @@
 
 
 import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Rating, Box, Avatar, FormControlLabel, Switch, IconButton, Snackbar, Alert } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
-import Box from '@mui/material/Box';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import { UserNavbar } from "../components/Navbar";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -19,7 +19,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import parseJwt from '../utils/parseJwt.jsx'
-
+import CancelIcon from '@mui/icons-material/Cancel';
 // Reservation State Variables
 const Reservation = () => {
     const [currentReservations, setCurrentReservations] = useState([]);
@@ -28,19 +28,33 @@ const Reservation = () => {
     const [error, setError] = useState(null);
     const { token } = useContext(TokenContext);
     const [userId, setUserId] = useState(null);
-    const [openReschedule, setOpenReschedule] = useState(false);  // Dialog for rescheduling reservation
+    const [openReschedule, setOpenReschedule] = useState(false);
     const [selectedReservation, setSelectedReservation] = useState(null);
     const [newDate, setNewDate] = useState('');
     const [newTimeStart, setNewTimeStart] = useState('');
     const [newTimeEnd, setNewTimeEnd] = useState('');
-    const [openCancelDialog, setOpenCancelDialog] = useState(false);  // 1st dialog for cancel confirmation
+    const [openCancelDialog, setOpenCancelDialog] = useState(false);
     const [reservationToCancel, setReservationToCancel] = useState(null);
-    const [openSuccessDialog, setOpenSuccessDialog] = useState(false);  // 2nd dialog for cancel confirmation
+    const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [dateError, setDateError] = useState('');  // Validation state variables
+    const [dateError, setDateError] = useState('');
     const [timeError, setTimeError] = useState('');
     const [selectedDonation, setSelectedDonation] = useState(null);
+
+    // New state variables for review functionality
+    const [openReviewModal, setOpenReviewModal] = useState(false);
+    const [selectedDonator, setSelectedDonator] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [ratingError, setRatingError] = useState(false);
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
     const navigate = useNavigate();
+    const currentUserRole = parseJwt(token).role;
+    const currentUserId = parseJwt(token).id;
+    const currentUserName = parseJwt(token).name;
 
     useEffect(() => {
         if (token) {
@@ -265,80 +279,181 @@ const Reservation = () => {
         }
     };
 
-    // INDIVIDUAL RESERVATION CARD
-    const ReservationCard = ({ reservation, isPast }) => {
-        // Check if reservation n these 3 exist first
-        const foodName = reservation.reservationItems?.[0]?.food?.name || 'N/A';
-        const quantity = reservation.reservationItems?.[0]?.food?.quantity || 'N/A';
-        const image = reservation.reservationItems?.[0]?.food?.donation?.image || "/path/to/default-food-image.jpg";
+    // John add reviews
+    const handleOpenReviewModal = async (donator) => {
+        try {
+            const response = await fetch(`${backendRoute}/get_donator`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ id: donator.id })
+            });
 
+            if (!response.ok) {
+                throw new Error('Failed to fetch donator information');
+            }
+
+            const donatorData = await response.json();
+
+            setSelectedDonator({ ...donator, name: donatorData.name });
+            setOpenReviewModal(true);
+        } catch (error) {
+            console.error('Error fetching donator information:', error);
+        }
+    };
+
+    const handleCloseReviewModal = () => {
+        setOpenReviewModal(false);
+        setSelectedDonator(null);
+        setRating(0);
+        setComment('');
+        setRatingError(false);
+        setIsAnonymous(false);
+        setSelectedImages([]);
+    };
+
+    const handleImageSelect = (event) => {
+        const files = Array.from(event.target.files);
+        if (files.length > 1) {
+            setSnackbar({ open: true, message: 'You can only upload up to 1 image', severity: 'error' });
+            return;
+        }
+        setSelectedImages(files);
+    };
+
+    const handleRemoveImage = (index) => {
+        setSelectedImages(prevImages => prevImages.filter((_, i) => i !== index));
+    };
+
+    const getDisplayName = (name, isAnonymous) => {
+        if (isAnonymous) {
+            return `${name[0]}${'*'.repeat(8)}`;
+        }
+        return name;
+    };
+
+    const handleSubmitReview = async () => {
+        try {
+            if (!rating || rating < 1 || rating > 5) {
+                setRatingError(true);
+                throw new Error('Please select a rating between 1 and 5');
+            }
+
+            const formData = new FormData();
+            formData.append('rating', rating);
+            formData.append('comment', comment);
+            formData.append('userId', userId);
+            formData.append('isAnonymous', isAnonymous);
+            selectedImages.forEach((image, index) => {
+                formData.append('images', image);
+            });
+
+            const response = await fetch(`${backendRoute}/review_submit/${selectedDonator.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit review');
+            }
+
+            const responseData = await response.json();
+            console.log('Review submission response:', responseData);
+
+            setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
+            handleCloseReviewModal();
+            fetchReservations();
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
+        }
+    };
+
+
+    // INDIVIDUAL RESERVATION CARD
+    const ReservationCard = ({ reservation }) => {
         return (
-            <div className="reservation-card">
-                <img src={image} alt="Food" className="food-image" />
-                <div className="reservation-details">
-                    <h3>{foodName}</h3>
-                    <p>
-                        {new Date(reservation.collectionDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                    <p>
-                        {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
-                        {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                            <span
-                                className="reschedule-link" onClick={() => handleReschedule(reservation, reservation.reservationItems[0]?.food?.donation)}>Reschedule
-                            </span>
-                        )}
-                    </p>
-                    <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
-                        Status: {reservation.collectionStatus}
-                    </p>
-                </div>
-                <div className="reservation-actions">
-                    <div className="reservation-amount">{quantity}kg</div>
-                    {!isPast && reservation.collectionStatus === 'Uncollected' && (
-                        <>
-                            <div className="button-group">
+            <>
+                {reservation.reservationItems.map((item, index) => (
+                    <div key={`${reservation.id}-${index}`} className="reservation-card">
+                        <img
+                            src={item.food.donation?.image || "/path/to/default-food-image.jpg"}
+                            alt={item.food.name}
+                            className="food-image"
+                        />
+                        <div className="reservation-details">
+                            <h3>{item.food.name}</h3>
+                            <p>
+                                {new Date(reservation.collectionDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </p>
+                            <p>
+                                {reservation.collectionTimeStart} - {reservation.collectionTimeEnd}
+                                {reservation.collectionStatus === 'Uncollected' && (
+                                    <span
+                                        className="reschedule-link"
+                                        onClick={() => handleReschedule(reservation, item.food.donation)}
+                                    >
+                                        Reschedule
+                                    </span>
+                                )}
+                            </p>
+                            <p className={`status status-text ${reservation.collectionStatus.toLowerCase()}`}>
+                                Status: {reservation.collectionStatus}
+                            </p>
+                        </div>
+                        <div className="reservation-actions">
+                            <div className="reservation-amount">{item.quantity}g</div>
+                            {reservation.collectionStatus === 'Uncollected' && (
+                                <div className="button-group">
+                                    <Button
+                                        className="cancel-btn"
+                                        onClick={() => handleCancelClick(reservation, item)}
+                                        variant="contained"
+                                        color="error"
+                                        size="small"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        className="collect-btn"
+                                        onClick={() => handleCollectClick(reservation, item)}
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                    >
+                                        Collected
+                                    </Button>
+                                </div>
+                            )}
+                            {reservation.collectionStatus === 'Collected' && (
                                 <Button
-                                    className="cancel-btn"
-                                    onClick={() => handleCancelClick(reservation)}
+                                    className="review-btn"
+                                    onClick={() => handleOpenReviewModal(item.food.donation.donator)}
                                     variant="contained"
-                                    color="error"
+                                    color="primary"
                                     size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        top: '10px',
-                                        right: '10px',
-                                        backgroundColor: '#ff4d4d',
-                                        '&:hover': {
-                                            backgroundColor: '#ff3333',
-                                        },
-                                    }}>Cancel
+                                >
+                                    Add a review
                                 </Button>
-                                <Button
-                                    className="collect-btn"
-                                    onClick={() => handleCollectClick(reservation)}
-                                    variant="contained"
-                                    color="success"
-                                    size="small"
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: '10px',
-                                        right: '10px',
-                                        backgroundColor: '#4CAF50',
-                                        '&:hover': {
-                                            backgroundColor: '#45a049',
-                                        },
-                                    }}>Collect
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                    {isPast && reservation.collectionStatus === 'Collected' && (
-                        <Button className="review-btn" onClick={handleWriteReview}>Write a review</Button>
-                    )}
-                </div>
-            </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </>
         );
     };
+
     return (
         <>
             <UserNavbar />
@@ -377,6 +492,7 @@ const Reservation = () => {
                     </div>
                 )}
             </div>
+
             {/* RESCHEDULE DIALOG */}
             <Dialog open={openReschedule} onClose={() => setOpenReschedule(false)}>
                 <DialogTitle>Reschedule Reservation</DialogTitle>
@@ -392,7 +508,7 @@ const Reservation = () => {
                                         validateDate(date);
                                     }}
                                     renderInput={(params) => <TextField {...params} fullWidth error={!!dateError} helperText={dateError} />}
-                                    minDate={new Date()}  // Disable past dates
+                                    minDate={new Date()}
                                 />
                                 <TimePicker
                                     label="Collection Start Time"
@@ -429,6 +545,7 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
             {/* CANCELLATION DIALOG */}
             <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
                 <DialogTitle>
@@ -449,6 +566,7 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
                 <DialogTitle>
                     <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
@@ -465,6 +583,108 @@ const Reservation = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* REVIEW MODAL */}
+            <Dialog
+                open={openReviewModal}
+                onClose={handleCloseReviewModal}
+                aria-labelledby="add-review-modal"
+                aria-describedby="modal-to-add-review-for-donator"
+            >
+                <DialogTitle>
+                    <DialogTitle>
+                        Write review for {selectedDonator?.name || `Donator #${selectedDonator?.id}` || 'Unknown Donator'}
+                    </DialogTitle>
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography component="legend">Rating *</Typography>
+                        <Rating
+                            name="rating"
+                            value={rating}
+                            onChange={(event, newValue) => {
+                                setRating(newValue);
+                                setRatingError(false);
+                            }}
+                        />
+                        {ratingError && (
+                            <Typography color="error" variant="caption" display="block" sx={{ mt: 1 }}>
+                                Please select a rating
+                            </Typography>
+                        )}
+                        <TextField
+                            fullWidth
+                            label="Comment (optional)"
+                            multiline
+                            rows={4}
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            sx={{ mt: 2 }}
+                        />
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    name="anonymous"
+                                />
+                            }
+                            label="Submit anonymously"
+                            sx={{ mt: 2 }}
+                        />
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                            Your username will be shown as: {getDisplayName(currentUserName, isAnonymous)}
+                        </Typography>
+                        <Box sx={{ mt: 2 }}>
+                            <input
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                id="raised-button-file"
+                                multiple
+                                type="file"
+                                onChange={handleImageSelect}
+                            />
+                            <label htmlFor="raised-button-file">
+                                <Button variant="contained" component="span">
+                                    Upload Image (Max 1)
+                                </Button>
+                            </label>
+                        </Box>
+                        {selectedImages.length > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                                {selectedImages.map((image, index) => (
+                                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                        <Typography>{image.name}</Typography>
+                                        <IconButton onClick={() => handleRemoveImage(index)}>
+                                            <CancelIcon />
+                                        </IconButton>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseReviewModal}>Cancel</Button>
+                    <Button onClick={handleSubmitReview} variant="contained" color="primary">
+                        Submit Review
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+
+            <UserFooter />
         </>
     );
 };

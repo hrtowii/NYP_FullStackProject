@@ -22,10 +22,9 @@ model Person {
   hashedPassword String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  user    User?
-  donator Donator?
-  admin   Admin?
+  user           User?
+  donator        Donator?
+  admin          Admin?
 }
 
 model User {
@@ -57,13 +56,15 @@ model Review {
 model Like {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  userId    Int
+  userId    Int?
+  donatorId Int?
   reviewId  Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+  donator   Donator? @relation(fields: [donatorId], references: [id])
   review    Review   @relation(fields: [reviewId], references: [id])
-  likeCount Int @default(0)
 
   @@unique([userId, reviewId])
+  @@unique([donatorId, reviewId])
 }
 model Reply {
   id        Int      @id @default(autoincrement())
@@ -82,7 +83,6 @@ model Image {
   reviewId Int
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
-
 model Donator {
   id            Int        @unique
   person        Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -95,6 +95,7 @@ model Donator {
   donationGoal  Int?
   achievement   String?    @default("Silver")
   posts         Post[]
+  likes        Like[]
   @@id([id])
 }
 
@@ -127,9 +128,9 @@ model Donation {
   updatedAt    DateTime      @updatedAt
   donatorId    Int
   donator      Donator       @relation(fields: [donatorId], references: [id], onDelete: Cascade)
-  availability String @default("Available") // Iruss made this to label availability of donations
+  availability String   @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
-  reservations Reservation[] // remove for now, to test reservation by itself first
+  reservations Reservation[] 
 }
 
 model Food {
@@ -185,10 +186,12 @@ model Event {
   startDate      DateTime
   endDate        DateTime
   maxSlots       Int
+  takenSlots     Int
   attire         String
   donatorId      Int
   eventOrganiser Donator       @relation("Events", fields: [donatorId], references: [id])
   images         EventImage[]
+  participants Participant[]
 }
 
 model EventImage {
@@ -196,4 +199,10 @@ model EventImage {
   url     String
   eventId Int
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+model Participant {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
 }

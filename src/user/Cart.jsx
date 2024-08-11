@@ -13,6 +13,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
 import { useLocation, useNavigate } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 
 
 
@@ -173,18 +174,18 @@ const Cart = () => {
       const data = await response.json();
       console.log('Reservation created:', data);
 
-      await Promise.all(cartItems.map(item => 
-        fetch(`${backendRoute}/donations/${item.id}/availability`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ availability: 'Reserved' }),
-        })
-      ));
+      // await Promise.all(cartItems.map(item => 
+      //   fetch(`${backendRoute}/donations/${item.id}/availability`, {
+      //     method: 'PATCH',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       'Authorization': `Bearer ${token}`,
+      //     },
+      //     body: JSON.stringify({ availability: 'Reserved' }),
+      //   })
+      // ));
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
 
       setShowAlert(true);
       clearForm();
@@ -251,6 +252,7 @@ const Cart = () => {
                     }}
                   />
                 </TableCell>
+                <TableCell>Image</TableCell>
                 <TableCell>Food</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Quantity</TableCell>
@@ -272,7 +274,6 @@ const Cart = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {food.name}
                       {donation.image && (
                         <img
                           src={donation.image}
@@ -281,6 +282,7 @@ const Cart = () => {
                         />
                       )}
                     </TableCell>
+                    <TableCell>{food.name}</TableCell>
                     <TableCell>{food.type}</TableCell>
                     <TableCell>{food.quantity}</TableCell>
                     <TableCell>{donation.category}</TableCell>
@@ -363,6 +365,7 @@ const Cart = () => {
           RESERVE
         </Button>
       </Box>
+      <UserFooter/>
     </>
   );
 };

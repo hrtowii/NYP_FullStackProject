@@ -6,6 +6,7 @@ import Signup from './Signup.jsx'
 import Login from './Login.jsx'
 import About from './About.jsx'
 import Review from './review.jsx'
+import Contactus from './Contactus.jsx'
 import Forbidden from './Forbidden.jsx'
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserLanding from "./user/UserLanding.jsx"
@@ -23,6 +24,9 @@ import ManageDonations from './donator/ManageDonations.jsx'
 import DonateItem from './donator/DonateItem.jsx'
 import DonatorEventsUpdate from './donator/DonatorEventsUpdate.jsx'
 import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
+import ResetPasswordRequest from './password-reset/ResetPasswordRequest.jsx'
+import ResetPasswordForm from './password-reset/ResetPasswordForm.jsx'
+import UserEvents from './user/UserEvents.jsx'
 
 import './index.css'
 import {
@@ -46,9 +50,22 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />
   },
+  // MARK: password reset routes
+  {
+    path: "/reset-password-request",
+    element: <ResetPasswordRequest />,
+  },
+  {
+    path: "/reset/:token",
+    element: <ResetPasswordForm />,
+  },
   {
     path: "/about",
     element: <About />
+  },
+  {
+    path: "/Contactus",
+    element: <Contactus />
   },
   {
     path: "/review",
@@ -116,6 +133,13 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={['user', 'admin']}>
         <Fridge />
+      </ProtectedRoute>)
+  },
+  {
+    path: "/user/events",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <UserEvents />
       </ProtectedRoute>)
   },
   // MARK: Donator protected routes

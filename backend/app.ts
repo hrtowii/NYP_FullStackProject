@@ -16,7 +16,9 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
-
+import { v4 as uuidv4 } from 'uuid';
+import Anthropic from '@anthropic-ai/sdk';
+const anthropic = new Anthropic();
 configDotenv()
 const redisClient = createClient({
     // legacyMode: true,
@@ -222,6 +224,151 @@ app.post('/logout', async (req, res) => {
         .json({ success: true });
 });
 
+app.post('/reset-password-send-token', async (req, res) => {
+    const { email }: { email: string } = req.body;
+
+    try {
+        const user = await prisma.person.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const token = uuidv4();
+        const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+        // Store the hash in Redis with the email as the value (1 hour expiry)
+        await redisClient.set(`pwd_reset:${hash}`, email, 'EX', 3600);
+
+        // Send email with reset link
+        const resetLink = `http://localhost:8000/reset/${token}`;
+        await resend.emails.send({
+            from: "ecosanct@hrtowii.dev",
+            to: [email],
+            subject: "Reset Your CommuniFridge Password",
+            html: `Click this link to reset your password: <a href="${resetLink}">${resetLink}</a>`,
+        });
+
+        res.json({ message: "Password reset link sent to your email" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/validate-reset', async (req, res) => {
+    const { token }: { token: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (email) {
+            res.json({ isValid: true });
+        } else {
+            res.json({ isValid: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, password }: { token: string, password: string } = req.body;
+    const hash = crypto.createHash('sha3-256').update(token).digest('hex');
+
+    try {
+        const email = await redisClient.get(`pwd_reset:${hash}`);
+        if (!email) {
+            return res.status(400).json({ message: "Invalid or expired token" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await prisma.person.update({
+            where: { email },
+            data: { hashedPassword }
+        });
+
+        // Delete the used token
+        await redisClient.del(`pwd_reset:${hash}`);
+
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+const faqData = [
+    {
+        question: "What is CommuniFridge?",
+        answer: ""
+    },
+    {
+        question: "How can I donate food?",
+        answer: "To donate food, you need to create a donator account. Once logged in, you can list the food items you wish to donate, including details such as quantity, expiration date, and pickup location."
+    },
+    {
+        question: "Is my personal information safe?",
+        answer: "Yes, we take data privacy seriously. We use industry-standard encryption and security measures to protect your personal information. We never share your data with third parties without your explicit consent."
+    },
+    {
+        question: "How can I request food?",
+        answer: "To request food, create a user account and browse available donations in your area. You can then reserve the items you need and arrange for pickup with the donor."
+    },
+    {
+        question: "What if I have dietary restrictions?",
+        answer: "When browsing donations, you can filter items based on dietary restrictions. We encourage donors to provide accurate information about allergens and ingredients in their food donations."
+    }
+];
+
+app.post('/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        const faqContext = faqData.map(item => `Q: ${item.question}\nA: ${item.answer}`).join('\n\n');
+
+        const response = await anthropic.messages.create({
+            model: "claude-3-haiku-20240307",
+            max_tokens: 600,
+            system: `You are a helpful chatbot for CommuniFridge, a project dedicated to organizing food donations for community fridges to improve the community in Singapore. Your primary goal is to assist users with questions about food donations and the CommuniFridge project. 
+    
+    Here's some key information about CommuniFridge:
+    1. It's a local project specific to Singapore.
+    2. It connects food donors with individuals in need.
+    3. It aims to reduce food waste and address food insecurity.
+    
+    Below is a list of frequently asked questions. Use this information as a primary reference, but feel free to expand on these answers if necessary:
+    
+    ${faqContext}
+    
+    When responding to users:
+    1. Prioritize information from the FAQ if it's relevant to the question.
+    2. If the FAQ doesn't cover the topic, provide a helpful response based on the general context of CommuniFridge and its goals.
+    3. Keep your answers focused on food donations, community fridges, and the local context of Singapore.
+    4. Be friendly, empathetic, and encouraging to both potential donors and those seeking food assistance.
+    5. If you're unsure about specific details, it's okay to say so and provide general information about how community fridge projects typically work.
+    6. Encourage users to check the CommuniFridge website or contact the project directly for the most up-to-date and accurate information.`,
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: message,
+                        },
+                    ],
+                },
+            ],
+        });
+        console.log(response)
+        res.json({ response: response.content[0].text });
+    } catch (error) {
+        console.error('Error calling Anthropic API:', error);
+        res.status(500).json({ error: 'An error occurred while processing your request.' });
+    }
+});
+
 //MARK: Admin functions
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
@@ -289,6 +436,66 @@ app.post('/createAccounts', async (req, res) => {
             hashedPassword: await bcrypt.hash("123", 12),
             email: "lucasleong1000@gmail.com",
             ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "emma",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "emma@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "olivia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "olivia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "noah",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "noah@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "liam",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "liam@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ava",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "ava@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "sophia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "sophia@example.com",
+            ["donator"]: {
                 create: {}
             }
         }
@@ -562,6 +769,20 @@ app.get('/donations', async (req, res) => {
                             person: true
                         }
                     },
+                    reservations: {
+                        where: {
+                            collectionStatus: {
+                                not: "Cancelled"
+                            }
+                        },
+                        select: {
+                            id: true,
+                            collectionStatus: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
                 },
                 skip,
                 take: limitNumber,
@@ -586,34 +807,34 @@ app.get('/donations', async (req, res) => {
 
 app.get('/api/donators/leaderboard', async (req, res) => {
     try {
-      const donators = await prisma.donator.findMany({
-        include: {
-          donations: {
+        const donators = await prisma.donator.findMany({
             include: {
-              foods: true,
+                donations: {
+                    include: {
+                        foods: true,
+                    },
+                },
             },
-          },
-        },
-      });
-  
-      const leaderboard = donators.map(donator => {
-        const totalDonations = donator.donations.reduce((total, donation) => {
-          return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
-        }, 0);
-  
-        return {
-          donatorId: donator.id,
-          name: donator.person.name, // Assuming there's a `name` field in the Person model
-          totalDonations,
-        };
-      }).sort((a, b) => b.totalDonations - a.totalDonations);
-  
-      res.json(leaderboard);
+        });
+
+        const leaderboard = donators.map(donator => {
+            const totalDonations = donator.donations.reduce((total, donation) => {
+                return total + donation.foods.reduce((foodTotal, food) => foodTotal + food.quantity, 0);
+            }, 0);
+
+            return {
+                donatorId: donator.id,
+                name: donator.person.name, // Assuming there's a `name` field in the Person model
+                totalDonations,
+            };
+        }).sort((a, b) => b.totalDonations - a.totalDonations);
+
+        res.json(leaderboard);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-      res.status(500).json({ error: 'Failed to fetch leaderboard' });
+        console.error('Error fetching leaderboard:', error);
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
     }
-  });
+});
 
 // Endpoint to get total donations for a specific donator
 app.get('/api/donations/:donatorId/total', async (req, res) => {
@@ -823,12 +1044,15 @@ app.post('/reservation/:id', async (req, res) => {
     console.log('Request body:', req.body);
 
 
-    // const id: number = parseInt(req.params.id)
     const userId: number = parseInt(req.params.id)
     const formData: ReservationInterface = req.body;
-    let donationId = formData.cartItems[0].id;
     console.log('Received reservation data:', req.body);
     try {
+
+        if (!userId || !formData.collectionDate || !formData.collectionTimeStart || !formData.collectionTimeEnd || !formData.cartItems) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
         // Check if User exists
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -837,50 +1061,57 @@ app.post('/reservation/:id', async (req, res) => {
             return res.status(400).json({ error: `User with id ${userId} not found` });
         }
 
-        donationId = parseInt(donationId.toString(), 10);
+        const result = await prisma.$transaction(async (prisma) => {
+            const newReservations = await Promise.all(formData.cartItems.map(async (item) => {
+                const donationId = parseInt(item.id.toString(), 10);
 
-        const newReservation = await prisma.reservation.create({
-            data: {
-                user: {
-                    connect: { id: userId }
-                },
-                collectionDate: new Date(formData.collectionDate),
-                collectionTimeStart: formData.collectionTimeStart,
-                collectionTimeEnd: formData.collectionTimeEnd,
-                collectionStatus: 'Uncollected',
-                remarks: formData.remarks,
-                donation: {
-                    connect: { id: donationId }
-                },
-                reservationItems: {
-                    create: formData.cartItems.flatMap(item =>
-                        item.foods.map(food => ({
-                            food: { connect: { id: food.id } },
-                            quantity: food.quantity
-                        }))
-                    )
-                }
-            },
-            include: {
-                reservationItems: {
+                // Create reservation
+                const reservation = await prisma.reservation.create({
+                    data: {
+                        userId: userId,
+                        donationId: donationId,
+                        collectionDate: new Date(formData.collectionDate),
+                        collectionTimeStart: formData.collectionTimeStart,
+                        collectionTimeEnd: formData.collectionTimeEnd,
+                        collectionStatus: 'Uncollected',
+                        remarks: formData.remarks,
+                        reservationItems: {
+                            create: item.foods.map(food => ({
+                                foodId: food.id,
+                                quantity: food.quantity
+                            }))
+                        }
+                    },
                     include: {
-                        food: true
-                    }
-                },
-                donation: {
-                    include: {
-                        foods: true
-                    }
-                },
-                user: true
-            },
+                        reservationItems: {
+                            include: {
+                                food: true
+                            }
+                        },
+                        user: true
+                    },
+                });
+
+                // Update donation availability
+                await prisma.donation.update({
+                    where: { id: donationId },
+                    data: { availability: 'Reserved' }
+                });
+
+                return reservation;
+            }));
+
+            return newReservations;
         });
-        res.status(201).json(newReservation);
+
+        console.log('Created reservations:', result);
+        res.status(201).json(result);
     } catch (error) {
-        console.error('Error creating reservation:', error);
-        res.status(500).json({ error: 'Unable to create reservation', details: error.message });
+        console.error('Error creating reservaton:', error);
+        res.status(500).json({ error: 'Failed to create reservation', details: error.message });
     }
 });
+
 
 // Get Current Reservation
 app.get('/reservation/current/:userId', async (req, res) => {
@@ -1001,38 +1232,50 @@ app.patch('/reservation/:id/cancel', async (req, res) => {
     console.log('Cancelling reservation with id:', id);
 
     try {
-        const existingReservation = await prisma.reservation.findUnique({
-            where: { id: id }
-        });
+        const result = await prisma.$transaction(async (prisma) => {
+            const existingReservation = await prisma.reservation.findUnique({
+                where: { id: id },
+                include: { donation: true }
+            });
 
-        if (!existingReservation) {
-            return res.status(404).json({ error: 'Reservation not found.' });
-        }
+            if (!existingReservation) {
+                return res.status(404).json({ error: 'Reservation not found.' });
+            }
 
-        if (existingReservation.collectionStatus !== 'Uncollected') {
-            return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
-        }
+            if (existingReservation.collectionStatus !== 'Uncollected') {
+                return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
+            }
 
-        const updatedReservation = await prisma.reservation.update({
-            where: { id: id },
-            data: {
-                collectionStatus: 'Cancelled',
-                updatedAt: new Date()
-            },
-            include: {
-                reservationItems: {
-                    include: {
-                        food: true
+            const updatedReservation = await prisma.reservation.update({
+                where: { id: id },
+                data: {
+                    collectionStatus: 'Cancelled',
+                    updatedAt: new Date()
+                },
+                include: {
+                    reservationItems: {
+                        include: {
+                            food: true
+                        }
                     }
                 }
+            });
+
+            if (existingReservation.donation) {
+                await prisma.donation.update({
+                    where: { id: existingReservation.donation.id },
+                    data: { availability: "Available" }
+                });
             }
+
+            return updatedReservation;
         });
 
-        console.log('Cancelled reservation:', updatedReservation);
+        console.log('Cancelled reservation:', result);
 
         res.status(200).json({
             message: 'Reservation cancelled successfully',
-            reservation: updatedReservation
+            reservation: result
         });
     } catch (error) {
         console.error('Error cancelling reservation:', error);
@@ -1117,6 +1360,7 @@ interface EventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
@@ -1124,7 +1368,7 @@ interface EventBody {
 
 
 app.post('/events', upload.array('images', 1), async (req, res) => {
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     try {
@@ -1138,6 +1382,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 maxSlots: parseInt(maxSlots),
+                takenSlots: 0,
                 attire,
                 donatorId: parseInt(donatorId),
                 images: {
@@ -1150,7 +1395,7 @@ app.post('/events', upload.array('images', 1), async (req, res) => {
                 images: true
             }
         });
-
+        console.log(newEvent)
         res.status(200).json(newEvent);
     } catch (error) {
         console.error('Error creating event:', error);
@@ -1167,18 +1412,32 @@ interface updateEventBody {
     startDate: Date,
     endDate: Date,
     maxSlots: number,
+    takenSlots: number,
     attire: string,
     donatorId: number,
     images: Express.Multer.File,
 
 }
-app.put('/events/update/:eventId', async (req, res) => {
+
+
+
+app.put('/events/update/:eventId', upload.single('images'), async (req, res) => {
     const { eventId } = req.params;
-    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, attire, donatorId } = req.body;
-    const files = req.files as Express.Multer.File[];
+    const { title, briefSummary, fullSummary, phoneNumber, emailAddress, startDate, endDate, maxSlots, takenSlots, attire, donatorId, imageUpdated } = req.body;
+    const file = req.file;
 
     try {
-        let updateData: any = {
+        // Find the current event to get the old image
+        const currentEvent = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { images: true }
+        });
+
+        if (!currentEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const updateData: any = {
             title,
             briefSummary,
             fullSummary,
@@ -1186,17 +1445,32 @@ app.put('/events/update/:eventId', async (req, res) => {
             emailAddress,
             startDate: new Date(startDate),
             endDate: new Date(endDate),
-            maxSlots,
+            maxSlots: parseInt(maxSlots),
+            takenSlots: parseInt(takenSlots),
             attire,
-            donatorId: Number(donatorId),
+            donatorId: parseInt(donatorId),
         };
-        if (files && files.length > 0) {
+
+        if (imageUpdated === 'true' && file) {
+            // Delete old image file if it exists
+            if (currentEvent.images && currentEvent.images.length > 0) {
+                const oldImagePath = path.join(__dirname, '..', currentEvent.images[0].url);
+                try {
+                    await fs.unlink(oldImagePath);
+                } catch (err) {
+                    console.error('Error deleting old image file:', err);
+                }
+            }
+
+            // Update with new image
             updateData.images = {
-                create: files.map(file => ({
+                deleteMany: {},  // This will delete all existing images for this event
+                create: {
                     url: `/public/${file.filename}`
-                }))
+                }
             };
         }
+
         const updatedEvent = await prisma.event.update({
             where: { id: Number(eventId) },
             data: updateData,
@@ -1211,15 +1485,14 @@ app.put('/events/update/:eventId', async (req, res) => {
         res.status(500).json({ error: 'Failed to update event' });
     }
 });
-
-
 app.get('/events/:eventId', async (req, res) => {
     const { eventId } = req.params;
     try {
         const event = await prisma.event.findUnique({
             where: { id: Number(eventId) },
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         if (event) {
@@ -1233,11 +1506,13 @@ app.get('/events/:eventId', async (req, res) => {
     }
 });
 
+
 app.get('/events', async (req, res) => {
     try {
         const events = await prisma.event.findMany({
             include: {
-                images: true
+                images: true,
+                participants: true
             }
         });
         res.json(events);
@@ -1254,6 +1529,7 @@ app.post('/findeventsfromdonator', async (req, res) => {
         }
     })
     res.status(200).json(donator)
+
 })
 
 app.delete('/event/:id', async (req, res) => {
@@ -1282,6 +1558,52 @@ app.get('/donator/events', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
+
+// sign up functionality
+app.post('/events/:eventId/signup', async (req, res) => {
+    const { eventId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { participants: true }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        if (event.participants.some(participant => participant.userId === Number(userId))) {
+            return res.status(400).json({ error: 'You have already signed up for this event' });
+        }
+
+        if (event.takenSlots >= event.maxSlots) {
+            return res.status(400).json({ error: 'Event is already full' });
+        }
+
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                takenSlots: { increment: 1 },
+                participants: {
+                    create: { userId: Number(userId) }
+                }
+            },
+            include: {
+                participants: true,
+                images: true
+            }
+        });
+        console.log(updatedEvent);
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error signing up for event:', error);
+        res.status(500).json({ error: 'Failed to sign up for event' });
+    }
+
+});
+
 
 // MARK: review CRUD
 // app.post('/get_donator/', async (req,res) => {
@@ -1483,8 +1805,9 @@ app.get('/reviews/:id', async (req, res) => {
         const { id } = req.params;
         const donatorId = parseInt(id, 10);
         const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
+        const userRole = req.query.userRole;
 
-        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}`);
+        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}, userRole: ${userRole}`);
 
         const reviews = await prisma.review.findMany({
             where: {
@@ -1503,12 +1826,7 @@ app.get('/reviews/:id', async (req, res) => {
                 },
                 reply: true,
                 images: true,
-                _count: {
-                    select: { likes: true }
-                },
-                likes: userId ? {
-                    where: { userId: userId }
-                } : undefined
+                likes: true
             },
             orderBy: {
                 createdAt: 'desc'
@@ -1523,9 +1841,12 @@ app.get('/reviews/:id', async (req, res) => {
                 const name = reviewData.user?.person?.name || 'Anonymous';
                 reviewData.user.person.name = `${name[0]}${'*'.repeat(6)}`;
             }
-            reviewData.likeCount = reviewData._count.likes;
-            reviewData.likedByUser = reviewData.likes && reviewData.likes.length > 0;
-            delete reviewData._count;
+            reviewData.likeCount = reviewData.likes.length;
+            reviewData.likedByUser = reviewData.likes.some(like =>
+                (userRole === 'user' && like.userId === userId) ||
+                (userRole === 'donator' && like.donatorId === userId)
+            );
+            reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
             delete reviewData.likes;
             return reviewData;
         });
@@ -1539,68 +1860,80 @@ app.get('/reviews/:id', async (req, res) => {
 
 app.post('/reviews/:reviewId/like', async (req, res) => {
     const { reviewId } = req.params;
-    const { userId } = req.body;
+    const { userId, userRole } = req.body;
+
+    console.log(`Received like request for reviewId: ${reviewId}, userId: ${userId}, userRole: ${userRole}`);
 
     try {
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_reviewId: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
-            }
+        const review = await prisma.review.findUnique({
+            where: { id: parseInt(reviewId) },
+            include: { likes: true }
         });
+
+        if (!review) {
+            console.log(`Review with id ${reviewId} not found`);
+            return res.status(404).json({ error: "Review not found." });
+        }
+
+        let existingLike;
+        let likeData;
+
+        if (userRole === 'user') {
+            existingLike = review.likes.find(like => like.userId === parseInt(userId));
+            likeData = { userId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else if (userRole === 'donator') {
+            existingLike = review.likes.find(like => like.donatorId === parseInt(userId));
+            likeData = { donatorId: parseInt(userId), reviewId: parseInt(reviewId) };
+        } else {
+            return res.status(400).json({ error: "Invalid user role" });
+        }
 
         let updatedReview;
         let message;
         let liked;
 
         if (existingLike) {
-            // Unlike the review
+            console.log(`Unliking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.delete({
-                where: {
-                    userId_reviewId: {
-                        userId: parseInt(userId),
-                        reviewId: parseInt(reviewId)
-                    }
-                }
+                where: { id: existingLike.id }
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { decrement: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review unliked';
             liked = false;
         } else {
-            // Like the review
+            console.log(`Liking review ${reviewId} for ${userRole} ${userId}`);
             await prisma.like.create({
-                data: {
-                    userId: parseInt(userId),
-                    reviewId: parseInt(reviewId)
-                }
+                data: likeData
             });
 
             updatedReview = await prisma.review.update({
                 where: { id: parseInt(reviewId) },
                 data: { likeCount: { increment: 1 } },
-                include: { _count: { select: { likes: true } } }
             });
 
             message = 'Review liked';
             liked = true;
         }
 
+        console.log(`Successfully updated like status for review ${reviewId}`);
         res.status(200).json({
             message: message,
-            likeCount: updatedReview._count.likes,
+            likeCount: updatedReview.likeCount,
             liked: liked
         });
     } catch (error) {
         console.error('Error handling review like:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message,
+            stack: error.stack
+        });
     }
 });
 
@@ -1672,7 +2005,6 @@ app.put('/reviews/:id', async (req, res) => {
     }
 });
 
-
 app.delete('/reviews/:id', async (req, res) => {
     const reviewId = parseInt(req.params.id, 10);
     const userId = parseInt(req.body.userId, 10);
@@ -1685,7 +2017,8 @@ app.delete('/reviews/:id', async (req, res) => {
             include: {
                 reply: true,
                 donator: true,
-                images: true
+                images: true,
+                likes: true
             }
         });
 
@@ -1702,7 +2035,15 @@ app.delete('/reviews/:id', async (req, res) => {
         }
 
         await prisma.$transaction(async (prisma) => {
-            // First, delete associated images if they exist
+            // First, delete associated likes
+            if (review.likes.length > 0) {
+                console.log(`Deleting ${review.likes.length} likes for review ${reviewId}`);
+                await prisma.like.deleteMany({
+                    where: { reviewId: reviewId }
+                });
+            }
+
+            // Delete associated images if they exist
             if (review.images.length > 0) {
                 console.log(`Deleting ${review.images.length} images for review ${reviewId}`);
                 await prisma.image.deleteMany({
@@ -1710,7 +2051,7 @@ app.delete('/reviews/:id', async (req, res) => {
                 });
             }
 
-            // Then, delete the associated reply if it exists
+            // Delete the associated reply if it exists
             if (review.reply) {
                 console.log(`Deleting reply ${review.reply.id} for review ${reviewId}`);
                 await prisma.reply.delete({
@@ -1744,8 +2085,8 @@ app.delete('/reviews/:id', async (req, res) => {
             });
         });
 
-        console.log(`Review ${reviewId}, associated reply, and images deleted successfully`);
-        res.status(200).json({ message: 'Review, associated reply, and images deleted successfully' });
+        console.log(`Review ${reviewId}, associated reply, likes, and images deleted successfully`);
+        res.status(200).json({ message: 'Review, associated reply, likes, and images deleted successfully' });
     } catch (error) {
         console.error('Error deleting review:', error);
         console.error('Error stack:', error.stack);

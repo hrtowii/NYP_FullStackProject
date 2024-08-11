@@ -1,26 +1,23 @@
-/* General styles */
+/* Base styles */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: Arial, sans-serif;
     line-height: 1.6;
     color: #333;
-    background-color: #f4f4f4;
-  }
-  
-  /* Image container and overlay styles */
-  .image-container {
+}
+
+/* Image container and overlay */
+.image-container {
     position: relative;
     width: 100%;
-    height: 60vh;
-    overflow: hidden;
-  }
-  
-  .full-width-image {
+}
+
+.full-width-image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .overlay {
+    height: auto;
+    display: block;
+}
+
+.overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -32,120 +29,260 @@ body {
     align-items: center;
     background: rgba(0, 0, 0, 0.5);
     text-align: center;
-    padding: 2rem;
-  }
-  
-  .overlay-text {
+}
+
+.overlay-text {
     color: white;
     margin: 0;
-  }
-  
-  .title {
-    font-size: 4rem;
+}
+
+.title {
+    font-size: clamp(2rem, 5vw, 6rem);
     font-weight: 700;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  }
-  
-  .description {
-    font-size: 1.5rem;
+}
+
+.description {
+    font-size: clamp(1rem, 2vw, 2rem);
     font-weight: 400;
-    margin-top: 1rem;
-    max-width: 80%;
+    margin-top: 0.5rem;
+    max-width: 70%;
     color: rgba(255, 255, 255, 0.9);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-  }
-  
-  /* Middle container styles */
-  .middle-container {
+}
+
+/* Button styles */
+.middle-container {
     display: flex;
     justify-content: center;
-    padding: 2rem 0;
-  }
-  
-  .buttonicon {
-    margin-right: 0.5rem;
-    display: flex;
+    padding: 20px 0;
+}
+
+.buttonicon {
+    display: inline-flex;
     align-items: center;
-  }
-  
-  /* Events container styles */
-  .events-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    padding: 2rem;
-  }
-  
-  /* Card styles */
-  .MuiCard-root {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .MuiCard-root:hover {
+    padding-right: 10px;
+}
+
+/* Event layout */
+.events-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.event-card {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    width: 100%;
+    margin: 20px 0;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.event-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  .MuiCardContent-root {
-    padding: 1.5rem;
-  }
-  
-  .MuiTypography-h5 {
-    margin-bottom: 1rem;
-    color: #2c3e50;
-  }
-  
-  .MuiTypography-body2 {
-    color: #7f8c8d;
-  }
-  
-  .MuiCardActions-root {
-    padding: 1rem 1.5rem;
-    justify-content: space-between;
-  }
-  
-  /* Button styles */
-  .MuiButton-contained {
-    text-transform: none;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-  }
-  
-  /* Event date and duration styles */
-  .event-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .event-info-item {
-    display: flex;
-    align-items: center;
-    border: 1px solid #e0e0e0;
+}
+
+.displayEventImage {
+    flex: 0 0 200px;
+    margin-right: 20px;
+}
+
+.displayEventImage img {
+    width: 100%;
+    height: auto;
     border-radius: 4px;
-    padding: 0.5rem 0.75rem;
-    margin-right: 1rem;
-    font-size: 0.875rem;
-    color: #555;
-  }
-  
-  .event-info-icon {
-    margin-right: 0.5rem;
-    font-size: 1rem;
-    color: #3498db;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .title {
-      font-size: 3rem;
+}
+
+.event-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.rightSide-title-summary {
+    margin-bottom: 20px;
+}
+
+.event-details-and-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.event-details {
+    display: flex;
+    gap: 15px;
+    margin: 10px 0;
+}
+
+.event-detail {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.9rem;
+}
+
+.event-detail svg {
+    margin-right: 6px;
+}
+
+.event-actions {
+    display: flex;
+    gap: 5px;
+    margin: 10px 0;
+}
+
+.event-action {
+    display: flex;
+    gap: 5px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    transition: background-color 0.3s ease;
+}
+
+.event-action:hover {
+    background-color: #e0e0e0;
+}
+
+/* Modal styles */
+.event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.modal-close, .modal-signup {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.modal-body {
+    display: flex;
+    gap: 30px;
+}
+
+.modal-left {
+    flex: 0 0 300px;
+}
+
+.modal-left img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.modal-details {
+    flex: 1;
+}
+
+.modal-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.modal-summary {
+    margin-bottom: 20px;
+}
+
+.modal-info {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.modal-info-item {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    width: fit-content;
+
+}
+
+.modal-info-item svg {
+    margin-right: 6px;
+}
+
+/* Sort container */
+.sort-container {
+    margin: 20px 0;
+    text-align: right;
+}
+
+.sort-container select {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .event-card {
+        flex-direction: column;
     }
-  
-    .description {
-      font-size: 1.25rem;
+
+    .displayEventImage {
+        margin-right: 0;
+        margin-bottom: 20px;
+        flex: 0 0 auto;
     }
-  
-    .events-container {
-      grid-template-columns: 1fr;
+
+    .event-details-and-actions {
+        flex-direction: column;
+        align-items: flex-start;
     }
-  }
+
+    .modal-body {
+        flex-direction: column;
+    }
+
+    .modal-left {
+        margin-bottom: 20px;
+    }
+}

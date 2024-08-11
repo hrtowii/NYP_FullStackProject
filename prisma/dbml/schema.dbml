@@ -46,14 +46,16 @@ Table Review {
 Table Like {
   id Int [pk, increment]
   createdAt DateTime [default: `now()`, not null]
-  userId Int [not null]
+  userId Int
+  donatorId Int
   reviewId Int [not null]
-  user User [not null]
+  user User
+  donator Donator
   review Review [not null]
-  likeCount Int [not null, default: 0]
 
   indexes {
     (userId, reviewId) [unique]
+    (donatorId, reviewId) [unique]
   }
 }
 
@@ -87,6 +89,7 @@ Table Donator {
   donationGoal Int
   achievement String [default: 'Silver']
   posts Post [not null]
+  likes Like [not null]
 
   indexes {
     (id) [pk]
@@ -175,10 +178,12 @@ Table Event {
   startDate DateTime [not null]
   endDate DateTime [not null]
   maxSlots Int [not null]
+  takenSlots Int [not null]
   attire String [not null]
   donatorId Int [not null]
   eventOrganiser Donator [not null]
   images EventImage [not null]
+  participants Participant [not null]
 }
 
 Table EventImage {
@@ -188,6 +193,13 @@ Table EventImage {
   event Event [not null]
 }
 
+Table Participant {
+  id Int [pk, increment]
+  userId Int [not null]
+  event Event [not null]
+  eventId Int [not null]
+}
+
 Ref: User.id - Person.id [delete: Cascade]
 
 Ref: Review.userId > User.id
@@ -195,6 +207,8 @@ Ref: Review.userId > User.id
 Ref: Review.donatorId > Donator.id
 
 Ref: Like.userId > User.id
+
+Ref: Like.donatorId > Donator.id
 
 Ref: Like.reviewId > Review.id
 
@@ -225,3 +239,5 @@ Ref: ReservationItem.foodId > Food.id
 Ref: Event.donatorId > Donator.id
 
 Ref: EventImage.eventId > Event.id [delete: Cascade]
+
+Ref: Participant.eventId > Event.id

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar, { UserNavbar } from "../components/Navbar";
 import { NavLink, useNavigate } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
     Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel, TablePagination
@@ -162,17 +163,17 @@ export default function Fridge() {
     const handleItemSelect = (donation) => {
         if (!cartItems.some(item => item.id === donation.id)) {
             setSelectedItems(prev => {
-              if (prev.some(item => item.id === donation.id)) {
-                return prev.filter(item => item.id !== donation.id);
-              } else if (prev.length < 5) {
-                return [...prev, donation];
-              } else {
-                alert("You can only select up to 5 items.");
-                return prev;
-              }
+                if (prev.some(item => item.id === donation.id)) {
+                    return prev.filter(item => item.id !== donation.id);
+                } else if (prev.length < 5) {
+                    return [...prev, donation];
+                } else {
+                    alert("You can only select up to 5 items.");
+                    return prev;
+                }
             });
-          }
-        };
+        }
+    };
 
     const handleAddToCart = () => {
         const newCartItems = [...cartItems, ...selectedItems];
@@ -337,7 +338,7 @@ export default function Fridge() {
                                                 direction={orderBy === 'quantity' ? order : 'asc'}
                                                 onClick={() => handleRequestSort('quantity')}
                                             >
-                                                Quantity (kg)
+                                                Quantity (g)
                                             </TableSortLabel>
                                         </TableCell>
                                         <TableCell>Category</TableCell>
@@ -394,14 +395,14 @@ export default function Fridge() {
                                                         <TableCell>{donation.location}</TableCell>
                                                         <TableCell>{donation.donator.person.name}</TableCell>
                                                         <TableCell>
-                                                            <span style= {{ color: donation.availability === "Available" ? "green" : "inherit" }}>
+                                                            <span style={{ color: donation.availability === "Available" ? "green" : "inherit" }}>
                                                                 {donation.availability}
                                                             </span>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
                                             ))
-                                        )}
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>
@@ -427,6 +428,7 @@ export default function Fridge() {
                     </Box>
                 </>
             </div>
+            <UserFooter/>
         </>
     )
 }

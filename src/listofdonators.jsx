@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useContext, useMemo } from 're
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
+import {UserFooter, DonatorFooter} from './components/Footer';
 import { backendRoute } from './utils/BackendUrl';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx'
@@ -33,6 +34,62 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { Leaf, Recycle, Globe } from 'lucide-react';
+
+const SustainabilityDonatorBanner = () => {
+  return (
+    <Paper 
+      elevation={3}
+      sx={{
+        background: 'linear-gradient(90deg, #2ecc71, #27ae60)',
+        color: 'white',
+        padding: 3,
+        marginBottom: 4,
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
+          Our Eco-Conscious Donators
+        </Typography>
+        <Typography variant="subtitle1" align="center">
+          Together, we're nurturing a greener future
+        </Typography>
+      </Box>
+      
+      <Box sx={{ 
+        position: 'absolute', 
+        top: -20, 
+        left: -20, 
+        opacity: 0.2,
+        transform: 'rotate(-15deg)'
+      }}>
+        <Leaf size={100} />
+      </Box>
+      
+      <Box sx={{ 
+        position: 'absolute', 
+        bottom: -20, 
+        right: -20, 
+        opacity: 0.2,
+        transform: 'rotate(15deg)'
+      }}>
+        <Recycle size={100} />
+      </Box>
+      
+      <Box sx={{ 
+        position: 'absolute', 
+        top: '50%', 
+        left: '50%', 
+        opacity: 0.1,
+        transform: 'translate(-50%, -50%)'
+      }}>
+        <Globe size={150} />
+      </Box>
+    </Paper>
+  );
+};
 
 export default function ListOfDonators() {
     const [error, setError] = useState(null);
@@ -266,8 +323,12 @@ export default function ListOfDonators() {
                             <TableCell component="th" scope="row">
                                 <Box display="flex" alignItems="center">
                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                    {profile.name}
-                                    {profile.id === userId && " (Myself)"}
+                                    
+                                    <Typography color={"blue"}>
+                                        {profile.name}
+                                        {profile.id === userId && " (You)"}
+                                    </Typography>
+                                    
                                 </Box>
                             </TableCell>
                             <TableCell align="center">
@@ -290,10 +351,8 @@ export default function ListOfDonators() {
         <>
             {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <div className="container">
-                <Box sx={{ p: 3 }}>
-                    <Typography variant="h4" gutterBottom align="center" sx={{ position: 'sticky', top: 0, bgcolor: 'background.default', zIndex: 1, py: 2 }}>
-                        Donators
-                    </Typography>
+                <Box sx={{ p: 3, bgcolor: '#f0f8f1' }}> {/* Light green background */}
+                    <SustainabilityDonatorBanner />
                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                         <ToggleButtonGroup
                             value={view}
@@ -302,7 +361,7 @@ export default function ListOfDonators() {
                             aria-label="view selector"
                         >
                             <ToggleButton value="list" aria-label="list view">
-                                List
+                                View All
                             </ToggleButton>
                             <ToggleButton value="leaderboard" aria-label="leaderboard view">
                                 Leaderboard
@@ -392,7 +451,7 @@ export default function ListOfDonators() {
                                                         <Box display="flex" alignItems="center">
                                                             <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
                                                             {profile.name}
-                                                            {profile.id === userId && " (Myself)"}
+                                                            {profile.id === userId && " (You)"}
                                                         </Box>
                                                     </TableCell>
                                                     <TableCell align="center">
@@ -448,7 +507,7 @@ export default function ListOfDonators() {
                                         <TableCell>Name</TableCell>
                                         <TableCell align="center">Average Rating</TableCell>
                                         <TableCell align="center">Number of Reviews</TableCell>
-                                        <TableCell align="center">Achievement</TableCell>
+                                        <TableCell align="center">Rank</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -467,8 +526,8 @@ export default function ListOfDonators() {
                                             <TableCell component="th" scope="row">
                                                 <Box display="flex" alignItems="center">
                                                     <Avatar sx={{ mr: 2, bgcolor: stringToColor(profile.name) }}>{profile.name[0]}</Avatar>
-                                                    {profile.name}
-                                                    {profile.id === userId && " (Myself)"}
+                                                        {profile.name}
+                                                        {profile.id === userId && " (You)"}
                                                 </Box>
                                             </TableCell>
                                             <TableCell align="center">
@@ -601,6 +660,7 @@ export default function ListOfDonators() {
                     </Alert>
                 </Snackbar>
             </div>
+            <UserFooter/>
         </>
     );
 }

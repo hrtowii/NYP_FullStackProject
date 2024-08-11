@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import { styled } from '@mui/material/styles';
+import StarIcon from '@mui/icons-material/Star';
 import {
     List,
     ListItem,
@@ -23,6 +25,7 @@ import {
     Box,
     Avatar,
     Divider,
+    ButtonGroup,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -30,8 +33,76 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { TokenContext } from './utils/TokenContext';
+import { UserFooter, DonatorFooter } from './components/Footer';
 import parseJwt from './utils/parseJwt.jsx'
 import { backendRoute } from './utils/BackendUrl.jsx'
+
+// Styled components
+const StyledContainer = styled(Container)(({ theme }) => ({
+    backgroundColor: '#f5f5f5',
+    fontFamily: 'Roboto, sans-serif',
+    paddingTop: theme.spacing(3),
+    paddingBottom: theme.spacing(3),
+}));
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    backgroundColor: '#ffffff',
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    padding: theme.spacing(3),
+    marginBottom: theme.spacing(5),
+}));
+
+const StyledButtonGroup = styled(ButtonGroup)(({ theme }) => ({
+    marginBottom: theme.spacing(3),
+    '& .MuiButton-root': {
+        textTransform: 'none',
+        fontWeight: 400,
+    },
+}));
+
+const StyledListItem = styled(ListItem)(({ theme }) => ({
+    padding: theme.spacing(2, 0),
+    '&:not(:last-child)': {
+        borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+}));
+
+const StyledAvatar = styled(Avatar)(({ theme }) => ({
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+}));
+
+const StyledRating = styled(Rating)(({ theme }) => ({
+    marginTop: theme.spacing(1),
+    '& .MuiRating-iconFilled': {
+        color: '#ffb400',
+    },
+}));
+
+const ImagePreview = styled(Box)(({ theme }) => ({
+    display: 'inline-block',
+    marginRight: theme.spacing(1),
+    marginTop: theme.spacing(1.5),
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+    overflow: 'hidden',
+    transition: 'transform 0.2s',
+    '&:hover': {
+        transform: 'scale(1.05)',
+    },
+}));
+
+const ReplySection = styled(Box)(({ theme }) => ({
+    backgroundColor: theme.palette.grey[100],
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1.5),
+    marginTop: theme.spacing(2),
+}));
+
+const StyledFooter = styled(Box)(({ theme }) => ({
+    paddingTop: theme.spacing(3),
+}));
 
 export default function Profile() {
     const { token } = useContext(TokenContext);
@@ -39,6 +110,8 @@ export default function Profile() {
     const userRole = parseJwt(token).role
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
+    const [filteredReviews, setFilteredReviews] = useState([]);
+    const [currentFilter, setCurrentFilter] = useState('all');
     const [likedReviews, setLikedReviews] = useState({});
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
@@ -56,6 +129,26 @@ export default function Profile() {
     const [deleteReplyDialogOpen, setDeleteReplyDialogOpen] = useState(false);
     const [replyToDelete, setReplyToDelete] = useState(null);
 
+
+    const handleFilterChange = useCallback((filter) => {
+        setCurrentFilter(filter);
+        if (filter === 'all') {
+            setFilteredReviews(reviews);
+        } else {
+            const rating = parseInt(filter);
+            setFilteredReviews(reviews.filter(review => review.rating === rating));
+        }
+    }, [reviews]);
+
+    const StyledRating = styled(Rating)({
+        '& .MuiRating-iconFilled': {
+            color: '#ffb400',
+        },
+        '& .MuiRating-iconHover': {
+            color: '#ffb400',
+        },
+    });
+
     const handleThumbsUp = useCallback(async (reviewId) => {
         try {
             const response = await fetch(`${backendRoute}/reviews/${reviewId}/like`, {
@@ -64,14 +157,14 @@ export default function Profile() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ userId })
+                body: JSON.stringify({ userId, userRole })
             });
 
             if (response.ok) {
                 const { message, likeCount, liked } = await response.json();
                 setReviews(prevReviews => prevReviews.map(review =>
                     review.id === reviewId
-                        ? { ...review, likeCount: likeCount }
+                        ? { ...review, likeCount: likeCount, likedByUser: liked }
                         : review
                 ));
                 setLikedReviews(prev => ({
@@ -80,13 +173,17 @@ export default function Profile() {
                 }));
                 setSnackbar({ open: true, message: message, severity: 'success' });
             } else {
-                throw new Error('Failed to update like');
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                throw new Error(`Failed to update like: ${errorData.message}`);
             }
         } catch (error) {
             console.error('Error updating like:', error);
+            console.error('Error details:', error.message);
             setSnackbar({ open: true, message: 'Failed to update like. Please try again.', severity: 'error' });
         }
-    }, [token, userId, backendRoute]);
+    }, [token, userId, userRole, backendRoute]);
+
 
     const handleImageClick = (imageUrl) => {
         setEnlargedImage(imageUrl);
@@ -119,7 +216,7 @@ export default function Profile() {
     const fetchReviews = useCallback(async () => {
         console.log('Fetching reviews...');
         try {
-            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}`, {
+            const response = await fetch(`${backendRoute}/reviews/${donatorId}?userId=${userId}&userRole=${userRole}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -134,23 +231,25 @@ export default function Profile() {
             const data = await response.json();
             console.log('Reviews fetched:', data);
             setReviews(data);
-            // Initialize likedReviews state based on fetched data
+            setFilteredReviews(data);
             const initialLikedReviews = {};
             data.forEach(review => {
-                initialLikedReviews[review.id] = review.liked || false;
+                initialLikedReviews[review.id] = review.likedByUser || false;
             });
             setLikedReviews(initialLikedReviews);
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [donatorId, userId, token, backendRoute]);
+    }, [donatorId, userId, userRole, token, backendRoute]);
 
     useEffect(() => {
         fetchReviews();
         fetchDonatorName();
     }, [fetchReviews, fetchDonatorName]);
 
-    
+    useEffect(() => {
+        handleFilterChange(currentFilter);
+    }, [reviews, currentFilter, handleFilterChange]);
 
     const handleDeleteClick = useCallback((reviewId) => {
         console.log('Delete clicked for review:', reviewId);
@@ -170,13 +269,14 @@ export default function Profile() {
                     },
                     body: JSON.stringify({ userId: userId })
                 });
-
+    
                 console.log('Delete response received:', response.status);
-
+    
                 if (response.ok) {
-                    console.log('Review deleted successfully');
+                    const result = await response.json();
+                    console.log('Review deleted successfully:', result);
                     setReviews(prevReviews => prevReviews.filter(review => review.id !== reviewToDelete));
-                    setSnackbar({ open: true, message: 'Review deleted successfully', severity: 'success' });
+                    setSnackbar({ open: true, message: result.message, severity: 'success' });
                 } else {
                     const errorData = await response.json();
                     console.error('Server error details:', errorData);
@@ -192,6 +292,7 @@ export default function Profile() {
             }
         }
     }, [reviewToDelete, fetchReviews, userId, backendRoute]);
+    
     const handleDeleteCancel = useCallback(() => {
         console.log('Delete cancelled');
         setDeleteDialogOpen(false);
@@ -408,18 +509,36 @@ export default function Profile() {
     return (
         <>
             {userRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
-            <Container maxWidth="md">
-                <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
-                    <Typography variant="h4" gutterBottom>
+            <StyledContainer maxWidth="md">
+                <StyledPaper elevation={3}>
+                    <Typography variant="h4" gutterBottom sx={{ color: '#333', fontWeight: 500 }}>
                         {donatorName}'s Reviews
                         {userRole === "donator" && parseInt(donatorId) === userId && " (Myself)"}
                     </Typography>
+                    <StyledButtonGroup variant="contained" aria-label="rating filter button group">
+                        <Button
+                            onClick={() => handleFilterChange('all')}
+                            color={currentFilter === 'all' ? 'primary' : 'inherit'}
+                        >
+                            All
+                        </Button>
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                            <Button
+                                key={rating}
+                                onClick={() => handleFilterChange(rating.toString())}
+                                color={currentFilter === rating.toString() ? 'primary' : 'inherit'}
+                                startIcon={<StarIcon style={{ color: '#ffb400' }} />}
+                            >
+                                {rating}
+                            </Button>
+                        ))}
+                    </StyledButtonGroup>
                     <List>
-                        {reviews.map((review) => (
+                        {filteredReviews.map((review) => (
                             <React.Fragment key={review.id}>
-                                <ListItem alignItems="flex-start" component="div">
+                                <StyledListItem alignItems="flex-start" component="div">
                                     <ListItemAvatar>
-                                        <Avatar>{getDisplayName(review)[0]}</Avatar>
+                                        <StyledAvatar>{getDisplayName(review)[0]}</StyledAvatar>
                                     </ListItemAvatar>
                                     <ListItemText
                                         primary={
@@ -430,60 +549,31 @@ export default function Profile() {
                                                         Submitted on {formatDate(review.createdAt)}
                                                     </Typography>
                                                 </Box>
-                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
+                                                <StyledRating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
                                         }
                                         secondary={
                                             <>
-                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1 }}>
+                                                <Typography variant="body2" color="textPrimary" sx={{ mt: 1.5, color: '#555' }}>
                                                     {review.comment}
                                                 </Typography>
                                                 {review.images && review.images.length > 0 && (
                                                     <Box sx={{ display: 'flex', mt: 2 }}>
                                                         {review.images.map((image, index) => (
-                                                            <Box
+                                                            <ImagePreview
                                                                 key={index}
-                                                                sx={{
-                                                                    position: 'relative',
-                                                                    width: 80,
-                                                                    height: 80,
-                                                                    mr: 1,
-                                                                    cursor: 'pointer',
-                                                                }}
                                                                 onClick={() => handleImageClick(`${backendRoute}/uploads/${image.url}`)}
                                                             >
                                                                 <Box
                                                                     sx={{
-                                                                        width: '100%',
-                                                                        height: '100%',
+                                                                        width: 80,
+                                                                        height: 80,
                                                                         backgroundImage: `url(${backendRoute}/uploads/${image.url})`,
                                                                         backgroundSize: 'cover',
                                                                         backgroundPosition: 'center',
-                                                                        border: '1px solid #ddd',
-                                                                        borderRadius: '4px',
                                                                     }}
                                                                 />
-                                                                <Box
-                                                                    sx={{
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        width: '100%',
-                                                                        height: '100%',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        background: 'rgba(0, 0, 0, 0.3)',
-                                                                        opacity: 0,
-                                                                        transition: 'opacity 0.2s',
-                                                                        '&:hover': {
-                                                                            opacity: 1,
-                                                                        },
-                                                                    }}
-                                                                >
-                                                                    <ZoomInIcon sx={{ color: 'white' }} />
-                                                                </Box>
-                                                            </Box>
+                                                            </ImagePreview>
                                                         ))}
                                                     </Box>
                                                 )}
@@ -492,13 +582,13 @@ export default function Profile() {
                                                         size="small"
                                                         startIcon={<ReplyIcon />}
                                                         onClick={() => handleReplyClick(review)}
-                                                        sx={{ mt: 1 }}
+                                                        sx={{ mt: 1.5 }}
                                                     >
                                                         Reply
                                                     </Button>
                                                 )}
                                                 {review.reply && (
-                                                    <Box sx={{ mt: 2, bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
+                                                    <ReplySection>
                                                         <Typography variant="subtitle2">Donator's Reply:</Typography>
                                                         <Typography variant="body2">{review.reply.content}</Typography>
                                                         <Typography variant="caption" display="block" sx={{ mt: 1 }}>
@@ -514,42 +604,67 @@ export default function Profile() {
                                                                 </IconButton>
                                                             </Box>
                                                         )}
-                                                    </Box>
+                                                    </ReplySection>
                                                 )}
-
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1.5 }}>
+                                                    {userId === review.userId && (
+                                                        <>
+                                                            <IconButton size="small" onClick={() => handleEditClick(review)} sx={{ mr: 1 }}>
+                                                                <EditIcon fontSize="small" />
+                                                            </IconButton>
+                                                            <IconButton size="small" onClick={() => handleDeleteClick(review.id)} sx={{ mr: 1 }}>
+                                                                <DeleteIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </>
+                                                    )}
+                                                    <IconButton
+                                                        onClick={() => handleThumbsUp(review.id)}
+                                                        size="small"
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        <ThumbUpIcon color={review.likedByUser ? 'primary' : 'inherit'} />
+                                                    </IconButton>
+                                                    <Typography variant="body2" sx={{ mr: 2 }}>
+                                                        {review.likeCount} likes
+                                                    </Typography>
+                                                    {review.likedByDonator && (
+                                                        <Typography variant="body2" color="primary">
+                                                            Liked by donator
+                                                        </Typography>
+                                                    )}
+                                                </Box>
                                             </>
                                         }
                                     />
-                                </ListItem>
-                                <Divider variant="inset" component="li" />
+                                </StyledListItem>
                             </React.Fragment>
                         ))}
                     </List>
-                </Paper>
-
+                </StyledPaper>
+    
                 <Dialog
                     open={deleteDialogOpen}
-                    onClose={handleDeleteCancel}
+                    onClose={() => setDeleteDialogOpen(false)}
                     aria-labelledby="delete-dialog-title"
                     aria-describedby="delete-dialog-description"
                 >
                     <DialogTitle id="delete-dialog-title">{"Confirm Delete"}</DialogTitle>
                     <DialogContent>
                         <DialogContentText id="delete-dialog-description">
-                            Are you sure you want to delete this review?
+                            Are you sure you want to delete this review? This action cannot be undone.
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleDeleteCancel}>Cancel</Button>
-                        <Button onClick={handleDeleteConfirm} autoFocus>
+                        <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleDeleteConfirm} color="error" autoFocus>
                             Delete
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={editDialogOpen}
-                    onClose={handleEditCancel}
+                    onClose={() => setEditDialogOpen(false)}
                     aria-labelledby="edit-dialog-title"
                     aria-describedby="edit-dialog-description"
                 >
@@ -558,7 +673,7 @@ export default function Profile() {
                         <Rating
                             name="rating"
                             value={reviewToEdit ? reviewToEdit.rating : 0}
-                            onChange={(event, newValue) => handleEditChange('rating', newValue)}
+                            onChange={(event, newValue) => setReviewToEdit(prev => ({ ...prev, rating: newValue }))}
                         />
                         <TextField
                             autoFocus
@@ -567,22 +682,23 @@ export default function Profile() {
                             label="Comment"
                             type="text"
                             fullWidth
-                            variant="standard"
+                            multiline
+                            rows={4}
                             value={reviewToEdit ? reviewToEdit.comment : ''}
-                            onChange={(e) => handleEditChange('comment', e.target.value)}
+                            onChange={(e) => setReviewToEdit(prev => ({ ...prev, comment: e.target.value }))}
                         />
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleEditCancel}>Cancel</Button>
-                        <Button onClick={handleEditConfirm} autoFocus>
-                            Save
+                        <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleEditConfirm} color="primary">
+                            Save Changes
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={replyDialogOpen}
-                    onClose={handleReplyCancel}
+                    onClose={() => setReplyDialogOpen(false)}
                     aria-labelledby="reply-dialog-title"
                 >
                     <DialogTitle id="reply-dialog-title">Reply to Review</DialogTitle>
@@ -601,13 +717,13 @@ export default function Profile() {
                         />
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={handleReplyCancel}>Cancel</Button>
+                        <Button onClick={() => setReplyDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleReplyConfirm} disabled={!replyContent.trim()}>
                             Submit Reply
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={editReplyDialogOpen}
                     onClose={() => setEditReplyDialogOpen(false)}
@@ -635,7 +751,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Dialog
                     open={Boolean(enlargedImage)}
                     onClose={handleCloseEnlargedImage}
@@ -656,6 +772,7 @@ export default function Profile() {
                         <Button onClick={handleCloseEnlargedImage}>Close</Button>
                     </DialogActions>
                 </Dialog>
+    
                 <Dialog
                     open={deleteReplyDialogOpen}
                     onClose={() => setDeleteReplyDialogOpen(false)}
@@ -675,17 +792,19 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-
+    
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={6000}
-                    onClose={handleSnackbarClose}
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
                     message={snackbar.message}
                 />
-            </Container>
+            </StyledContainer>
+            <StyledFooter>
+                {userRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
+            </StyledFooter>
         </>
     );
 }
-
 
 

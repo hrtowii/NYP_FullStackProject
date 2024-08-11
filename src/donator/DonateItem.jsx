@@ -4,6 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
+import {DonatorFooter} from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
@@ -466,6 +467,7 @@ export default function DonateItem() {
                     </div>
                 )}
             </div>
+            <DonatorFooter/>
         </div>
     );
 }
