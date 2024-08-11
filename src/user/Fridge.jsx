@@ -395,8 +395,18 @@ export default function Fridge() {
                                                         <TableCell>{donation.location}</TableCell>
                                                         <TableCell>{donation.donator.person.name}</TableCell>
                                                         <TableCell>
-                                                            <span style={{ color: donation.availability === "Available" ? "green" : "inherit" }}>
-                                                                {donation.availability}
+                                                            <span style={{
+                                                                color: cartItems.some(item => item.id === donation.id)
+                                                                ? "orange"
+                                                                : donation.availability === "Available"
+                                                                    ? "green"
+                                                                    : inherit
+                                                            }}>
+                                                                {cartItems.some(item => item.id === donation.id)
+                                                                    ? <b>Pending</b>
+                                                                    : donation.availability === "Available"
+                                                                    ? <b>Available</b>
+                                                                    : donation.availability}
                                                             </span>
                                                         </TableCell>
                                                     </TableRow>
