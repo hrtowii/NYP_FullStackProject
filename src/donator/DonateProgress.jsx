@@ -290,6 +290,7 @@ export default function DonateItem() {
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
+        setGoalAchievedDialogOpen(false); // Close the goal achieved dialog
         setGoalAchieved(false); // Reset goal achieved state when opening the modal
     };
 
