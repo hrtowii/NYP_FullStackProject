@@ -229,7 +229,10 @@ const Cart = () => {
               width: '100%',
               justifyContent: 'center',
               fontSize: '1.1rem',
-              '& .MuiAlert-icon': { fontSize: '2rem' }
+              '& .MuiAlert-icon': { fontSize: '2rem' },
+              backgroundColor: 'rgba(35, 204, 114, 0.25)',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             Reserved Successfully!

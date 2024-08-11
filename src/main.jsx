@@ -110,7 +110,15 @@ const router = createBrowserRouter([
     path: "/user",
     element: (
       <ProtectedRoute allowedRoles={['user', 'admin']}>
-        <Reservation />
+        <UserLanding />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/userlanding",
+    element: (
+      <ProtectedRoute allowedRoles={['user', 'admin']}>
+        <UserLanding />
       </ProtectedRoute>
     ),
   },
