@@ -672,8 +672,11 @@ app.patch('/donators/:donatorId/goal', async (req, res) => {
     const donatorId = parseInt(req.params.donatorId, 10);
     const { donationGoal } = req.body;
 
+    console.log(`Received request to update goal for donator ${donatorId} to ${donationGoal}`);
+
     try {
         if (isNaN(donatorId) || donationGoal < 0) {
+            console.log('Invalid data received');
             return res.status(400).json({ error: 'Invalid data' });
         }
 
@@ -682,8 +685,10 @@ app.patch('/donators/:donatorId/goal', async (req, res) => {
             data: { donationGoal },
         });
 
+        console.log('Updated donator:', donator);
         res.json(donator);
     } catch (error) {
+        console.error('Error updating donation goal:', error);
         res.status(500).json({ error: 'Failed to update donation goal' });
     }
 });
@@ -789,6 +794,20 @@ app.get('/donations', async (req, res) => {
                             person: true
                         }
                     },
+                    reservations: {
+                        where: {
+                            collectionStatus: {
+                                not: "Cancelled"
+                            }
+                        },
+                        select: {
+                            id: true,
+                            collectionStatus: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
                 },
                 skip,
                 take: limitNumber,
@@ -1054,6 +1073,11 @@ app.post('/reservation/:id', async (req, res) => {
     const formData: ReservationInterface = req.body;
     console.log('Received reservation data:', req.body);
     try {
+
+        if (!userId || !formData.collectionDate || !formData.collectionTimeStart || !formData.collectionTimeEnd || !formData.cartItems) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
         // Check if User exists
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -1062,41 +1086,51 @@ app.post('/reservation/:id', async (req, res) => {
             return res.status(400).json({ error: `User with id ${userId} not found` });
         }
 
-        const newReservations = await Promise.all(formData.cartItems.map(async (item) => {  // 'Promise.all' create multiple reservations at the same time
-            const donationId = parseInt(item.id.toString(), 10);
+        const result = await prisma.$transaction(async (prisma) => {
+            const newReservations = await Promise.all(formData.cartItems.map(async (item) => {
+                const donationId = parseInt(item.id.toString(), 10);
 
-            return prisma.reservation.create({
-                data: {
-                    user: {
-                        connect: { id: userId }
-                    },
-                    collectionDate: new Date(formData.collectionDate),
-                    collectionTimeStart: formData.collectionTimeStart,
-                    collectionTimeEnd: formData.collectionTimeEnd,
-                    collectionStatus: 'Uncollected',
-                    remarks: formData.remarks,
-                    donation: {
-                        connect: { id: donationId }
-                    },
-                    reservationItems: {
-                        create: item.foods.map(food => ({
-                            food: { connect: { id: food.id } },
-                            quantity: food.quantity
-                        }))
-                    }
-                },
-                include: {
-                    reservationItems: {
-                        include: {
-                            food: true
+                // Create reservation
+                const reservation = await prisma.reservation.create({
+                    data: {
+                        userId: userId,
+                        donationId: donationId,
+                        collectionDate: new Date(formData.collectionDate),
+                        collectionTimeStart: formData.collectionTimeStart,
+                        collectionTimeEnd: formData.collectionTimeEnd,
+                        collectionStatus: 'Uncollected',
+                        remarks: formData.remarks,
+                        reservationItems: {
+                            create: item.foods.map(food => ({
+                                foodId: food.id,
+                                quantity: food.quantity
+                            }))
                         }
                     },
-                    user: true
-                },
-            });
-        }));
+                    include: {
+                        reservationItems: {
+                            include: {
+                                food: true
+                            }
+                        },
+                        user: true
+                    },
+                });
 
-        res.status(201).json(newReservations);
+                // Update donation availability
+                await prisma.donation.update({
+                    where: { id: donationId },
+                    data: { availability: 'Reserved' }
+                });
+
+                return reservation;
+            }));
+
+            return newReservations;
+        });
+
+        console.log('Created reservations:', result);
+        res.status(201).json(result);
     } catch (error) {
         console.error('Error creating reservaton:', error);
         res.status(500).json({ error: 'Failed to create reservation', details: error.message });
@@ -1223,38 +1257,50 @@ app.patch('/reservation/:id/cancel', async (req, res) => {
     console.log('Cancelling reservation with id:', id);
 
     try {
-        const existingReservation = await prisma.reservation.findUnique({
-            where: { id: id }
-        });
+        const result = await prisma.$transaction(async (prisma) => {
+            const existingReservation = await prisma.reservation.findUnique({
+                where: { id: id },
+                include: { donation: true }
+            });
 
-        if (!existingReservation) {
-            return res.status(404).json({ error: 'Reservation not found.' });
-        }
+            if (!existingReservation) {
+                return res.status(404).json({ error: 'Reservation not found.' });
+            }
 
-        if (existingReservation.collectionStatus !== 'Uncollected') {
-            return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
-        }
+            if (existingReservation.collectionStatus !== 'Uncollected') {
+                return res.status(400).json({ error: 'Cannot cancel a reservation that is not in Uncollected status' });
+            }
 
-        const updatedReservation = await prisma.reservation.update({
-            where: { id: id },
-            data: {
-                collectionStatus: 'Cancelled',
-                updatedAt: new Date()
-            },
-            include: {
-                reservationItems: {
-                    include: {
-                        food: true
+            const updatedReservation = await prisma.reservation.update({
+                where: { id: id },
+                data: {
+                    collectionStatus: 'Cancelled',
+                    updatedAt: new Date()
+                },
+                include: {
+                    reservationItems: {
+                        include: {
+                            food: true
+                        }
                     }
                 }
+            });
+
+            if (existingReservation.donation) {
+                await prisma.donation.update({
+                    where: { id: existingReservation.donation.id },
+                    data: { availability: "Available" }
+                });
             }
+
+            return updatedReservation;
         });
 
-        console.log('Cancelled reservation:', updatedReservation);
+        console.log('Cancelled reservation:', result);
 
         res.status(200).json({
             message: 'Reservation cancelled successfully',
-            reservation: updatedReservation
+            reservation: result
         });
     } catch (error) {
         console.error('Error cancelling reservation:', error);
@@ -1786,8 +1832,6 @@ app.get('/reviews/:id', async (req, res) => {
         const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
         const userRole = req.query.userRole;
 
-        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}, userRole: ${userRole}`);
-
         const reviews = await prisma.review.findMany({
             where: {
                 donatorId: donatorId
@@ -1811,8 +1855,6 @@ app.get('/reviews/:id', async (req, res) => {
                 createdAt: 'desc'
             }
         });
-
-        console.log(`Found ${reviews.length} reviews`);
 
         const mappedReviews = reviews.map(review => {
             const reviewData = { ...review };
@@ -1993,7 +2035,7 @@ app.delete('/reviews/:id', async (req, res) => {
 
         const review = await prisma.review.findUnique({
             where: { id: reviewId },
-            include: { 
+            include: {
                 reply: true,
                 donator: true,
                 images: true,
@@ -2073,9 +2115,9 @@ app.delete('/reviews/:id', async (req, res) => {
         if (error.meta) {
             console.error('Prisma error meta:', error.meta);
         }
-        res.status(500).json({ 
-            error: 'Failed to delete review', 
-            details: error.message, 
+        res.status(500).json({
+            error: 'Failed to delete review',
+            details: error.message,
             stack: error.stack,
             meta: error.meta
         });

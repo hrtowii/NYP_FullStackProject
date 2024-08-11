@@ -128,9 +128,9 @@ model Donation {
   updatedAt    DateTime      @updatedAt
   donatorId    Int
   donator      Donator       @relation(fields: [donatorId], references: [id], onDelete: Cascade)
-  availability String @default("Available") // Iruss made this to label availability of donations
+  availability String   @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
-  reservations Reservation[] // remove for now, to test reservation by itself first
+  reservations Reservation[] 
 }
 
 model Food {

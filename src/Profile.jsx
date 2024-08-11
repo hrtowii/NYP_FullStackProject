@@ -502,6 +502,7 @@ export default function Profile() {
         const date = new Date(dateString);
         return format(date, 'dd/MM/yyyy HH:mm');
     };
+    
 
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 

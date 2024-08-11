@@ -4,7 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { DonatorFooter } from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import {
@@ -22,7 +22,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Container,
     Box,
     List,
     ListItem,
@@ -43,17 +42,19 @@ export default function DonateItem() {
     const { token, updateToken } = useContext(TokenContext);
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
-    const [donationGoal, setDonationGoal] = useState(null);
+    const [donationGoal, setDonationGoal] = useState(1000);
     const [totalDonations, setTotalDonations] = useState(0);
     const [openGoalModal, setOpenGoalModal] = useState(false);
-    const [goalInput, setGoalInput] = useState(null);
+    const [goalInput, setGoalInput] = useState('');
     const [goalError, setGoalError] = useState(null);
     const [achievement, setAchievement] = useState('');
     const [goalAchieved, setGoalAchieved] = useState(false);
     const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false);
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [collectedDonations, setCollectedDonations] = useState([]);
-    const [uncollectedDonations, setUncollectedDonations] = useState([]);
+    const [reservedDonations, setReservedDonations] = useState([]);
+    const [unreservedDonations, setUnreservedDonations] = useState([]);
+    const [openSetInitialGoalModal, setOpenSetInitialGoalModal] = useState(false);
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -77,21 +78,25 @@ export default function DonateItem() {
             const data = await response.json();
             console.log(data);
 
-            // Separate collected and uncollected donations
             const collected = [];
-            const uncollected = [];
+            const reserved = [];
+            const unreserved = [];
 
             data.donations.forEach(donation => {
-                if (donation.reservations && donation.reservations.length > 0 &&
-                    donation.reservations[0].collectionStatus === 'Collected') {
-                    collected.push(donation);
+                if (donation.reservations && donation.reservations.length > 0) {
+                    if (donation.reservations[0].collectionStatus === 'Collected') {
+                        collected.push(donation);
+                    } else {
+                        reserved.push(donation);
+                    }
                 } else {
-                    uncollected.push(donation);
+                    unreserved.push(donation);
                 }
             });
 
             setCollectedDonations(collected);
-            setUncollectedDonations(uncollected);
+            setReservedDonations(reserved);
+            setUnreservedDonations(unreserved);
             setError(null);
         } catch (error) {
             console.error('Error fetching donations:', error);
@@ -123,22 +128,8 @@ export default function DonateItem() {
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [token, backendRoute]);
+    }, [token]);
 
-    const getDisplayName = (review) => {
-        if (review.isAnonymous) {
-            const name = review.user?.person?.name || 'Unknown User';
-            return `${name[0]}${'*'.repeat(6)}`;
-        }
-        return review.user?.person?.name || 'Unknown User';
-    };
-
-    const truncateMessage = (message, maxLength = 100) => {
-        if (message.length <= maxLength) return message;
-        return message.substr(0, maxLength) + '...';
-    };
-
-    // Fetch total donations
     const fetchTotalDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
         if (!donatorId) {
@@ -159,64 +150,6 @@ export default function DonateItem() {
         }
     }, [token]);
 
-    const formatDate = (dateString) => {
-        if (!dateString) return "Unreserved";
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    };
-
-    const formatImagePath = (path) => {
-        if (!path) return '';
-        const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
-        console.log('Formatted Image Path:', formattedPath);
-        return path.replace(/\\/g, '/').replace(/^public/, '');
-    };
-
-    const determineAchievement = (totalQuantity) => {
-        let newAchievement = '';
-        if (totalQuantity >= 10000) {
-            newAchievement = 'Supreme';
-        } else if (totalQuantity >= 5000) {
-            newAchievement = 'Diamond';
-        } else if (totalQuantity >= 1000) {
-            newAchievement = 'Gold';
-        } else {
-            newAchievement = 'Silver';
-        }
-        setAchievement(newAchievement);
-    };
-
-    const updateAchievement = async () => {
-        const donatorId = parseJwt(token).id;
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-
-        console.log('Updating achievement to:', achievement); // Log the current achievement
-
-        try {
-            console.log(achievement)
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/achievement`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ achievement }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update achievement');
-            }
-
-            const data = await response.json();
-            console.log('Achievement updated successfully:', data); // Log the success response
-        } catch (error) {
-            console.error('Error updating achievement:', error);
-            setError('Failed to update achievement. Please try again later.');
-        }
-    };
-
     const fetchInitialGoal = useCallback(async () => {
         const donatorId = parseJwt(token).id;
         if (!donatorId) {
@@ -235,13 +168,106 @@ export default function DonateItem() {
                 throw new Error('Failed to fetch donation goal');
             }
             const data = await response.json();
-            setDonationGoal(data.donationGoal || 1000); // Fallback to 1000 if no goal is set
-            setGoalInput(data.donationGoal || 1000);
+            console.log("Your donation goal = " + data.donationGoal);
+            if (data.donationGoal === 0 || data.donationGoal === null) {
+                setOpenSetInitialGoalModal(true);
+            } else {
+                setDonationGoal(data.donationGoal);
+                setGoalInput(data.donationGoal);
+            }
         } catch (error) {
             console.error('Error fetching donation goal:', error);
             setError('Failed to fetch donation goal. Please try again later.');
         }
+    }, [token, backendRoute]);
+
+    const handleSetInitialGoal = async () => {
+        try {
+            await handleDonationGoal();
+            setOpenSetInitialGoalModal(false);
+        } catch (error) {
+            console.error('Error setting initial goal:', error);
+            setGoalError(error.message || 'Failed to set initial donation goal. Please try again.');
+        }
+    };
+
+
+    const determineAchievement = useCallback((totalQuantity) => {
+        if (totalQuantity >= 10000) {
+            return 'Supreme';
+        } else if (totalQuantity >= 5000) {
+            return 'Diamond';
+        } else if (totalQuantity >= 1000) {
+            return 'Gold';
+        } else {
+            return 'Silver';
+        }
+    }, []);
+
+    const updateAchievement = useCallback(async (newAchievement) => {
+        const donatorId = parseJwt(token).id;
+        if (!donatorId) {
+            setError('No donator ID provided');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/achievement`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ achievement: newAchievement }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update achievement');
+            }
+
+            const data = await response.json();
+            console.log('Achievement updated successfully:', data);
+        } catch (error) {
+            console.error('Error updating achievement:', error);
+            setError('Failed to update achievement. Please try again later.');
+        }
     }, [token]);
+
+    const handleDonationGoal = async () => {
+        const donatorId = parseJwt(token).id;
+        if (!donatorId) {
+            throw new Error('No donator ID provided');
+        }
+        const goal = parseInt(goalInput);
+        if (isNaN(goal) || goal <= 0) {
+            throw new Error('Please enter a valid goal greater than 0');
+        }
+        if (goal <= totalDonations) {
+            throw new Error('New goal must be greater than current total donations');
+        }
+        try {
+            console.log(`Sending request to update goal: ${goal} for donator: ${donatorId}`);
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ donationGoal: goal }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update donation goal: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Response from server:', data);
+            setDonationGoal(goal);
+            setGoalError(null);
+            setGoalAchieved(false);
+        } catch (error) {
+            console.error('Error updating donation goal:', error);
+            throw error;
+        }
+    };
 
     useEffect(() => {
         fetchDonations();
@@ -250,23 +276,29 @@ export default function DonateItem() {
         fetchInitialGoal();
     }, [fetchDonations, fetchReviews, fetchTotalDonations, fetchInitialGoal]);
 
-
     useEffect(() => {
-        determineAchievement(totalDonations);
+        console.log('Donation goal changed:', donationGoal);
+        const newAchievement = determineAchievement(totalDonations);
+        setAchievement(newAchievement);
+        updateAchievement(newAchievement);
+
         if (totalDonations >= donationGoal && !goalAchieved) {
             setGoalAchieved(true);
             setGoalAchievedDialogOpen(true);
-        } else if (totalDonations < donationGoal) {
+        }
+    }, [totalDonations, donationGoal, goalAchieved, determineAchievement, updateAchievement]);
+
+    useEffect(() => {
+        console.log('Checking goal achievement:', { totalDonations, donationGoal });
+        if (totalDonations >= donationGoal && donationGoal > 0) {
+            console.log('Goal achieved!');
+            setGoalAchieved(true);
+            setGoalAchievedDialogOpen(true);
+        } else {
+            console.log('Goal not yet achieved');
             setGoalAchieved(false);
         }
-        updateAchievement();
-    }, [totalDonations, donationGoal, goalAchieved]);
-
-    // Add this separate effect to reset the dialog when the goal changes
-    useEffect(() => {
-        setGoalAchieved(false);
-        setGoalAchievedDialogOpen(false);
-    }, [donationGoal]);
+    }, [totalDonations, donationGoal]);
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
@@ -280,6 +312,76 @@ export default function DonateItem() {
         setGoalAchievedDialogOpen(false);
     };
 
+    const handleGoalChange = (event) => {
+        setGoalInput(event.target.value);
+    };
+
+    const handleGoalSubmit = async () => {
+        try {
+            await handleDonationGoal();
+            console.log('Goal updated successfully');
+
+            // Fetch the updated goal from the server
+            const donatorId = parseJwt(token).id;
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch updated donation goal');
+            }
+            const data = await response.json();
+            console.log('Fetched updated goal from server:', data.donationGoal);
+
+            setDonationGoal(data.donationGoal);
+            setOpenGoalModal(false);
+        } catch (error) {
+            console.error('Error submitting new goal:', error);
+            setGoalError(error.message || 'Failed to update donation goal. Please try again.');
+        }
+    };
+
+    const handleCloseEnlargedImage = () => {
+        setEnlargedImage(null);
+    };
+
+    const handleImageClick = (imageUrl) => {
+        setEnlargedImage(imageUrl);
+    };
+
+    const getDisplayName = (review) => {
+        if (review.isAnonymous) {
+            const name = review.user?.person?.name || 'Unknown User';
+            return `${name[0]}${'*'.repeat(6)}`;
+        }
+        return review.user?.person?.name || 'Unknown User';
+    };
+
+    const truncateMessage = (message, maxLength = 100) => {
+        if (message.length <= maxLength) return message;
+        return message.substr(0, maxLength) + '...';
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Unreserved";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const formatImagePath = (path) => {
+        if (!path) return '';
+        const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
+        return path.replace(/\\/g, '/').replace(/^public/, '');
+    };
+
+    const achievements = [
+        { name: 'Silver', description: 'Donated less than 1000 grams' },
+        { name: 'Gold', description: 'Donated less than 5000 grams' },
+        { name: 'Diamond', description: 'Donated less than 10000 grams' },
+        { name: 'Supreme', description: 'Donated 10000 grams or more' },
+    ];
 
     if (loading) {
         return (
@@ -296,97 +398,6 @@ export default function DonateItem() {
             </Box>
         );
     }
-
-    const handleGoalChange = (event) => {
-        setGoalInput(event.target.value);
-    };
-
-    const handleGoalSubmit = async () => {
-        const donatorId = parseJwt(token).id;
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-
-        if (parseInt(goalInput, 10) <= totalDonations) {
-            setGoalError('Donation goal cannot be lower than the current total donations in g.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ donationGoal: parseInt(goalInput, 10) }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update donation goal');
-            }
-
-            const data = await response.json();
-            setDonationGoal(data.donationGoal);
-            setGoalInput(data.donationGoal);
-            setGoalError(null); // Clear any previous errors
-        } catch (error) {
-            console.error('Error updating donation goal:', error);
-            setGoalError('Failed to update donation goal. Please try again later.');
-        } finally {
-            handleCloseGoalModal(); // Close modal on success or error
-        }
-    };
-
-    const handleSetGoal = async () => {
-        const donatorId = parseJwt(token).id
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-        const goal = parseInt(goalInput);
-        if (isNaN(goal) || goal <= 0) {
-            setGoalError('Please enter a valid goal greater than 0');
-            return;
-        }
-        try {
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ goal }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update donation goal');
-            }
-
-            const data = await response.json();
-            setDonationGoal(goal);
-            setOpenGoalModal(false);
-            setGoalError(null);
-        } catch (error) {
-            console.error('Error updating donation goal:', error);
-            setError('Failed to update donation goal. Please try again later.');
-        }
-    };
-
-    const handleCloseEnlargedImage = () => {
-        setEnlargedImage(null);
-    };
-
-    const handleImageClick = (imageUrl) => {
-        setEnlargedImage(imageUrl);
-    };
-
-
-    const achievements = [
-        { name: 'Silver', description: 'Donated less than 1000 grams' },
-        { name: 'Gold', description: 'Donated less than 5000 grams' },
-        { name: 'Diamond', description: 'Donated less than 10000 grams' },
-        { name: 'Supreme', description: 'Donated 10000 grams or more' },
-    ];
 
     return (
         <div className="container">
@@ -458,124 +469,214 @@ export default function DonateItem() {
                     </Box>
                 </div>
 
-                <Box sx={{backgroundColor: 'lightgrey'}} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
-                <Box justifyContent="center" textAlign="center" mt={2}>
-                    <Typography variant="h4" gutterBottom mt={2}>
-                        Current Rank:
-                    </Typography>
-                    <Box mt={2} mb={2} textAlign="center">
-                        <Box
-                            display="flex"
-                            flexDirection="row"
-                            flexWrap="wrap"
-                            justifyContent="center"
-                            alignItems="center"
-                            sx={{ gap: 2 }}
-                        >
-                            {achievements.map((achievementItem) => (
-                                <Card
-                                    key={achievementItem.name}
+                <Box sx={{ backgroundColor: 'lightgrey' }} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
+                    <Box justifyContent="center" textAlign="center" mt={2}>
+                        <Typography variant="h4" gutterBottom mt={2}>
+                            Current Rank:
+                        </Typography>
+                        <Box mt={2} mb={2} textAlign="center">
+                            <Box
+                                display="flex"
+                                flexDirection="row"
+                                flexWrap="wrap"
+                                justifyContent="center"
+                                alignItems="center"
+                                sx={{ gap: 2 }}
+                            >
+                                {achievements.map((achievementItem) => (
+                                    <Card
+                                        key={achievementItem.name}
+                                        sx={{
+                                            minWidth: 200,
+                                            bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
+                                            color: achievement === achievementItem.name ? 'black' : 'black',
+                                        }}
+                                    >
+                                        <CardContent>
+                                            <Typography variant="h6">{achievementItem.name}</Typography>
+                                            <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
+                        <Box flex={1} mr={2}>
+                            <Typography variant="h6" gutterBottom>
+                                Progress
+                            </Typography>
+                            <Box
+                                sx={{
+                                    border: '2px solid black',
+                                    borderRadius: 8,
+                                }}>
+
+                                <Box
                                     sx={{
-                                        minWidth: 200,
-                                        bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
-                                        color: achievement === achievementItem.name ? 'black' : 'black',
+                                        position: 'relative',
+                                        height: 15, // Thicker progress bar
+                                        borderRadius: 8, // Thicker border radius
+                                        border: '3x solid white', // Thicker and light grey border
+                                        backgroundColor: 'white', // Light grey background
+                                        padding: 0.3
                                     }}
                                 >
-                                    <CardContent>
-                                        <Typography variant="h6">{achievementItem.name}</Typography>
-                                        <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={(totalDonations / donationGoal) * 100}
+                                        sx={{
+                                            height: '100%',
+                                            borderRadius: 'inherit', // Inherit the border radius from the container
+                                            backgroundColor: 'transparent', // Make background transparent to show the border
+                                            '& .MuiLinearProgress-bar': {
+                                                backgroundColor: '#4caf50', // Completed portion color (green)
+                                                borderRadius: 8, // Match the border radius of the container
+                                            },
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+                            <Typography variant="body1" mt={2}>
+                                {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
+                                Set New Goal
+                            </Button>
+                            <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
+                                <DialogTitle>Set New Donation Goal</DialogTitle>
+                                <DialogContent>
+                                    <TextField
+                                        autoFocus
+                                        margin="dense"
+                                        label="New Donation Goal"
+                                        type="number"
+                                        fullWidth
+                                        value={goalInput}
+                                        onChange={handleGoalChange}
+                                        error={!!goalError}
+                                        helperText={goalError}
+                                    />
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={handleCloseGoalModal} color="primary">
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={handleGoalSubmit} color="primary">
+                                        Submit
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                         </Box>
                     </Box>
-                </Box>
-
-                <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
-                    <Box flex={1} mr={2}>
-                        <Typography variant="h6" gutterBottom>
-                            Progress
-                        </Typography>
-                        <Box
-                            sx={{border: '2px solid black',
-                                borderRadius: 8,
-                            }}>
-
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                height: 15, // Thicker progress bar
-                                borderRadius: 8, // Thicker border radius
-                                border: '3x solid white', // Thicker and light grey border
-                                backgroundColor: 'white', // Light grey background
-                                padding: 0.3
-                            }}
-                        >
-                            <LinearProgress
-                                variant="determinate"
-                                value={(totalDonations / donationGoal) * 100}
-                                sx={{
-                                    height: '100%',
-                                    borderRadius: 'inherit', // Inherit the border radius from the container
-                                    backgroundColor: 'transparent', // Make background transparent to show the border
-                                    '& .MuiLinearProgress-bar': {
-                                        backgroundColor: '#4caf50', // Completed portion color (green)
-                                        borderRadius: 8, // Match the border radius of the container
-                                    },
-                                }}
-                            />
-                        </Box>
-                        </Box>
-                        <Typography variant="body1" mt={2}>
-                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                        </Typography>
-                    </Box>
-                    <Box>
-                        <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
-                            Set New Goal
-                        </Button>
-                        <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
-                            <DialogTitle>Set New Donation Goal</DialogTitle>
-                            <DialogContent>
-                                <TextField
-                                    autoFocus
-                                    margin="dense"
-                                    label="New Donation Goal"
-                                    type="number"
-                                    fullWidth
-                                    value={goalInput}
-                                    onChange={handleGoalChange}
-                                    error={!!goalError}
-                                    helperText={goalError}
-                                />
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseGoalModal} color="primary">
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleGoalSubmit} color="primary">
-                                    Submit
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
-                    </Box>
-                </Box>
                 </Box>
                 <Box ml={5}>
                     <Typography variant="h4" gutterBottom mt={2}>
                         Your Donations:
                     </Typography>
                 </Box>
-                
+
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
-                    
+
                     <Box width="60%">
-                        <Typography variant="h6" gutterBottom>Uncollected</Typography>
+                        <Typography variant="h5" gutterBottom>
+                            Unreserved Donations
+                        </Typography>
                         <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
-                            {uncollectedDonations.length === 0 ? (
-                                <Alert severity="info">You have no uncollected donations.</Alert>
+                            {unreservedDonations.length === 0 ? (
+                                <Alert severity="info">You have no unreserved donations.</Alert>
                             ) : (
-                                uncollectedDonations.flatMap((donation) =>
+                                unreservedDonations.flatMap((donation) =>
+                                    donation.foods.map((food) => (
+                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
+                                            <CardContent>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                    {donation.image && (
+                                                        <Box
+                                                            sx={{
+                                                                position: 'relative',
+                                                                width: 80,
+                                                                height: 80,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: 'center',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            />
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    background: 'rgba(0, 0, 0, 0.3)',
+                                                                    opacity: 0,
+                                                                    transition: 'opacity 0.2s',
+                                                                    '&:hover': {
+                                                                        opacity: 1,
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <ZoomInIcon sx={{ color: 'white' }} />
+                                                            </Box>
+                                                        </Box>
+                                                    )}
+
+                                                    <Box>
+                                                        <Typography variant="h6">{food.name}</Typography>
+                                                        <Typography variant="body2">
+                                                            Collection date: {donation.reservations && donation.reservations.length > 0
+                                                                ? formatDate(donation.reservations[0].collectionDate)
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeStart
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeEnd
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Status: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionStatus
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                )
+                            )}
+                        </Box>
+                        <Typography variant="h5" gutterBottom style={{ marginTop: '20px' }}>
+                            Reserved Donations
+                        </Typography>
+                        <Box bgcolor="warning.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
+                            {reservedDonations.length === 0 ? (
+                                <Alert severity="info">You have no reserved donations.</Alert>
+                            ) : (
+                                reservedDonations.flatMap((donation) =>
                                     donation.foods.map((food) => (
                                         <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
                                             <CardContent>
@@ -657,7 +758,6 @@ export default function DonateItem() {
                         </Box>
 
 
-
                         <Dialog
                             open={Boolean(enlargedImage)}
                             onClose={handleCloseEnlargedImage}
@@ -679,19 +779,28 @@ export default function DonateItem() {
                             </DialogActions>
                         </Dialog>
 
-                        <Dialog open={goalAchievedDialogOpen} onClose={handleCloseGoalAchievedDialog}>
+                        <Dialog
+                            open={goalAchievedDialogOpen}
+                            onClose={handleCloseGoalAchievedDialog}
+                        >
                             <DialogTitle>Congratulations!</DialogTitle>
                             <DialogContent>
                                 <Typography>
                                     You have achieved your donation goal of {donationGoal} grams!
                                 </Typography>
                                 <Typography>
-                                    Please set your next goal.
+                                    Your current total donations: {totalDonations} grams.
+                                </Typography>
+                                <Typography>
+                                    Would you like to set a new goal?
                                 </Typography>
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={handleCloseGoalAchievedDialog} color="primary">
                                     Close
+                                </Button>
+                                <Button onClick={handleOpenGoalModal} color="primary">
+                                    Set New Goal
                                 </Button>
                             </DialogActions>
                         </Dialog>
@@ -843,8 +952,33 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
+                <Dialog open={openSetInitialGoalModal} onClose={() => setOpenSetInitialGoalModal(false)}>
+                    <DialogTitle>Set Your Donation Goal</DialogTitle>
+                    <DialogContent>
+                        <Typography>You haven't set a donation goal yet. Would you like to set one now?</Typography>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="Donation Goal"
+                            type="number"
+                            fullWidth
+                            value={goalInput}
+                            onChange={handleGoalChange}
+                            error={!!goalError}
+                            helperText={goalError}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenSetInitialGoalModal(false)} color="primary">
+                            Not Now
+                        </Button>
+                        <Button onClick={handleSetInitialGoal} color="primary">
+                            Set Goal
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </div>
-            <DonatorFooter/>
+            <DonatorFooter />
         </div>
     );
 }

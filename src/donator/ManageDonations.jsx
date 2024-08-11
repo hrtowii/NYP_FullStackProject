@@ -35,7 +35,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import AddIcon from '@mui/icons-material/Add';
 import { DonatorNavbar } from '../components/Navbar';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
@@ -250,6 +250,15 @@ export default function ManageDonations() {
       .filter(searchFields);
   }, [donations, order, orderBy, searchQuery]);
 
+  const isCollected = (donation) => {
+    try{
+      return donation.reservations.some(reservation => reservation.collectionStatus === "Collected");
+    }catch (error) {
+      console.error('Error:', error);
+    }
+    
+  };
+
 
   if (loading) {
     return (
@@ -462,12 +471,23 @@ export default function ManageDonations() {
                           <TableCell>{donation.remarks || 'N/A'}</TableCell>
                           <TableCell>{donation.location || 'N/A'}</TableCell>
                           <TableCell>
-                            <Button variant="outlined" color="primary" style={{ marginRight: '8px' }} onClick={() => handleEditClick(donation.id)}>
-                              Edit
-                            </Button>
-                            <Button variant="outlined" color="secondary" onClick={() => handleDeleteClick(donation.id)}>
-                              Delete
-                            </Button>
+                            {!isCollected(donation) ? (
+                              <>
+                                <Button variant="outlined" color="primary" style={{ marginRight: '8px' }} onClick={() => handleEditClick(donation.id)}>
+                                  Edit
+                                </Button>
+                                <Button variant="outlined" color="secondary" onClick={() => handleDeleteClick(donation.id)}>
+                                  Delete
+                                </Button>
+                              </>
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                Collected
+                              </Typography>
+                            )}
+                            <Typography variant="caption" display="block" color="textSecondary">
+                              Status: {isCollected(donation) ? 'Collected' : donation.availability}
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       ))
@@ -606,7 +626,7 @@ export default function ManageDonations() {
           </DialogActions>
         </Dialog>
       </div>
-      <DonatorFooter/>
+      <DonatorFooter />
     </div>
   );
 }
