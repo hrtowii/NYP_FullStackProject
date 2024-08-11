@@ -4,7 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import {
@@ -53,7 +53,8 @@ export default function DonateItem() {
     const [goalAchievedDialogOpen, setGoalAchievedDialogOpen] = useState(false);
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [collectedDonations, setCollectedDonations] = useState([]);
-    const [uncollectedDonations, setUncollectedDonations] = useState([]);
+    const [reservedDonations, setReservedDonations] = useState([]);
+    const [unreservedDonations, setUnreservedDonations] = useState([]);
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -77,21 +78,26 @@ export default function DonateItem() {
             const data = await response.json();
             console.log(data);
 
-            // Separate collected and uncollected donations
+            // Separate donations into collected, reserved, and unreserved
             const collected = [];
-            const uncollected = [];
+            const reserved = [];
+            const unreserved = [];
 
             data.donations.forEach(donation => {
-                if (donation.reservations && donation.reservations.length > 0 &&
-                    donation.reservations[0].collectionStatus === 'Collected') {
-                    collected.push(donation);
+                if (donation.reservations && donation.reservations.length > 0) {
+                    if (donation.reservations[0].collectionStatus === 'Collected') {
+                        collected.push(donation);
+                    } else {
+                        reserved.push(donation);
+                    }
                 } else {
-                    uncollected.push(donation);
+                    unreserved.push(donation);
                 }
             });
 
             setCollectedDonations(collected);
-            setUncollectedDonations(uncollected);
+            setReservedDonations(reserved);
+            setUnreservedDonations(unreserved);
             setError(null);
         } catch (error) {
             console.error('Error fetching donations:', error);
@@ -338,7 +344,7 @@ export default function DonateItem() {
         }
     };
 
-   
+
 
     const handleCloseEnlargedImage = () => {
         setEnlargedImage(null);
@@ -426,124 +432,127 @@ export default function DonateItem() {
                     </Box>
                 </div>
 
-                <Box sx={{backgroundColor: 'lightgrey'}} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
-                <Box justifyContent="center" textAlign="center" mt={2}>
-                    <Typography variant="h4" gutterBottom mt={2}>
-                        Current Rank:
-                    </Typography>
-                    <Box mt={2} mb={2} textAlign="center">
-                        <Box
-                            display="flex"
-                            flexDirection="row"
-                            flexWrap="wrap"
-                            justifyContent="center"
-                            alignItems="center"
-                            sx={{ gap: 2 }}
-                        >
-                            {achievements.map((achievementItem) => (
-                                <Card
-                                    key={achievementItem.name}
+                <Box sx={{ backgroundColor: 'lightgrey' }} p={2} marginLeft={3} marginRight={3} paddingBottom={4} borderRadius={3}>
+                    <Box justifyContent="center" textAlign="center" mt={2}>
+                        <Typography variant="h4" gutterBottom mt={2}>
+                            Current Rank:
+                        </Typography>
+                        <Box mt={2} mb={2} textAlign="center">
+                            <Box
+                                display="flex"
+                                flexDirection="row"
+                                flexWrap="wrap"
+                                justifyContent="center"
+                                alignItems="center"
+                                sx={{ gap: 2 }}
+                            >
+                                {achievements.map((achievementItem) => (
+                                    <Card
+                                        key={achievementItem.name}
+                                        sx={{
+                                            minWidth: 200,
+                                            bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
+                                            color: achievement === achievementItem.name ? 'black' : 'black',
+                                        }}
+                                    >
+                                        <CardContent>
+                                            <Typography variant="h6">{achievementItem.name}</Typography>
+                                            <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
+                        <Box flex={1} mr={2}>
+                            <Typography variant="h6" gutterBottom>
+                                Progress
+                            </Typography>
+                            <Box
+                                sx={{
+                                    border: '2px solid black',
+                                    borderRadius: 8,
+                                }}>
+
+                                <Box
                                     sx={{
-                                        minWidth: 200,
-                                        bgcolor: achievement === achievementItem.name ? 'primary.main' : 'grey.200',
-                                        color: achievement === achievementItem.name ? 'black' : 'black',
+                                        position: 'relative',
+                                        height: 15, // Thicker progress bar
+                                        borderRadius: 8, // Thicker border radius
+                                        border: '3x solid white', // Thicker and light grey border
+                                        backgroundColor: 'white', // Light grey background
+                                        padding: 0.3
                                     }}
                                 >
-                                    <CardContent>
-                                        <Typography variant="h6">{achievementItem.name}</Typography>
-                                        <Typography variant="body2" color={"black"}>{achievementItem.description}</Typography>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={(totalDonations / donationGoal) * 100}
+                                        sx={{
+                                            height: '100%',
+                                            borderRadius: 'inherit', // Inherit the border radius from the container
+                                            backgroundColor: 'transparent', // Make background transparent to show the border
+                                            '& .MuiLinearProgress-bar': {
+                                                backgroundColor: '#4caf50', // Completed portion color (green)
+                                                borderRadius: 8, // Match the border radius of the container
+                                            },
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
+                            <Typography variant="body1" mt={2}>
+                                {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
+                                Set New Goal
+                            </Button>
+                            <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
+                                <DialogTitle>Set New Donation Goal</DialogTitle>
+                                <DialogContent>
+                                    <TextField
+                                        autoFocus
+                                        margin="dense"
+                                        label="New Donation Goal"
+                                        type="number"
+                                        fullWidth
+                                        value={goalInput}
+                                        onChange={handleGoalChange}
+                                        error={!!goalError}
+                                        helperText={goalError}
+                                    />
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={handleCloseGoalModal} color="primary">
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={handleGoalSubmit} color="primary">
+                                        Submit
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                         </Box>
                     </Box>
-                </Box>
-
-                <Box display="flex" alignItems="center" ml={6} mr={6} mt={4}>
-                    <Box flex={1} mr={2}>
-                        <Typography variant="h6" gutterBottom>
-                            Progress
-                        </Typography>
-                        <Box
-                            sx={{border: '2px solid black',
-                                borderRadius: 8,
-                            }}>
-
-                        <Box
-                            sx={{
-                                position: 'relative',
-                                height: 15, // Thicker progress bar
-                                borderRadius: 8, // Thicker border radius
-                                border: '3x solid white', // Thicker and light grey border
-                                backgroundColor: 'white', // Light grey background
-                                padding: 0.3
-                            }}
-                        >
-                            <LinearProgress
-                                variant="determinate"
-                                value={(totalDonations / donationGoal) * 100}
-                                sx={{
-                                    height: '100%',
-                                    borderRadius: 'inherit', // Inherit the border radius from the container
-                                    backgroundColor: 'transparent', // Make background transparent to show the border
-                                    '& .MuiLinearProgress-bar': {
-                                        backgroundColor: '#4caf50', // Completed portion color (green)
-                                        borderRadius: 8, // Match the border radius of the container
-                                    },
-                                }}
-                            />
-                        </Box>
-                        </Box>
-                        <Typography variant="body1" mt={2}>
-                            {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                        </Typography>
-                    </Box>
-                    <Box>
-                        <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
-                            Set New Goal
-                        </Button>
-                        <Dialog open={openGoalModal} onClose={handleCloseGoalModal}>
-                            <DialogTitle>Set New Donation Goal</DialogTitle>
-                            <DialogContent>
-                                <TextField
-                                    autoFocus
-                                    margin="dense"
-                                    label="New Donation Goal"
-                                    type="number"
-                                    fullWidth
-                                    value={goalInput}
-                                    onChange={handleGoalChange}
-                                    error={!!goalError}
-                                    helperText={goalError}
-                                />
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseGoalModal} color="primary">
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleGoalSubmit} color="primary">
-                                    Submit
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
-                    </Box>
-                </Box>
                 </Box>
                 <Box ml={5}>
                     <Typography variant="h4" gutterBottom mt={2}>
                         Your Donations:
                     </Typography>
                 </Box>
-                
+
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
-                    
+
                     <Box width="60%">
-                        <Typography variant="h6" gutterBottom>Uncollected</Typography>
+                        <Typography variant="h5" gutterBottom>
+                            Unreserved Donations
+                        </Typography>
                         <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
-                            {uncollectedDonations.length === 0 ? (
-                                <Alert severity="info">You have no uncollected donations.</Alert>
+                            {unreservedDonations.length === 0 ? (
+                                <Alert severity="info">You have no unreserved donations.</Alert>
                             ) : (
-                                uncollectedDonations.flatMap((donation) =>
+                                unreservedDonations.flatMap((donation) =>
                                     donation.foods.map((food) => (
                                         <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
                                             <CardContent>
@@ -623,7 +632,93 @@ export default function DonateItem() {
                                 )
                             )}
                         </Box>
+                        <Typography variant="h5" gutterBottom style={{ marginTop: '20px' }}>
+                            Reserved Donations
+                        </Typography>
+                        <Box bgcolor="warning.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
+                            {reservedDonations.length === 0 ? (
+                                <Alert severity="info">You have no reserved donations.</Alert>
+                            ) : (
+                                reservedDonations.flatMap((donation) =>
+                                    donation.foods.map((food) => (
+                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
+                                            <CardContent>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                    {donation.image && (
+                                                        <Box
+                                                            sx={{
+                                                                position: 'relative',
+                                                                width: 80,
+                                                                height: 80,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                                                        >
+                                                            <Box
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                                                    backgroundSize: 'cover',
+                                                                    backgroundPosition: 'center',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            />
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    background: 'rgba(0, 0, 0, 0.3)',
+                                                                    opacity: 0,
+                                                                    transition: 'opacity 0.2s',
+                                                                    '&:hover': {
+                                                                        opacity: 1,
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <ZoomInIcon sx={{ color: 'white' }} />
+                                                            </Box>
+                                                        </Box>
+                                                    )}
 
+                                                    <Box>
+                                                        <Typography variant="h6">{food.name}</Typography>
+                                                        <Typography variant="body2">
+                                                            Collection date: {donation.reservations && donation.reservations.length > 0
+                                                                ? formatDate(donation.reservations[0].collectionDate)
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeStart
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionTimeEnd
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Status: {donation.reservations && donation.reservations.length > 0
+                                                                ? donation.reservations[0].collectionStatus
+                                                                : "Unreserved"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                )
+                            )}
+                        </Box>
 
 
                         <Dialog
@@ -812,7 +907,7 @@ export default function DonateItem() {
                     </Box>
                 </Box>
             </div>
-            <DonatorFooter/>
+            <DonatorFooter />
         </div>
     );
 }
