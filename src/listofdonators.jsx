@@ -115,6 +115,36 @@ export default function ListOfDonators() {
     const currentUserName = parseJwt(token).name;
     const userId = parseJwt(token).id;
 
+    const determineAchievement = useCallback((totalDonations) => {
+        if (totalDonations >= 10000) return 'Supreme';
+        if (totalDonations >= 5000) return 'Diamond';
+        if (totalDonations >= 1000) return 'Gold';
+        return 'Silver';
+    }, []);
+
+    const updateAchievement = useCallback(async (donatorId, newAchievement) => {
+        try {
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/achievement`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ achievement: newAchievement }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update achievement');
+            }
+
+            const data = await response.json();
+            console.log('Achievement updated successfully:', data);
+        } catch (error) {
+            console.error('Error updating achievement:', error);
+            setError('Failed to update achievement. Please try again later.');
+        }
+    }, [token]);
+
 
     const handleImageSelect = (event) => {
         const files = Array.from(event.target.files);
@@ -182,13 +212,26 @@ export default function ListOfDonators() {
             if (data.length === 0) {
                 setError('No users found in the database');
             } else {
-                setProfiles(data);
+                // Update achievements for each donator
+                const updatedProfiles = await Promise.all(data.map(async (profile) => {
+                    const totalDonationsResponse = await fetch(`${backendRoute}/api/donations/${profile.id}/total`);
+                    const totalDonationsData = await totalDonationsResponse.json();
+                    const totalDonations = totalDonationsData.totalQuantity || 0;
+                    const newAchievement = determineAchievement(totalDonations);
+                    
+                    if (newAchievement !== profile.donator.achievement) {
+                        await updateAchievement(profile.id, newAchievement);
+                        return { ...profile, donator: { ...profile.donator, achievement: newAchievement } };
+                    }
+                    return profile;
+                }));
+                setProfiles(updatedProfiles);
             }
         } catch (error) {
             console.error('Error fetching profiles:', error);
             setError('Failed to fetch profiles');
         }
-    }, []);
+    }, [determineAchievement, updateAchievement]);
 
     useEffect(() => {
         fetchProfiles();
