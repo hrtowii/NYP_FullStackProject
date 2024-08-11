@@ -4,7 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
-import { UserFooter, DonatorFooter } from '../components/Footer';
+import { DonatorFooter } from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import {
@@ -22,7 +22,6 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Container,
     Box,
     List,
     ListItem,
@@ -43,10 +42,10 @@ export default function DonateItem() {
     const { token, updateToken } = useContext(TokenContext);
     const { donatorId } = useParams();
     const [reviews, setReviews] = useState([]);
-    const [donationGoal, setDonationGoal] = useState(null);
+    const [donationGoal, setDonationGoal] = useState(1000);
     const [totalDonations, setTotalDonations] = useState(0);
     const [openGoalModal, setOpenGoalModal] = useState(false);
-    const [goalInput, setGoalInput] = useState(null);
+    const [goalInput, setGoalInput] = useState('');
     const [goalError, setGoalError] = useState(null);
     const [achievement, setAchievement] = useState('');
     const [goalAchieved, setGoalAchieved] = useState(false);
@@ -55,6 +54,7 @@ export default function DonateItem() {
     const [collectedDonations, setCollectedDonations] = useState([]);
     const [reservedDonations, setReservedDonations] = useState([]);
     const [unreservedDonations, setUnreservedDonations] = useState([]);
+    const [openSetInitialGoalModal, setOpenSetInitialGoalModal] = useState(false);
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -78,7 +78,6 @@ export default function DonateItem() {
             const data = await response.json();
             console.log(data);
 
-            // Separate donations into collected, reserved, and unreserved
             const collected = [];
             const reserved = [];
             const unreserved = [];
@@ -129,22 +128,8 @@ export default function DonateItem() {
         } catch (error) {
             console.error('Error fetching reviews:', error);
         }
-    }, [token, backendRoute]);
+    }, [token]);
 
-    const getDisplayName = (review) => {
-        if (review.isAnonymous) {
-            const name = review.user?.person?.name || 'Unknown User';
-            return `${name[0]}${'*'.repeat(6)}`;
-        }
-        return review.user?.person?.name || 'Unknown User';
-    };
-
-    const truncateMessage = (message, maxLength = 100) => {
-        if (message.length <= maxLength) return message;
-        return message.substr(0, maxLength) + '...';
-    };
-
-    // Fetch total donations
     const fetchTotalDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
         if (!donatorId) {
@@ -165,64 +150,6 @@ export default function DonateItem() {
         }
     }, [token]);
 
-    const formatDate = (dateString) => {
-        if (!dateString) return "Unreserved";
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    };
-
-    const formatImagePath = (path) => {
-        if (!path) return '';
-        const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
-        console.log('Formatted Image Path:', formattedPath);
-        return path.replace(/\\/g, '/').replace(/^public/, '');
-    };
-
-    const determineAchievement = (totalQuantity) => {
-        let newAchievement = '';
-        if (totalQuantity >= 10000) {
-            newAchievement = 'Supreme';
-        } else if (totalQuantity >= 5000) {
-            newAchievement = 'Diamond';
-        } else if (totalQuantity >= 1000) {
-            newAchievement = 'Gold';
-        } else {
-            newAchievement = 'Silver';
-        }
-        setAchievement(newAchievement);
-    };
-
-    const updateAchievement = async () => {
-        const donatorId = parseJwt(token).id;
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-
-        console.log('Updating achievement to:', achievement); // Log the current achievement
-
-        try {
-            console.log(achievement)
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/achievement`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ achievement }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update achievement');
-            }
-
-            const data = await response.json();
-            console.log('Achievement updated successfully:', data); // Log the success response
-        } catch (error) {
-            console.error('Error updating achievement:', error);
-            setError('Failed to update achievement. Please try again later.');
-        }
-    };
-
     const fetchInitialGoal = useCallback(async () => {
         const donatorId = parseJwt(token).id;
         if (!donatorId) {
@@ -241,13 +168,106 @@ export default function DonateItem() {
                 throw new Error('Failed to fetch donation goal');
             }
             const data = await response.json();
-            setDonationGoal(data.donationGoal || 1000); // Fallback to 1000 if no goal is set
-            setGoalInput(data.donationGoal || 1000);
+            console.log("Your donation goal = " + data.donationGoal);
+            if (data.donationGoal === 0 || data.donationGoal === null) {
+                setOpenSetInitialGoalModal(true);
+            } else {
+                setDonationGoal(data.donationGoal);
+                setGoalInput(data.donationGoal);
+            }
         } catch (error) {
             console.error('Error fetching donation goal:', error);
             setError('Failed to fetch donation goal. Please try again later.');
         }
+    }, [token, backendRoute]);
+
+    const handleSetInitialGoal = async () => {
+        try {
+            await handleDonationGoal();
+            setOpenSetInitialGoalModal(false);
+        } catch (error) {
+            console.error('Error setting initial goal:', error);
+            setGoalError(error.message || 'Failed to set initial donation goal. Please try again.');
+        }
+    };
+
+
+    const determineAchievement = useCallback((totalQuantity) => {
+        if (totalQuantity >= 10000) {
+            return 'Supreme';
+        } else if (totalQuantity >= 5000) {
+            return 'Diamond';
+        } else if (totalQuantity >= 1000) {
+            return 'Gold';
+        } else {
+            return 'Silver';
+        }
+    }, []);
+
+    const updateAchievement = useCallback(async (newAchievement) => {
+        const donatorId = parseJwt(token).id;
+        if (!donatorId) {
+            setError('No donator ID provided');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/achievement`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ achievement: newAchievement }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update achievement');
+            }
+
+            const data = await response.json();
+            console.log('Achievement updated successfully:', data);
+        } catch (error) {
+            console.error('Error updating achievement:', error);
+            setError('Failed to update achievement. Please try again later.');
+        }
     }, [token]);
+
+    const handleDonationGoal = async () => {
+        const donatorId = parseJwt(token).id;
+        if (!donatorId) {
+            throw new Error('No donator ID provided');
+        }
+        const goal = parseInt(goalInput);
+        if (isNaN(goal) || goal <= 0) {
+            throw new Error('Please enter a valid goal greater than 0');
+        }
+        if (goal <= totalDonations) {
+            throw new Error('New goal must be greater than current total donations');
+        }
+        try {
+            console.log(`Sending request to update goal: ${goal} for donator: ${donatorId}`);
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ donationGoal: goal }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update donation goal: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Response from server:', data);
+            setDonationGoal(goal);
+            setGoalError(null);
+            setGoalAchieved(false);
+        } catch (error) {
+            console.error('Error updating donation goal:', error);
+            throw error;
+        }
+    };
 
     useEffect(() => {
         fetchDonations();
@@ -256,23 +276,29 @@ export default function DonateItem() {
         fetchInitialGoal();
     }, [fetchDonations, fetchReviews, fetchTotalDonations, fetchInitialGoal]);
 
-
     useEffect(() => {
-        determineAchievement(totalDonations);
+        console.log('Donation goal changed:', donationGoal);
+        const newAchievement = determineAchievement(totalDonations);
+        setAchievement(newAchievement);
+        updateAchievement(newAchievement);
+
         if (totalDonations >= donationGoal && !goalAchieved) {
             setGoalAchieved(true);
             setGoalAchievedDialogOpen(true);
-        } else if (totalDonations < donationGoal) {
+        }
+    }, [totalDonations, donationGoal, goalAchieved, determineAchievement, updateAchievement]);
+
+    useEffect(() => {
+        console.log('Checking goal achievement:', { totalDonations, donationGoal });
+        if (totalDonations >= donationGoal && donationGoal > 0) {
+            console.log('Goal achieved!');
+            setGoalAchieved(true);
+            setGoalAchievedDialogOpen(true);
+        } else {
+            console.log('Goal not yet achieved');
             setGoalAchieved(false);
         }
-        updateAchievement();
-    }, [totalDonations, donationGoal, goalAchieved]);
-
-    // Add this separate effect to reset the dialog when the goal changes
-    useEffect(() => {
-        setGoalAchieved(false);
-        setGoalAchievedDialogOpen(false);
-    }, [donationGoal]);
+    }, [totalDonations, donationGoal]);
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
@@ -286,6 +312,76 @@ export default function DonateItem() {
         setGoalAchievedDialogOpen(false);
     };
 
+    const handleGoalChange = (event) => {
+        setGoalInput(event.target.value);
+    };
+
+    const handleGoalSubmit = async () => {
+        try {
+            await handleDonationGoal();
+            console.log('Goal updated successfully');
+
+            // Fetch the updated goal from the server
+            const donatorId = parseJwt(token).id;
+            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch updated donation goal');
+            }
+            const data = await response.json();
+            console.log('Fetched updated goal from server:', data.donationGoal);
+
+            setDonationGoal(data.donationGoal);
+            setOpenGoalModal(false);
+        } catch (error) {
+            console.error('Error submitting new goal:', error);
+            setGoalError(error.message || 'Failed to update donation goal. Please try again.');
+        }
+    };
+
+    const handleCloseEnlargedImage = () => {
+        setEnlargedImage(null);
+    };
+
+    const handleImageClick = (imageUrl) => {
+        setEnlargedImage(imageUrl);
+    };
+
+    const getDisplayName = (review) => {
+        if (review.isAnonymous) {
+            const name = review.user?.person?.name || 'Unknown User';
+            return `${name[0]}${'*'.repeat(6)}`;
+        }
+        return review.user?.person?.name || 'Unknown User';
+    };
+
+    const truncateMessage = (message, maxLength = 100) => {
+        if (message.length <= maxLength) return message;
+        return message.substr(0, maxLength) + '...';
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Unreserved";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const formatImagePath = (path) => {
+        if (!path) return '';
+        const formattedPath = `${backendRoute}/${path.replace(/\\/g, '/').replace(/^public/, '')}`;
+        return path.replace(/\\/g, '/').replace(/^public/, '');
+    };
+
+    const achievements = [
+        { name: 'Silver', description: 'Donated less than 1000 grams' },
+        { name: 'Gold', description: 'Donated less than 5000 grams' },
+        { name: 'Diamond', description: 'Donated less than 10000 grams' },
+        { name: 'Supreme', description: 'Donated 10000 grams or more' },
+    ];
 
     if (loading) {
         return (
@@ -302,65 +398,6 @@ export default function DonateItem() {
             </Box>
         );
     }
-
-    const handleGoalChange = (event) => {
-        setGoalInput(event.target.value);
-    };
-
-    const handleGoalSubmit = async () => {
-        const donatorId = parseJwt(token).id;
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-
-        if (parseInt(goalInput, 10) <= totalDonations) {
-            setGoalError('Donation goal cannot be lower than the current total donations in g.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ donationGoal: parseInt(goalInput, 10) }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update donation goal');
-            }
-
-            const data = await response.json();
-            setDonationGoal(data.donationGoal);
-            setGoalInput(data.donationGoal);
-            setGoalError(null); // Clear any previous errors
-        } catch (error) {
-            console.error('Error updating donation goal:', error);
-            setGoalError('Failed to update donation goal. Please try again later.');
-        } finally {
-            handleCloseGoalModal(); // Close modal on success or error
-        }
-    };
-
-
-
-    const handleCloseEnlargedImage = () => {
-        setEnlargedImage(null);
-    };
-
-    const handleImageClick = (imageUrl) => {
-        setEnlargedImage(imageUrl);
-    };
-
-
-    const achievements = [
-        { name: 'Silver', description: 'Donated less than 1000 grams' },
-        { name: 'Gold', description: 'Donated less than 5000 grams' },
-        { name: 'Diamond', description: 'Donated less than 10000 grams' },
-        { name: 'Supreme', description: 'Donated 10000 grams or more' },
-    ];
 
     return (
         <div className="container">
@@ -742,19 +779,28 @@ export default function DonateItem() {
                             </DialogActions>
                         </Dialog>
 
-                        <Dialog open={goalAchievedDialogOpen} onClose={handleCloseGoalAchievedDialog}>
+                        <Dialog
+                            open={goalAchievedDialogOpen}
+                            onClose={handleCloseGoalAchievedDialog}
+                        >
                             <DialogTitle>Congratulations!</DialogTitle>
                             <DialogContent>
                                 <Typography>
                                     You have achieved your donation goal of {donationGoal} grams!
                                 </Typography>
                                 <Typography>
-                                    Please set your next goal.
+                                    Your current total donations: {totalDonations} grams.
+                                </Typography>
+                                <Typography>
+                                    Would you like to set a new goal?
                                 </Typography>
                             </DialogContent>
                             <DialogActions>
                                 <Button onClick={handleCloseGoalAchievedDialog} color="primary">
                                     Close
+                                </Button>
+                                <Button onClick={handleOpenGoalModal} color="primary">
+                                    Set New Goal
                                 </Button>
                             </DialogActions>
                         </Dialog>
@@ -906,6 +952,31 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
+                <Dialog open={openSetInitialGoalModal} onClose={() => setOpenSetInitialGoalModal(false)}>
+                    <DialogTitle>Set Your Donation Goal</DialogTitle>
+                    <DialogContent>
+                        <Typography>You haven't set a donation goal yet. Would you like to set one now?</Typography>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="Donation Goal"
+                            type="number"
+                            fullWidth
+                            value={goalInput}
+                            onChange={handleGoalChange}
+                            error={!!goalError}
+                            helperText={goalError}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenSetInitialGoalModal(false)} color="primary">
+                            Not Now
+                        </Button>
+                        <Button onClick={handleSetInitialGoal} color="primary">
+                            Set Goal
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </div>
             <DonatorFooter />
         </div>

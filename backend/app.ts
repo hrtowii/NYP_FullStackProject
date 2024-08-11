@@ -652,8 +652,11 @@ app.patch('/donators/:donatorId/goal', async (req, res) => {
     const donatorId = parseInt(req.params.donatorId, 10);
     const { donationGoal } = req.body;
 
+    console.log(`Received request to update goal for donator ${donatorId} to ${donationGoal}`);
+
     try {
         if (isNaN(donatorId) || donationGoal < 0) {
+            console.log('Invalid data received');
             return res.status(400).json({ error: 'Invalid data' });
         }
 
@@ -662,8 +665,10 @@ app.patch('/donators/:donatorId/goal', async (req, res) => {
             data: { donationGoal },
         });
 
+        console.log('Updated donator:', donator);
         res.json(donator);
     } catch (error) {
+        console.error('Error updating donation goal:', error);
         res.status(500).json({ error: 'Failed to update donation goal' });
     }
 });
@@ -1807,8 +1812,6 @@ app.get('/reviews/:id', async (req, res) => {
         const userId = req.query.userId ? parseInt(req.query.userId.toString(), 10) : undefined;
         const userRole = req.query.userRole;
 
-        console.log(`Fetching reviews for donatorId: ${donatorId}, userId: ${userId}, userRole: ${userRole}`);
-
         const reviews = await prisma.review.findMany({
             where: {
                 donatorId: donatorId
@@ -1832,8 +1835,6 @@ app.get('/reviews/:id', async (req, res) => {
                 createdAt: 'desc'
             }
         });
-
-        console.log(`Found ${reviews.length} reviews`);
 
         const mappedReviews = reviews.map(review => {
             const reviewData = { ...review };
