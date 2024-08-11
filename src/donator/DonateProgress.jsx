@@ -337,39 +337,7 @@ export default function DonateItem() {
         }
     };
 
-    const handleSetGoal = async () => {
-        const donatorId = parseJwt(token).id
-        if (!donatorId) {
-            setError('No donator ID provided');
-            return;
-        }
-        const goal = parseInt(goalInput);
-        if (isNaN(goal) || goal <= 0) {
-            setGoalError('Please enter a valid goal greater than 0');
-            return;
-        }
-        try {
-            const response = await fetch(`${backendRoute}/donators/${donatorId}/goal`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ goal }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update donation goal');
-            }
-
-            const data = await response.json();
-            setDonationGoal(goal);
-            setOpenGoalModal(false);
-            setGoalError(null);
-        } catch (error) {
-            console.error('Error updating donation goal:', error);
-            setError('Failed to update donation goal. Please try again later.');
-        }
-    };
+   
 
     const handleCloseEnlargedImage = () => {
         setEnlargedImage(null);

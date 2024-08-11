@@ -81,6 +81,7 @@ export default function ListOfDonators() {
             default: return 'default';
         }
     };
+    
 
     function stringToColor(string) {
         let hash = 0;

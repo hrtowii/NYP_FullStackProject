@@ -150,6 +150,8 @@ export default function Profile() {
         fetchDonatorName();
     }, [fetchReviews, fetchDonatorName]);
 
+    
+
     const handleDeleteClick = useCallback((reviewId) => {
         console.log('Delete clicked for review:', reviewId);
         setReviewToDelete(reviewId);
@@ -399,12 +401,13 @@ export default function Profile() {
         const date = new Date(dateString);
         return format(date, 'dd/MM/yyyy HH:mm');
     };
+    
 
     console.log('Rendering Profile component', { reviews, deleteDialogOpen, reviewToDelete, editDialogOpen, reviewToEdit });
 
     return (
         <>
-            {currentUserRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
+            {userRole === 'donator' ? <DonatorNavbar /> : <UserNavbar />}
             <Container maxWidth="md">
                 <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
                     <Typography variant="h4" gutterBottom>
