@@ -70,7 +70,8 @@ export function UserNavbar() {
   return (
     <div className='navbar'>
       <div>
-        <span className="navbar-logo">🍃 FridgeShare</span>
+        
+        <NavLink to={"/userlanding"}><span className="navbar-logo">🍃 FridgeShare</span></NavLink>
         <NavLink to={"/user/reservation"}>Reservations</NavLink>
         <NavLink to={"/user/fridge"}>Fridge</NavLink>
         <NavLink to={"/user/events"}>Events</NavLink>
