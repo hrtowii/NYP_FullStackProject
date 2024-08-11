@@ -174,18 +174,18 @@ const Cart = () => {
       const data = await response.json();
       console.log('Reservation created:', data);
 
-      await Promise.all(cartItems.map(item => 
-        fetch(`${backendRoute}/donations/${item.id}/availability`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ availability: 'Reserved' }),
-        })
-      ));
+      // await Promise.all(cartItems.map(item => 
+      //   fetch(`${backendRoute}/donations/${item.id}/availability`, {
+      //     method: 'PATCH',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       'Authorization': `Bearer ${token}`,
+      //     },
+      //     body: JSON.stringify({ availability: 'Reserved' }),
+      //   })
+      // ));
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
 
       setShowAlert(true);
       clearForm();
