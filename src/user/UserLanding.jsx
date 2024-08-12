@@ -109,113 +109,113 @@ const UserLandingPage = () => {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
         <UserNavbar />
         <main>
-        <Paper
-                        sx={{
-                            position: 'relative',
-                            backgroundColor: 'grey.800',
-                            color: '#fff',
-                            mb: 4,
-                            backgroundSize: 'cover',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'center',
-                            backgroundImage: `url('/api/placeholder/1200/400')`,
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                position: 'absolute',
-                                top: 0,
-                                bottom: 0,
-                                right: 0,
-                                left: 0,
-                                backgroundColor: 'rgba(76, 175, 80, 0.3)',
-                            }}
-                        />
-                        <Grid container>
-                            <Grid item md={6}>
-                                <Box
-                                    sx={{
-                                        position: 'relative',
-                                        p: { xs: 3, md: 6 },
-                                        pr: { md: 0 },
-                                    }}
-                                >
-                                    <Typography component="h1" variant="h3" color="inherit" gutterBottom>
-                                        Sustain & Share
-                                    </Typography>
-                                    <Typography variant="h5" color="inherit" paragraph>
-                                        Join our eco-friendly community in reducing food waste and fostering sustainability. Share surplus food and help those in need.
-                                    </Typography>
-                                    <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />}>
-                                        Reserve your food now
-                                    </Button>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Paper>
+          <Paper
+            sx={{
+              position: 'relative',
+              backgroundColor: 'grey.800',
+              color: '#fff',
+              mb: 4,
+              backgroundSize: 'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundImage: `url('/api/placeholder/1200/400')`,
+            }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                right: 0,
+                left: 0,
+                backgroundColor: 'rgba(76, 175, 80, 0.3)',
+              }}
+            />
+            <Grid container>
+              <Grid item md={6}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    p: { xs: 3, md: 6 },
+                    pr: { md: 0 },
+                  }}
+                >
+                  <Typography component="h1" variant="h3" color="inherit" gutterBottom>
+                    Sustain & Share
+                  </Typography>
+                  <Typography variant="h5" color="inherit" paragraph>
+                    Join our eco-friendly community in reducing food waste and fostering sustainability. Share surplus food and help those in need.
+                  </Typography>
+                  <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />}>
+                    Reserve your food now
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
 
-                    {/* Features Section */}
-                    <Container sx={{ py: 8 }} maxWidth="md">
-                        <Grid container spacing={4}>
-                            <Grid item xs={12} sm={4}>
-                                <Feature
-                                    icon={<Apple size={48} color={theme.palette.primary.main} />}
-                                    title="Find Sustainable Food"
-                                    description="Discover nearby community fridges with fresh, locally-sourced food items."
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                                <Feature
-                                    icon={<ShoppingBag size={48} color={theme.palette.primary.main} />}
-                                    title="Donate Surplus"
-                                    description="Contribute excess food to reduce waste and support your community."
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={4}>
-                                <Feature
-                                    icon={<Recycle size={48} color={theme.palette.primary.main} />}
-                                    title="Reduce Food Waste"
-                                    description="Schedule pickups to ensure no food goes to waste in our community."
-                                />
-                            </Grid>
-                        </Grid>
-                    </Container>
+          {/* Features Section */}
+          <Container sx={{ py: 8 }} maxWidth="md">
+            <Grid container spacing={4}>
+              <Grid item xs={12} sm={4}>
+                <Feature
+                  icon={<Apple size={48} color={theme.palette.primary.main} />}
+                  title="Find Sustainable Food"
+                  description="Discover nearby community fridges with fresh, locally-sourced food items."
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Feature
+                  icon={<ShoppingBag size={48} color={theme.palette.primary.main} />}
+                  title="Donate Surplus"
+                  description="Contribute excess food to reduce waste and support your community."
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Feature
+                  icon={<Recycle size={48} color={theme.palette.primary.main} />}
+                  title="Reduce Food Waste"
+                  description="Schedule pickups to ensure no food goes to waste in our community."
+                />
+              </Grid>
+            </Grid>
+          </Container>
 
-                    {/* Process Section */}
-                    <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
-                        <Typography variant="h4" align="center" color="primary.dark" gutterBottom>
-                            Our Eco-Friendly Process
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-                            <Button
-                                variant={processType === 'user' ? 'contained' : 'outlined'}
-                                color="primary"
-                                onClick={() => setProcessType('user')}
-                                startIcon={<User />}
-                                sx={{ mr: 2 }}
-                            >
-                                User Process
-                            </Button>
-                            <Button
-                                variant={processType === 'donator' ? 'contained' : 'outlined'}
-                                color="primary"
-                                onClick={() => setProcessType('donator')}
-                                startIcon={<UserPlus />}
-                            >
-                                Donator Process
-                            </Button>
-                        </Box>
-                        <Card>
-                            <CardContent>
-                                <ProcessStepper steps={processType === 'user' ? userSteps : donatorSteps} />
-                            </CardContent>
-                        </Card>
-                    </Container>
-                </main>
+          {/* Process Section */}
+          <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
+            <Typography variant="h4" align="center" color="primary.dark" gutterBottom>
+              Our Eco-Friendly Process
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+              <Button
+                variant={processType === 'user' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => setProcessType('user')}
+                startIcon={<User />}
+                sx={{ mr: 2 }}
+              >
+                User Process
+              </Button>
+              <Button
+                variant={processType === 'donator' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => setProcessType('donator')}
+                startIcon={<UserPlus />}
+              >
+                Donator Process
+              </Button>
             </Box>
-            <UserFooter />
-        </ThemeProvider>
-    );
+            <Card>
+              <CardContent>
+                <ProcessStepper steps={processType === 'user' ? userSteps : donatorSteps} />
+              </CardContent>
+            </Card>
+          </Container>
+        </main>
+      </Box>
+      <UserFooter />
+    </ThemeProvider>
+  );
 };
 
 export default UserLandingPage;
