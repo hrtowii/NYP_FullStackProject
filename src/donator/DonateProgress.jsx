@@ -207,8 +207,10 @@ export default function DonateItem() {
                 if (donation.reservations && donation.reservations.length > 0) {
                     if (donation.reservations[0].collectionStatus === 'Collected') {
                         collected.push(donation);
-                    } else {
+                    } else if (donation.reservations[0].collectionStatus === 'Uncollected') {
                         reserved.push(donation);
+                    } else if (donation.reservations[0].collectionStatus === 'Cancelled') {
+                        unreserved.push(donation);
                     }
                 } else {
                     unreserved.push(donation);
@@ -723,7 +725,7 @@ export default function DonateItem() {
                                 />
                             </>
                         ) : (
-                            <Box textAlign="center" mt={2} mb={4} p={4} sx={{bgcolor:'#EEEEEE', borderRadius:4}}>
+                            <Box textAlign="center" mt={2} mb={4} p={4} sx={{ bgcolor: '#EEEEEE', borderRadius: 4 }}>
                                 <Typography variant="h6" gutterBottom>
                                     You don't have any donations yet.
                                 </Typography>

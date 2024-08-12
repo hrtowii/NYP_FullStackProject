@@ -235,6 +235,9 @@ export default function DonateItem() {
                                     <MenuItem value="meat">Meat</MenuItem>
                                     <MenuItem value="vegetable">Vegetable</MenuItem>
                                     <MenuItem value="dairy">Dairy</MenuItem>
+                                    <MenuItem value="fruit">Fruit</MenuItem>
+                                    <MenuItem value="bread">Bread</MenuItem>
+                                    <MenuItem value="others">Others</MenuItem>
                                 </Select>
                                 <FormHelperText>{errors.type}</FormHelperText>
                             </FormControl>

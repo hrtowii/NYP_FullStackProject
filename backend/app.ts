@@ -373,32 +373,72 @@ app.post('/chat', async (req, res) => {
 
 // Create test accounts, including admin. NEVER ADD THIS IN REAL LIFE
 app.post('/createAccounts', async (req, res) => {
-    const user: User = {
-        name: "Admin",
-        email: "admin@gmail.com",
-        password: "123",
-        role: "admin"
-    }
+    // const user: User = {
+    //     name: "Admin",
+    //     email: "admin@gmail.com",
+    //     password: "123",
+    //     role: "admin"
+    // }
+    // await prisma.person.create({
+    //     data: {
+    //         name: user.name,
+    //         hashedPassword: await bcrypt.hash(user.password, 12),
+    //         email: user.email,
+    //         [user.role]: {
+    //             create: {}
+    //         },
+    //     },
+    //     include: {
+    //         user: true,
+    //         donator: true,
+    //         admin: true
+    //     }
+    // })
+    // await prisma.person.create({
+    //     data: {
+    //         name: "DonatorA",
+    //         hashedPassword: await bcrypt.hash("123", 12),
+    //         email: "DonatorA@gmail.com",
+    //         ["donator"]: {
+    //             create: {}
+    //         }
+    //     }
+    // })
+    // await prisma.person.create({
+    //     data: {
+    //         name: "UserA",
+    //         hashedPassword: await bcrypt.hash("123", 12),
+    //         email: "UserA@gmail.com",
+    //         ["user"]: {
+    //             create: {}
+    //         }
+    //     }
+    // })
+    // await prisma.person.create({
+    //     data: {
+    //         name: "DonatorB",
+    //         hashedPassword: await bcrypt.hash("123", 12),
+    //         email: "DonatorB@gmail.com",
+    //         ["donator"]: {
+    //             create: {}
+    //         }
+    //     }
+    // })
+    // await prisma.person.create({
+    //     data: {
+    //         name: "UserB",
+    //         hashedPassword: await bcrypt.hash("123", 12),
+    //         email: "UserB@gmail.com",
+    //         ["user"]: {
+    //             create: {}
+    //         }
+    //     }
+    // })
     await prisma.person.create({
         data: {
-            name: user.name,
-            hashedPassword: await bcrypt.hash(user.password, 12),
-            email: user.email,
-            [user.role]: {
-                create: {}
-            },
-        },
-        include: {
-            user: true,
-            donator: true,
-            admin: true
-        }
-    })
-    await prisma.person.create({
-        data: {
-            name: "DonatorA",
+            name: "iruss",
             hashedPassword: await bcrypt.hash("123", 12),
-            email: "DonatorA@gmail.com",
+            email: "230446k@gmail.com",
             ["donator"]: {
                 create: {}
             }
@@ -406,9 +446,9 @@ app.post('/createAccounts', async (req, res) => {
     })
     await prisma.person.create({
         data: {
-            name: "UserA",
+            name: "ron",
             hashedPassword: await bcrypt.hash("123", 12),
-            email: "UserA@gmail.com",
+            email: "lucasleong1000@gmail.com",
             ["user"]: {
                 create: {}
             }
@@ -416,9 +456,19 @@ app.post('/createAccounts', async (req, res) => {
     })
     await prisma.person.create({
         data: {
-            name: "DonatorB",
+            name: "emma",
             hashedPassword: await bcrypt.hash("123", 12),
-            email: "DonatorB@gmail.com",
+            email: "emma@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "olivia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "olivia@example.com",
             ["donator"]: {
                 create: {}
             }
@@ -426,94 +476,44 @@ app.post('/createAccounts', async (req, res) => {
     })
     await prisma.person.create({
         data: {
-            name: "UserB",
+            name: "noah",
             hashedPassword: await bcrypt.hash("123", 12),
-            email: "UserB@gmail.com",
+            email: "noah@example.com",
             ["user"]: {
                 create: {}
             }
         }
     })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "iruss",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "230446k@gmail.com",
-    //         ["donator"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "ron",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "lucasleong1000@gmail.com",
-    //         ["user"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "emma",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "emma@example.com",
-    //         ["user"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "olivia",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "olivia@example.com",
-    //         ["donator"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "noah",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "noah@example.com",
-    //         ["user"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "liam",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "liam@example.com",
-    //         ["donator"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "ava",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "ava@example.com",
-    //         ["user"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
-    // await prisma.person.create({
-    //     data: {
-    //         name: "sophia",
-    //         hashedPassword: await bcrypt.hash("123", 12),
-    //         email: "sophia@example.com",
-    //         ["donator"]: {
-    //             create: {}
-    //         }
-    //     }
-    // })
+    await prisma.person.create({
+        data: {
+            name: "liam",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "liam@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "ava",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "ava@example.com",
+            ["user"]: {
+                create: {}
+            }
+        }
+    })
+    await prisma.person.create({
+        data: {
+            name: "sophia",
+            hashedPassword: await bcrypt.hash("123", 12),
+            email: "sophia@example.com",
+            ["donator"]: {
+                create: {}
+            }
+        }
+    })
     return res.status(200).json({ success: true });
 })
 
@@ -1938,7 +1938,12 @@ app.get('/reviews/:id', async (req, res) => {
                 },
                 reply: true,
                 images: true,
-                likes: true
+                likes: true,
+                reviewedItem: {
+                    include: {
+                        food: true
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'desc'
@@ -1965,6 +1970,7 @@ app.get('/reviews/:id', async (req, res) => {
             reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
             reviewData.reviewedByUser = reviewedItems.some(item => item.reviewId === review.id);
             delete reviewData.likes;
+            reviewData.foodName = review.reviewedItem?.food?.name || 'Unknown Item';
             return reviewData;
         });
 

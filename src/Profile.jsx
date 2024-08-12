@@ -160,6 +160,7 @@ export default function Profile() {
                     [reviewId]: liked
                 }));
                 setSnackbar({ open: true, message: message, severity: 'success' });
+                await fetchReviews();
             } else {
                 const errorData = await response.json();
                 console.error('Server error:', errorData);
@@ -257,9 +258,9 @@ export default function Profile() {
                     },
                     body: JSON.stringify({ userId: userId })
                 });
-    
+
                 console.log('Delete response received:', response.status);
-    
+
                 if (response.ok) {
                     const result = await response.json();
                     console.log('Review deleted successfully:', result);
@@ -280,7 +281,7 @@ export default function Profile() {
             }
         }
     }, [reviewToDelete, fetchReviews, userId, backendRoute]);
-    
+
     const handleDeleteCancel = useCallback(() => {
         console.log('Delete cancelled');
         setDeleteDialogOpen(false);
@@ -530,13 +531,27 @@ export default function Profile() {
                                     <ListItemText
                                         primary={
                                             <Box>
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
-                                                    <Typography variant="caption">
-                                                        Submitted on {formatDate(review.createdAt)}
-                                                    </Typography>
+                                                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+                                                    <Box>
+                                                        <Typography variant="subtitle1">{getDisplayName(review)}</Typography>
+                                                        <Rating name="read-only" value={review.rating} readOnly size="small" sx={{ mt: 0.5 }} />
+                                                    </Box>
+                                                    <Box>
+                                                        <Typography variant="caption" display="block">
+                                                            Submitted on {formatDate(review.createdAt)}
+                                                        </Typography>
+                                                        <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                                color: 'text.secondary',
+                                                                fontSize: '0.75rem',
+                                                                textAlign: 'right'
+                                                            }}
+                                                        >
+                                                            Item Received: {review.foodName || 'Unknown Item'}
+                                                        </Typography>
+                                                    </Box>
                                                 </Box>
-                                                <Rating name="read-only" value={review.rating} readOnly size="small" />
                                             </Box>
                                         }
                                         secondary={
@@ -628,7 +643,7 @@ export default function Profile() {
                         ))}
                     </List>
                 </StyledPaper>
-    
+
                 <Dialog
                     open={deleteDialogOpen}
                     onClose={() => setDeleteDialogOpen(false)}
@@ -648,7 +663,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={editDialogOpen}
                     onClose={() => setEditDialogOpen(false)}
@@ -682,7 +697,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={replyDialogOpen}
                     onClose={() => setReplyDialogOpen(false)}
@@ -710,7 +725,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={editReplyDialogOpen}
                     onClose={() => setEditReplyDialogOpen(false)}
@@ -738,7 +753,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={Boolean(enlargedImage)}
                     onClose={handleCloseEnlargedImage}
@@ -759,7 +774,7 @@ export default function Profile() {
                         <Button onClick={handleCloseEnlargedImage}>Close</Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Dialog
                     open={deleteReplyDialogOpen}
                     onClose={() => setDeleteReplyDialogOpen(false)}
@@ -779,7 +794,7 @@ export default function Profile() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-    
+
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={6000}

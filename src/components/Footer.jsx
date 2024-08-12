@@ -106,10 +106,10 @@ export function UserFooter() {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Quick Links
                         </Typography>
-                        <Link href="/user/reservation" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Reservations</Link>
-                        <Link href="/user/fridge" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Fridge</Link>
-                        <Link href="/listofdonators" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Donators</Link>
-                        <Link href="/About" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>About Us</Link>
+                        <Link href="/user/reservation" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#fff' } }}>Reservations</Link>
+                        <Link href="/user/fridge" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#fff' } }}>Fridge</Link>
+                        <Link href="/listofdonators" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#fff' } }}>Donators</Link>
+                        <Link href="/About" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#fff' } }}>About Us</Link>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Typography variant="h6" gutterBottom fontWeight="bold">
@@ -178,10 +178,10 @@ export function DonatorFooter() {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Quick Links
                         </Typography>
-                        <Link href="/donator" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donator Dashboard</Link>
-                        <Link href="/donator/ManageDonations" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Manage Donations</Link>
-                        <Link href="/donator/DonateItem" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donate Item</Link>
-                        <Link href="/donator/events" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Events</Link>
+                        <Link href="/donator" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donator Dashboard</Link>
+                        <Link href="/donator/ManageDonations" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Manage Donations</Link>
+                        <Link href="/donator/DonateItem" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donate Item</Link>
+                        <Link href="/donator/events" color="#fff" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Events</Link>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Typography variant="h6" gutterBottom fontWeight="bold">

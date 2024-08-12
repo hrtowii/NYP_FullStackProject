@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import "./Navbar.css"
 import "../index.css"
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { TokenContext } from '../utils/TokenContext.jsx'
 import AvatarMenu from './AvatarMenu.jsx'
 import parseJwt from '../utils/parseJwt.jsx'
@@ -18,6 +18,7 @@ export default function Navbar() {
       <div>
         <span className="navbar-logo">🍃 CommuniFridge</span>
         <NavLink to={"/"}>Home</NavLink>
+        
         <NavLink to={"/about"}>About Us</NavLink>
         {/* <NavLink to={"/sustainabilitymetrics"}>Sustainability</NavLink> */}
         {!isLoggedIn ? (
@@ -47,14 +48,16 @@ export function DonatorNavbar() {
   const currentUserName = isLoggedIn ? parseJwt(token).name : null;
   const currentUserRole = isLoggedIn ? parseJwt(token).role : null;
   const currentUserId = isLoggedIn ? parseJwt(token).id : null;
+  const location = useLocation();
+
   return (
     <div className='navbar'>
       <div>
         <span className="navbar-logo">🍃 CommuniFridge</span>
-        <NavLink to={"/donator"}>Dashboard</NavLink>
-        <NavLink to={"/donator/events"}>Manage Events</NavLink>
-        <NavLink to={"/listofdonators"}>Donators</NavLink>
-        <NavLink to={"/contactus"}>Contact Us</NavLink>
+        <NavLink to="/donator" end>Dashboard</NavLink>
+        <NavLink to="/donator/events" isActive={() => location.pathname.startsWith('/donator/events')}>Manage Events</NavLink>
+        <NavLink to="/listofdonators">Donators</NavLink>
+        <NavLink to="/contactus">Contact Us</NavLink>
       </div>
       <div className="avatarmenu">
         <AvatarMenu currentUserRole={currentUserRole} currentUserId={currentUserId} currentUserName={currentUserName} updateToken={updateToken} />
@@ -79,6 +82,7 @@ export function UserNavbar() {
         <NavLink to={"/user/events"}>Events</NavLink>
         <NavLink to={"/listofdonators"}>Donators</NavLink>
         <NavLink to={"/contactus"}>Contact Us</NavLink>
+        <NavLink to={"/about"}>About Us</NavLink>
       </div>
       <div className="navbar-right">
         <div className="user-actions">

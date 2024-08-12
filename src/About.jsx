@@ -76,34 +76,34 @@ function ourBox(props) {
 
 const teamMembers = [
   {
-    name: 'Ronald Stride',
-    role: 'Handsome #1',
+    name: 'Lucas Leong',
+    role: 'Account Security Manager',
     image: 'public/lucasimagefsdp.jpg',
-    bio: 'Ronald Stride is the Chairman of the Board...',
+    bio: 'Contributions: \n- Sign up, Login, Reset Password, Authentication, Navbar',
   },
   {
-    name: 'Mahesh Buxani',
-    role: 'Handsome #2',
+    name: 'Andric Lim',
+    role: 'Donations Operations Manager',
     image: 'public/andricimagefsdp.jpg',
-    bio: 'Chairman of Indian Chamber of Commerce, Hong Kong and has been a board member there since 1991. He has been recently appointed on the School of Design and Environment Advancement Advisory Council (SAAC). Deeply compassionate and inspired by spiritual teachings throughout his life, Mahesh follows a disciplinary life of strict vegetarianism and daily meditation. Despite his vast accomplishments in the corporate world, Mahesh does not lose sight of the value that lies within happiness and peace, and supports efforts to help others achieve the best version of themselves.',
+    bio: "Contributions: \n- Dashboard page, Donate new item, Manage Donations, Manage Donations\n- Calculation for Donator's Rank and Personal Goal",
   },
   {
-    name: 'Knut Unger',
-    role: 'Handsome #3',
+    name: 'Johnavon Tan',
+    role: 'Leaderboard & Feedback Coordinator',
     image: 'public/parisimagefsdp.jpg',
-    bio: 'Knut Unger serves as the Secretary...',
+    bio: 'Contributions: \n- Donators Page, Reviews, Donator Replies, Leaderboard Ranking\n- Contact Us Page, User Landing Page, Footer',
   },
   {
-    name: 'Ronald Stride',
-    role: 'Handsome #4',
+    name: 'Iruss Eng',
+    role: 'Donation Logistics Coordinator',
     image: 'public/irussimagefsdp.jpg',
-    bio: 'Ronald Stride is the Chairman of the Board...',
+    bio: 'Contributions: \n- Reservations, Fridge page, Add to cart',
   },
   {
-    name: 'Mahesh Buxani',
-    role: 'Handsome #5',
+    name: 'Ron Joshua',
+    role: 'Events Coordinator',
     image: 'public/ronimagefsdp.jpg',
-    bio: 'Chairman of Indian Chamber of Commerce, Hong Kong and has been a board member there since 1991. He has been recently appointed on the School of Design and Environment Advancement Advisory Council (SAAC). Deeply compassionate and inspired by spiritual teachings throughout his life, Mahesh follows a disciplinary life of strict vegetarianism and daily meditation. Despite his vast accomplishments in the corporate world, Mahesh does not lose sight of the value that lies within happiness and peace, and supports efforts to help others achieve the best version of themselves.',
+    bio: 'Contributions: \n- Events Page, Sign up feature for Users/Donators',
   },
 
 ];
@@ -114,12 +114,41 @@ export default function About() {
   const [currentSection, setCurrentSection] = useState('main');
   const [selectedMember, setSelectedMember] = useState(null);
 
-  let currentUserRole;
-  if (token == null) {
-    currentUserRole = "user";
-  } else {
-    currentUserRole = parseJwt(token).role;
+  let currentUserRole = null;
+  if (token) {
+    try {
+      currentUserRole = parseJwt(token).role;
+    } catch (error) {
+      console.error('Error parsing token:', error);
+      // If there's an error parsing the token, we'll leave currentUserRole as null
+    }
   }
+
+  const renderNavbar = () => {
+    switch(currentUserRole) {
+      case 'donator':
+        return <DonatorNavbar />;
+      case 'user':
+        return <UserNavbar />;
+      default:
+        return <Navbar />;
+    }
+  };
+  const BioText = ({ text }) => {
+    return (
+      <Typography
+        variant="body1"
+        component="div"  // Changed to div to safely render line breaks
+      >
+        {text.split('\n').map((line, index) => (
+          <React.Fragment key={index}>
+            {line}
+            {index < text.split('\n').length - 1 && <br />}
+          </React.Fragment>
+        ))}
+      </Typography>
+    );
+  };
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setValue(31238), 100);
@@ -213,7 +242,7 @@ export default function About() {
   const renderTeamSection = () => (
     <div className="team-section">
       <Typography variant="h3" gutterBottom>
-        Our Team
+        Our Team & Contributions
       </Typography>
       <Grid container spacing={3} justifyContent="center">
         {teamMembers.map((member, index) => (
@@ -411,15 +440,7 @@ export default function About() {
   };
   return (
     <ThemeProvider theme={theme}>
-      {/* {currentUserRole === 'donator' ? (
-        <DonatorNavbar />
-      ) : currentUserRole === 'user' ? (
-        <UserNavbar />
-      ) : (
-        <Navbar />
-      )} */}
-      <Navbar />
-
+      {renderNavbar()}
       <div className="content">
         {currentSection === 'main' && renderMainSection()}
         {currentSection === 'team' && renderTeamSection()}
@@ -457,7 +478,7 @@ export default function About() {
                     {selectedMember.role}
                   </Typography>
                   <Typography variant="body1">
-                    {selectedMember.bio}
+                    <BioText text={selectedMember.bio} />
                   </Typography>
                 </Grid>
               </Grid>
