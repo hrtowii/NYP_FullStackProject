@@ -336,7 +336,7 @@ const AddEventForm = () => {
                   )}
 
 
-                  <div>
+                  <div className='add-event-button'>
                     <Button variant="contained" type="submit" disabled={isLoading} className="add-event-button" color="success">
                       {isLoading ? 'Adding event...' : 'Add event'}
                     </Button>

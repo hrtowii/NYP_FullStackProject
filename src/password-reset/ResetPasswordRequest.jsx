@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Box } from '@mui/material';
 import { backendRoute } from '../utils/BackendUrl';
-
+import Navbar from '../components/Navbar'
 const ResetPasswordRequest = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -24,10 +24,10 @@ const ResetPasswordRequest = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 400, margin: 'auto', mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Reset Password
-      </Typography>
+    <>
+    <Navbar/>
+    <Box sx={{ maxWidth: 800, margin: 'auto', mt: 4 }}>
+      <h2 style={{ color: "#4D4D4D" }}>Reset Password</h2>
       <form onSubmit={handleSubmit}>
         <TextField
           fullWidth
@@ -55,6 +55,7 @@ const ResetPasswordRequest = () => {
         </Typography>
       )}
     </Box>
+    </>
   );
 };
 

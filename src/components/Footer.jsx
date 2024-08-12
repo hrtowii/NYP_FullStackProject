@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Link, Grid, Snackbar, Container } from '@mui/material';
-
+import { Box, Typography, TextField, Button, Link, Grid, Snackbar, Container, ThemeProvider} from '@mui/material';
+import {theme} from '../user/UserLanding.jsx'
 export function UserFooter() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
@@ -15,6 +15,7 @@ export function UserFooter() {
     };
 
     return (
+        <ThemeProvider theme={theme}>
         <Box 
             component="footer" 
             sx={{ 
@@ -145,6 +146,7 @@ export function UserFooter() {
                 message={snackbar.message}
             />
         </Box>
+        </ThemeProvider>
     );
 }
 

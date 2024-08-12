@@ -41,7 +41,7 @@
 .donator-events-add-page .left-half label,
 .donator-events-add-page #datelabel,
 .donator-events-add-page .maxSlots label,
-.donator-events-add-page .attire label{
+.donator-events-add-page .attire label {
   position: absolute;
   top: -12px;
   background: none;
@@ -69,9 +69,9 @@
 }
 
 .donator-events-add-page .form-container .datepickercss input,
-.donator-events-add-page .form-container .datepickercss textarea{
-  border: none ;
-  box-shadow: none ;
+.donator-events-add-page .form-container .datepickercss textarea {
+  border: none;
+  box-shadow: none;
 }
 
 
@@ -175,7 +175,7 @@
 }
 
 .donator-events-add-page .stepper-item.completed .step-counter {
-  background-color: #4bb543;
+  background-color: #2ecc71;
 }
 
 .donator-events-add-page .stepper-item.completed::after {
@@ -203,6 +203,7 @@
   align-items: center;
   text-align: center;
   margin-top: 20px;
+  padding-bottom: 15%;
 }
 
 .donator-events-add-page .form-response h3 {
@@ -247,7 +248,7 @@
 }
 
 .donator-events-add-page .form-response-buttons .back-button {
-  background-color: #007bff;
+  background-color: #2ecc71;
   color: white;
 }
 
@@ -278,11 +279,20 @@
   font-size: 50px;
   font-weight: bold;
   margin: 0;
-  color: #4bb543;
+  color: #2ecc71;
 
 }
 
 .donator-events-add-page .checkcircleicon {
-  color: #4bb543;
+  color: #2ecc71;
   font-size: 100px;
+}
+
+.add-event-button .MuiButton-contained {
+  background-color: #2ecc71 !important;
+}
+
+.update-event-button .MuiButton-contained {
+  background-color: #2ecc71 !important;
+
 }

@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { Leaf, Recycle, Apple, ShoppingBag, User, UserPlus } from 'lucide-react';
 
-const theme = createTheme({
+export const theme = createTheme({
   palette: {
     primary: {
       main: '#4caf50',
