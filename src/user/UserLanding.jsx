@@ -212,8 +212,9 @@ const UserLandingPage = () => {
             </Card>
           </Container>
         </main>
+        <UserFooter />
       </Box>
-      <UserFooter />
+      
     </ThemeProvider>
   );
 };
