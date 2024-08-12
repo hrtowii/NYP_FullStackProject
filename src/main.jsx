@@ -35,12 +35,17 @@ import {
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
 import AdminLanding from './admin/AdminLanding.tsx'
+import SustainabilityMetrics from './SustainabilityMetrics.jsx'
 
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Landing />,
+  },
+  {
+    path: "/SustainabilityMetrics",
+    element: <SustainabilityMetrics />,
   },
   {
     path: "/signup",
