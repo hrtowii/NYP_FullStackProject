@@ -52,6 +52,7 @@ export default function DonateItem() {
     const [shouldNavigate, setShouldNavigate] = useState(false);
     const navigate = useNavigate();
     const [selectedImages, setSelectedImages] = useState([]);
+    const today = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         let timer;
@@ -265,6 +266,7 @@ export default function DonateItem() {
                                 margin="normal"
                                 required
                                 InputLabelProps={{ shrink: true }}
+                                inputProps={{ min: today }}
                                 error={!!errors.expiryDate}
                                 helperText={errors.expiryDate}
                             />
@@ -278,6 +280,7 @@ export default function DonateItem() {
                                 margin="normal"
                                 required
                                 InputLabelProps={{ shrink: true }}
+                                inputProps={{ min: today }}
                                 error={!!errors.deliveryDate}
                                 helperText={errors.deliveryDate}
                             />
