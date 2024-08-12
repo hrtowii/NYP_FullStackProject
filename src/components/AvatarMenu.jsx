@@ -1,22 +1,28 @@
-import React, {useContext} from 'react';
+import React, { useContext } from 'react';
 import { Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip } from '@mui/material';
 import { PersonAdd, Settings, Logout } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import {backendRoute} from '../utils/BackendUrl.jsx'
+import { backendRoute } from '../utils/BackendUrl.jsx'
+
 function stringToColor(string) {
   let hash = 0;
   for (let i = 0; i < string.length; i++) {
-      hash = string.charCodeAt(i) + ((hash << 5) - hash);
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
   }
   let color = '#';
   for (let i = 0; i < 3; i++) {
-      const value = (hash >> (i * 8)) & 0xFF;
-      color += ('00' + value.toString(16)).substr(-2);
+    const value = (hash >> (i * 8)) & 0xFF;
+    color += ('00' + value.toString(16)).substr(-2);
   }
   return color;
 }
 
 export default function AvatarMenu({ currentUserName, currentUserRole, currentUserId, updateToken }) {
+  // Check if any of the required props are empty or undefined
+  if (!currentUserName || !currentUserRole || !currentUserId || !updateToken) {
+    return <div></div>; // Render an empty div if any prop is empty
+  }
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
@@ -33,7 +39,6 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
     try {
       const response = await fetch(`${backendRoute}/logout`, {
         method: 'POST',
-        // credentials: 'include', // This is important for including cookies in the request
       });
       if (response.ok) {
         updateToken(null);
@@ -58,7 +63,9 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
         >
-          <Avatar sx={{ width: 32, height: 32, bgcolor: stringToColor(currentUserName)}}>{currentUserName?.charAt(0).toUpperCase()}</Avatar>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: stringToColor(currentUserName) }}>
+            {currentUserName.charAt(0).toUpperCase()}
+          </Avatar>
         </IconButton>
       </Tooltip>
       <Menu
@@ -96,25 +103,11 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        {currentUserRole == "donator" &&
-        <MenuItem onClick={() => navigate(`/profile/${currentUserId}`)}>
-          <Avatar /> Profile
-        </MenuItem>}
-        {/* <MenuItem onClick={() => navigate('/account')}>
-          <Avatar /> My account
-        </MenuItem> */}
-        {/* <MenuItem onClick={() => navigate('/add-account')}>
-          <ListItemIcon>
-            <PersonAdd fontSize="small" />
-          </ListItemIcon>
-          Add another account
-        </MenuItem> */}
-        {/* <MenuItem onClick={() => navigate('/settings')}>
-          <ListItemIcon>
-            <Settings fontSize="small" />
-          </ListItemIcon>
-          Settings
-        </MenuItem> */}
+        {currentUserRole === "donator" && (
+          <MenuItem onClick={() => navigate(`/profile/${currentUserId}`)}>
+            <Avatar /> Profile
+          </MenuItem>
+        )}
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <Logout fontSize="small" />
@@ -124,4 +117,4 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
       </Menu>
     </>
   );
-};
+}
