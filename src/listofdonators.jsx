@@ -579,7 +579,7 @@ export default function ListOfDonators() {
                                                         />
                                                     </TableCell>
                                                     <TableCell align="right">
-                                                        {currentUserRole != "donator" &&
+                                                        {/* {currentUserRole != "donator" &&
                                                             <Button
                                                                 variant="contained"
                                                                 color="primary"
@@ -588,12 +588,19 @@ export default function ListOfDonators() {
                                                                 onClick={() => handleOpenModal(profile)}
                                                             >
                                                                 Add Review
-                                                            </Button>}
+                                                            </Button>} */}
                                                         <Button
                                                             variant="outlined"
                                                             color="primary"
                                                             size="small"
                                                             onClick={() => handleViewReviews(profile.id)}
+                                                            sx={{
+                                                                bgcolor: '#4cbb17',
+                                                                color: '#fff',
+                                                                '&:hover': {
+                                                                    bgcolor: '#228b22',
+                                                                },
+                                                            }}
                                                         >
                                                             View Reviews
                                                         </Button>
