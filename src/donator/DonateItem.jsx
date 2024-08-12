@@ -4,7 +4,7 @@ import '../index.css';
 import './DonatorLanding.css';
 import "./DonateItem.css";
 import { DonatorNavbar } from '../components/Navbar';
-import {DonatorFooter} from '../components/Footer';
+import { DonatorFooter } from '../components/Footer';
 import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
@@ -325,25 +325,28 @@ export default function DonateItem() {
                         </div>
                     </div>
                 );
-                case 1:
+            case 1:
                 return (
-                    <Paper elevation={3} sx={{ padding: 3, marginTop: 2 }}>
+                    <Paper elevation={3} sx={{ padding: 3, marginTop: 2, marginRight: 10, marginLeft: 10 }}>
                         <Typography variant="h5" gutterBottom fontWeight="bold">Donation Summary</Typography>
-                        <Grid container spacing={2} alignItems="flex-start">
+                        <Grid container spacing={2} alignItems="flex-start" >
                             {formData.image && (
                                 <Grid item xs={12} md={4}>
                                     <Typography variant="h6" gutterBottom fontWeight="bold">Uploaded Image</Typography>
                                     <img
                                         src={URL.createObjectURL(formData.image)}
                                         alt="Uploaded food"
-                                        style={{ 
-                                            width: '100%', 
-                                            height: 'auto', 
-                                            maxHeight: '300px', 
+                                        style={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            maxHeight: '300px',
                                             maxWidth: '400px',
-                                            objectFit: 'contain', 
+                                            objectFit: 'contain',
+                                            border: '2px solid #3498db', // Change the color here
+                                            borderRadius: '10px' // Adjust the rounding here
                                         }}
                                     />
+
                                 </Grid>
                             )}
                             <Grid item xs={12} md={formData.image ? 4 : 6}>
@@ -383,7 +386,7 @@ export default function DonateItem() {
     return (
         <div className="container">
             <DonatorNavbar />
-            <div className='contents' style={{backgroundColor: '#f0f8f1' }}>
+            <div className='contents' style={{ backgroundColor: '#f0f8f1' }}>
                 <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
                     <Box
                         display="flex"
@@ -499,7 +502,7 @@ export default function DonateItem() {
                     </div>
                 )}
             </div>
-            <DonatorFooter/>
+            <DonatorFooter />
         </div>
     );
 }

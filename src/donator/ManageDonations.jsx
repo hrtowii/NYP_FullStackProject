@@ -362,7 +362,7 @@ export default function ManageDonations() {
 
 
         <Container maxWidth={false} style={{ width: '90%', marginTop: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Paper elevation={3} style={{ padding: '20px', marginTop: '5px', marginBottom: "50px", minHeight:"400px",  flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Paper elevation={3} style={{ padding: '20px', marginTop: '5px', marginBottom: "50px", minHeight: "400px", flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
@@ -403,9 +403,25 @@ export default function ManageDonations() {
                   Make a New Donation
                 </Button>
               </Box>
+            ) : sortedDonations.length === 0 ? (
+              <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" flex={1}>
+                <Typography align="center" variant="h6" gutterBottom>
+                  No donations match your search.
+                </Typography>
+                <Button
+                  onClick={() => setSearchQuery('')}
+                  variant="contained"
+                  color="primary"
+                  startIcon={<CancelIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  Clear Search
+                </Button>
+              </Box>
             ) : (
               <TableContainer style={{ flex: 1 }}>
-                <Table aria-label="donations table" >
+                <Table aria-label="donations table">
+
                   <TableHead>
                     <TableRow style={{ backgroundColor: '#f0f8f1' }}>
                       <TableCell>Image</TableCell>
