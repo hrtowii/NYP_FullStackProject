@@ -1,3 +1,4 @@
+// UserEvents.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import '../index.css';
 import '../donator/DonatorEvents.css';
@@ -119,24 +120,48 @@ export default function DonatorEvents() {
             setSignUpMessage(error.message);
             setSignUpSnackbarOpen(true);
         }
+        
+    };
+    const [sortBy, setSortBy] = useState('upcoming');
+
+    const sortEvents = (events, sortBy) => {
+        const sortedEvents = [...events];
+        if (sortBy === 'duration') {
+            sortedEvents.sort((a, b) => {
+                const durationA = (new Date(a.endDate) - new Date(a.startDate)) / (1000 * 60 * 60 * 24);
+                const durationB = (new Date(b.endDate) - new Date(b.startDate)) / (1000 * 60 * 60 * 24);
+                return durationB - durationA;
+            });
+        } else if (sortBy === 'upcoming') {
+            sortedEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        }
+        return sortedEvents;
     };
 
     return (
         <>
             <UserNavbar />
-            <div className="image-container">
-                <img className="full-width-image roundedimg" src="/Eventsphoto.png" alt="Events photos" />
-                <div className="overlay">
-                    <p className="overlay-text title">Events</p>
-                    <p className="overlay-text description">Building a strong community, and teaching each other to help each other in need. Events help us become a tight-knit community, and a safe place to ask for help.</p>
-                </div>
+            <div className="events-header">
+                <h1>Events</h1>
+                <p>Building a strong community, and teaching each other to help each other in need. Events help us become a tight-knit community, and a safe place to ask for help.</p>
             </div>
             <div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
+            <div className="sort-container">
+                <label htmlFor="sort-select">Sort by: </label>
+                <select
+                    id="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="duration">Duration</option>
+                </select>
+            </div>
             <hr />
             <div className="events-container">
-                {events.map((event) => (
+            {sortEvents(events, sortBy).map((event) => (
                     <Card key={event.id} className="event-card">
                         <div className='displayEventImage'>
                             {event.images && event.images.length > 0 && (

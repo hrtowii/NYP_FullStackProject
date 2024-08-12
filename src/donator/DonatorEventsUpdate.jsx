@@ -336,7 +336,7 @@ const UpdateEventForm = () => {
                     </Box>
                   )}
 
-                  <div>
+                  <div className='update-event-button'>
                     <Button variant="contained" type="submit" disabled={isLoading} className="update-event-button" color="primary">
                       {isLoading ? 'Updating event...' : 'Update event'}
                     </Button>

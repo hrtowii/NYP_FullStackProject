@@ -240,4 +240,4 @@ Ref: Event.donatorId > Donator.id
 
 Ref: EventImage.eventId > Event.id [delete: Cascade]
 
-Ref: Participant.eventId > Event.id
+Ref: Participant.eventId > Event.id [delete: Cascade]

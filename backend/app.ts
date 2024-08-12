@@ -1621,13 +1621,58 @@ app.post('/events/:eventId/signup', async (req, res) => {
                 images: true
             }
         });
-        console.log(updatedEvent);
-        res.status(200).json(updatedEvent);
+
+        res.status(200).json({
+            message: 'You have successfully signed up for this event!',
+            event: updatedEvent
+        });
     } catch (error) {
         console.error('Error signing up for event:', error);
         res.status(500).json({ error: 'Failed to sign up for event' });
     }
+});
 
+app.post('/events/:eventId/cancel-signup', async (req, res) => {
+    const { eventId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { participants: true }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const participantIndex = event.participants.findIndex(
+            participant => participant.userId === Number(userId)
+        );
+
+        if (participantIndex === -1) {
+            return res.status(400).json({ error: 'You are not signed up for this event' });
+        }
+
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                takenSlots: { decrement: 1 },
+                participants: {
+                    delete: { id: event.participants[participantIndex].id }
+                }
+            },
+            include: {
+                participants: true,
+                images: true
+            }
+        });
+
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error canceling sign-up for event:', error);
+        res.status(500).json({ error: 'Failed to cancel sign-up for event' });
+    }
 });
 
 

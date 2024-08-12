@@ -1,8 +1,9 @@
+// DonatorEvents.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import '../index.css';
 import './DonatorEvents.css';
 import { DonatorNavbar } from '../components/Navbar';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import Button from '@mui/material/Button';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -33,6 +34,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 
+// progress bar
+import LinearProgress from '@mui/material/LinearProgress';
 
 
 const backendRoute = 'http://localhost:3000';
@@ -75,7 +78,47 @@ export default function DonatorEvents() {
         setEnlargedImage(null);
     };
 
+    // signup
+    const [cancelSignUpDialogOpen, setCancelSignUpDialogOpen] = useState(false);
+    const [eventToCancelSignUp, setEventToCancelSignUp] = useState(null);
 
+    const handleCancelSignUpClick = (event) => {
+        setEventToCancelSignUp(event);
+        setCancelSignUpDialogOpen(true);
+    };
+
+    const handleConfirmCancelSignUp = async () => {
+        if (eventToCancelSignUp) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/events/${eventToCancelSignUp.id}/cancel-signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to cancel sign-up');
+                }
+
+                const updatedEvent = await response.json();
+                setEvents(prevEvents => prevEvents.map(event =>
+                    event.id === eventToCancelSignUp.id ? updatedEvent : event
+                ));
+                setSignUpMessage('You have successfully cancelled your sign-up for this event.');
+                setSignUpSnackbarOpen(true);
+                setSelectedEvent(updatedEvent); // Update the selected event in the modal
+            } catch (error) {
+                setSignUpMessage(error.message);
+                setSignUpSnackbarOpen(true);
+            }
+            setCancelSignUpDialogOpen(false);
+            setEventToCancelSignUp(null);
+        }
+    };
 
 
     const navigate = useNavigate();
@@ -136,23 +179,23 @@ export default function DonatorEvents() {
                         'Content-Type': 'application/json'
                     },
                 });
-    
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
-    
+
                 setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
                 handleCloseDialog();
                 setSuccessMessage(`Event "${eventToDelete.title}" has been deleted successfully.`);
                 setDeleteSnackbarOpen(true);
-    
+
                 // Set a timeout to clear the success message and close the Snackbar
                 setTimeout(() => {
                     setSuccessMessage('');
                     setDeleteSnackbarOpen(false);
                 }, 6000); // 6000 milliseconds = 6 seconds
-    
+
             } catch (error) {
                 console.error('Error deleting event:', error);
                 setError('Failed to delete event: ' + error.message);
@@ -203,20 +246,41 @@ export default function DonatorEvents() {
             setSignUpSnackbarOpen(true);
         }
     };
+    const [sortBy, setSortBy] = useState('upcoming');
+    const sortEvents = (events, sortBy) => {
+        const sortedEvents = [...events];
+        switch (sortBy) {
+            case 'duration':
+                sortedEvents.sort((a, b) => {
+                    const durationA = (new Date(a.endDate) - new Date(a.startDate)) / (1000 * 60 * 60 * 24);
+                    const durationB = (new Date(b.endDate) - new Date(b.startDate)) / (1000 * 60 * 60 * 24);
+                    return durationB - durationA;
+                });
+                break;
+            case 'upcoming':
+                sortedEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                break;
+            case 'yourEvents':
+                return sortedEvents.filter(event => event.donatorId === userId);
+            case 'signedUp':
+                return sortedEvents.filter(event => event.participants.some(p => p.userId === userId));
+            default:
+                return sortedEvents;
+        }
+        return sortedEvents;
+    };
+
 
     return (
         <>
             <DonatorNavbar />
-            <div className="image-container">
-                <img className="full-width-image roundedimg" src="/Eventsphoto.png" alt="Events photos" />
-                <div className="overlay">
-                    <p className="overlay-text title">Events</p>
-                    <p className="overlay-text description">Building a strong community, and teaching each other to help each other in need. Events help us become a tight-knit community, and a safe place to ask for help.</p>
-                </div>
+            <div className="events-header">
+                <h1>Events</h1>
+                <p>Building a strong community, and teaching each other to help each other in need. Events help us become a tight-knit community, and a safe place to ask for help.</p>
             </div>
             <div className="middle-container">
                 <NavLink to={"/donator/addEvent"}>
-                    <Button variant="contained" color="success">
+                    <Button variant="contained" >
                         <div className="buttonicon">
                             <AddCircleOutlineIcon />
                         </div>
@@ -228,9 +292,22 @@ export default function DonatorEvents() {
                 {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
                 {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
+            <div className="sort-container">
+                <label htmlFor="sort-select">Sort by: </label>
+                <select
+                    id="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="duration">Duration</option>
+                    <option value="yourEvents">Your Events</option>
+                    <option value="signedUp">Signed Up</option>
+                </select>
+            </div>
             <hr />
             <div className="events-container">
-                {events.map((event) => (
+                {sortEvents(events, sortBy).map((event) => (
                     <Card key={event.id} className="event-card">
                         <div className='displayEventImage'>
                             {event.images && event.images.length > 0 && (
@@ -284,9 +361,11 @@ export default function DonatorEvents() {
                         </div>
                         <div className="event-content">
                             <div className='rightSide-title-summary'>
-                                <Typography variant="h5" component="div">
-                                    {event.title}
-                                </Typography>
+                                <div className='event-title'>
+                                    <Typography variant="h5" component="div">
+                                        {event.title}
+                                    </Typography>
+                                </div>
                                 <Typography variant="body2">
                                     {event.briefSummary}
                                 </Typography>
@@ -306,7 +385,6 @@ export default function DonatorEvents() {
                                             {calculateDuration(event.startDate, event.endDate)}
                                         </Typography>
                                     </div>
-
 
                                 </div>
                                 <div className="event-actions">
@@ -343,7 +421,22 @@ export default function DonatorEvents() {
                                         </div>
                                     )}
                                 </div>
+
                             </div>
+                            <Box sx={{ width: '100%', mt: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2">
+                                        {event.takenSlots} / {event.maxSlots} slots
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        {Math.round((event.takenSlots / event.maxSlots) * 100)}%
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={(event.takenSlots / event.maxSlots) * 100}
+                                />
+                            </Box>
                         </div>
                     </Card>
                 ))}
@@ -376,6 +469,22 @@ export default function DonatorEvents() {
                                         <AccessTimeIcon />
                                         <span>{calculateDuration(selectedEvent.startDate, selectedEvent.endDate)}</span>
                                     </div>
+                                    <div className='model-info-item'>
+                                        <Box sx={{ width: '100%', mt: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                <Typography variant="body2">
+                                                    {selectedEvent.takenSlots} / {selectedEvent.maxSlots} slots
+                                                </Typography>
+                                                <Typography variant="body2">
+                                                    {Math.round((selectedEvent.takenSlots / selectedEvent.maxSlots) * 100)}%
+                                                </Typography>
+                                            </Box>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={(selectedEvent.takenSlots / selectedEvent.maxSlots) * 100}
+                                            />
+                                        </Box>
+                                    </div>
                                 </div>
                             </div>
 
@@ -388,14 +497,15 @@ export default function DonatorEvents() {
                         </div>
 
                         <div className="modal-footer">
-                            
+
                             {selectedEvent.donatorId !== userId && (
                                 <Button
                                     className="modal-signup"
-                                    onClick={() => handleSignUp(selectedEvent.id)}
-                                    disabled={selectedEvent.participants.some(p => p.userId === userId)}
+                                    onClick={() => selectedEvent.participants.some(p => p.userId === userId)
+                                        ? handleCancelSignUpClick(selectedEvent)
+                                        : handleSignUp(selectedEvent.id)}
                                 >
-                                    {selectedEvent.participants.some(p => p.userId === userId) ? 'Signed Up' : 'Sign Up'}
+                                    {selectedEvent.participants.some(p => p.userId === userId) ? 'Cancel Sign Up' : 'Sign Up'}
                                 </Button>
                             )}
                             <Button className="modal-close" onClick={handleCloseModal}>Close</Button>
@@ -462,7 +572,28 @@ export default function DonatorEvents() {
                     {successMessage}
                 </MuiAlert>
             </Snackbar>
-            <DonatorFooter/>
+            <Dialog
+                open={cancelSignUpDialogOpen}
+                onClose={() => setCancelSignUpDialogOpen(false)}
+                aria-labelledby="cancel-signup-dialog-title"
+                aria-describedby="cancel-signup-dialog-description"
+            >
+                <DialogTitle id="cancel-signup-dialog-title">{"Confirm Cancellation of Sign Up"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="cancel-signup-dialog-description">
+                        Are you sure you want to cancel your sign-up for the event "{eventToCancelSignUp?.title}"?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCancelSignUpDialogOpen(false)} color="primary">
+                        No, Keep Me Signed Up
+                    </Button>
+                    <Button onClick={handleConfirmCancelSignUp} color="error" autoFocus>
+                        Yes, Cancel My Sign Up
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <DonatorFooter />
         </>
     );
 }

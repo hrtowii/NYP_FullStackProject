@@ -53,6 +53,7 @@ model Review {
   likes       Like[]
   likeCount   Int      @default(0)
 }
+
 model Like {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -66,6 +67,7 @@ model Like {
   @@unique([userId, reviewId])
   @@unique([donatorId, reviewId])
 }
+
 model Reply {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -83,10 +85,11 @@ model Image {
   reviewId Int
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
+
 model Donator {
   id            Int        @unique
   person        Person     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  donations     Donation[] 
+  donations     Donation[]
   reviews       Review[]   @relation("DonatorReviews")
   events        Event[]    @relation("Events")
   averageRating Float      @default(0)
@@ -95,7 +98,8 @@ model Donator {
   donationGoal  Int?
   achievement   String?    @default("Silver")
   posts         Post[]
-  likes        Like[]
+  likes         Like[]
+
   @@id([id])
 }
 
@@ -108,7 +112,6 @@ model Post {
   donatorId Int
   donator   Donator  @relation(fields: [donatorId], references: [id])
 }
-
 
 model Admin {
   id     Int    @unique
@@ -128,9 +131,9 @@ model Donation {
   updatedAt    DateTime      @updatedAt
   donatorId    Int
   donator      Donator       @relation(fields: [donatorId], references: [id], onDelete: Cascade)
-  availability String   @default("Available") // Iruss made this to label availability of donations
+  availability String        @default("Available") // Iruss made this to label availability of donations
   foods        Food[]
-  reservations Reservation[] 
+  reservations Reservation[]
 }
 
 model Food {
@@ -152,7 +155,7 @@ model Reservation {
   collectionDate      DateTime
   collectionTimeStart String
   collectionTimeEnd   String
-  collectionStatus    String @default("Uncollected")
+  collectionStatus    String            @default("Uncollected")
   remarks             String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -191,7 +194,7 @@ model Event {
   donatorId      Int
   eventOrganiser Donator       @relation("Events", fields: [donatorId], references: [id])
   images         EventImage[]
-  participants Participant[]
+  participants   Participant[]
 }
 
 model EventImage {
@@ -200,9 +203,10 @@ model EventImage {
   eventId Int
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
+
 model Participant {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   Int
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId Int
 }
