@@ -1,16 +1,27 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar, { UserNavbar } from "../components/Navbar";
 import { NavLink, useNavigate } from 'react-router-dom';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
-    Paper, Box, Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel, TablePagination
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, Box,
+    Checkbox, Button, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem, TableSortLabel, TablePagination, Snackbar, IconButton
 } from '@mui/material';
 import "./Fridge.css"
 import ReactOdometer from 'react-odometerjs';
 import { TokenContext } from '../utils/TokenContext';
 import { backendRoute } from '../utils/BackendUrl';
 import { styled } from '@mui/material/styles';
+import CloseIcon from '@mui/icons-material/Close';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+
+
+const StyledSnackbar = styled(Snackbar)(({ theme }) => ({
+    '& .MuiSnackbarContent-root': {
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        flexWrap: 'nowrap',
+    },
+}));
 
 const CompactFormControl = styled(FormControl)(({ theme }) => ({
     minWidth: 120,
@@ -84,6 +95,7 @@ export default function Fridge() {
     const [filterAvailability, setFilterAvailability] = useState('all');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
     const navigate = useNavigate();
 
 
@@ -180,7 +192,14 @@ export default function Fridge() {
         localStorage.setItem('cartItems', JSON.stringify(newCartItems));
         setCartItems(newCartItems);
         setSelectedItems([]);
-        alert("Items added to cart successfully!");
+        setSnackbarOpen(true);
+    };
+
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbarOpen(false);
     };
 
     const handleViewCart = () => {
@@ -397,16 +416,16 @@ export default function Fridge() {
                                                         <TableCell>
                                                             <span style={{
                                                                 color: cartItems.some(item => item.id === donation.id)
-                                                                ? "orange"
-                                                                : donation.availability === "Available"
-                                                                    ? "green"
-                                                                    : inherit
+                                                                    ? "orange"
+                                                                    : donation.availability === "Available"
+                                                                        ? "green"
+                                                                        : inherit
                                                             }}>
                                                                 {cartItems.some(item => item.id === donation.id)
                                                                     ? <b>Pending</b>
                                                                     : donation.availability === "Available"
-                                                                    ? <b>Available</b>
-                                                                    : donation.availability}
+                                                                        ? <b>Available</b>
+                                                                        : donation.availability}
                                                             </span>
                                                         </TableCell>
                                                     </TableRow>
@@ -436,9 +455,35 @@ export default function Fridge() {
                             </Button>
                         </Box>
                     </Box>
+
+                    <StyledSnackbar
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'center',
+                        }}
+                        open={snackbarOpen}
+                        autoHideDuration={2500}
+                        onClose={handleCloseSnackbar}
+                        message={
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                                <ShoppingCartIcon style={{ marginRight: '8px' }} />
+                                Items added to cart successfully!
+                            </span>
+                        }
+                        action={
+                            <IconButton
+                                size="small"
+                                aria-label="close"
+                                color="inherit"
+                                onClick={handleCloseSnackbar}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        }
+                    />
                 </>
             </div>
-            <UserFooter/>
+            <UserFooter />
         </>
     )
 }
