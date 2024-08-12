@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
+import { DonatorFooter } from './components/Footer.jsx';
 import Navbar from "./components/Navbar";
 import "./index.css"
 import './About.css'
@@ -97,6 +98,7 @@ export default function About() {
           <p>donations since 2000</p>
         </div>
       </div>
+      {currentUserRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
     </>
   )
 }

@@ -27,6 +27,7 @@ import {
   Alert,
   IconButton,
 } from '@mui/material';
+
 import Box from '@mui/material/Box';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -55,6 +56,10 @@ export default function ManageDonations() {
   const { token, updateToken } = useContext(TokenContext);
   const [enlargedImage, setEnlargedImage] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteSuccessDialogOpen, setDeleteSuccessDialogOpen] = useState(false);
+  const [editConfirmDialogOpen, setEditConfirmDialogOpen] = useState(false);
+  const [editSuccessDialogOpen, setEditSuccessDialogOpen] = useState(false);
+  const locationOptions = ["Ang Mo Kio", "Sengkang", "Yio Chu Kang", "Jurong"];
 
 
   const handleSearchChange = (event) => {
@@ -126,6 +131,7 @@ export default function ManageDonations() {
         if (response.ok) {
           setDonations(prevDonations => prevDonations.filter(donation => donation.id !== donationToDelete));
           console.log(data.message);
+          setDeleteSuccessDialogOpen(true);
         } else {
           throw new Error(data.error || 'Failed to delete donation');
         }
@@ -139,6 +145,7 @@ export default function ManageDonations() {
     }
   };
 
+
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setDonationToDelete(null);
@@ -147,8 +154,13 @@ export default function ManageDonations() {
   const handleEditClick = (donationId) => {
     const donationToEdit = donations.find(donation => donation.id === donationId);
     setEditingDonation({ ...donationToEdit });
-    setEditDialogOpen(true);
+    setEditConfirmDialogOpen(true);
     setErrors({});
+  };
+
+  const handleEditConfirm = () => {
+    setEditConfirmDialogOpen(false);
+    setEditDialogOpen(true);
   };
 
   const handleEditCancel = () => {
@@ -160,6 +172,7 @@ export default function ManageDonations() {
   const validateForm = () => {
     const newErrors = {};
     if (!editingDonation.category) newErrors.category = 'Category is required';
+    if (!editingDonation.location) newErrors.location = 'Location is required';
     editingDonation.foods.forEach((food, index) => {
       if (!food.name) newErrors[`foodName${index}`] = 'Food name is required';
       if (!food.quantity) newErrors[`foodQuantity${index}`] = 'Quantity is required';
@@ -190,6 +203,7 @@ export default function ManageDonations() {
         );
         setEditingDonation(null);
         setEditDialogOpen(false);
+        setEditSuccessDialogOpen(true);
       } catch (error) {
         console.error('Error updating donation:', error);
         setError('Failed to update donation. Please try again.');
@@ -251,12 +265,12 @@ export default function ManageDonations() {
   }, [donations, order, orderBy, searchQuery]);
 
   const isCollected = (donation) => {
-    try{
+    try {
       return donation.reservations.some(reservation => reservation.collectionStatus === "Collected");
-    }catch (error) {
+    } catch (error) {
       console.error('Error:', error);
     }
-    
+
   };
 
 
@@ -279,7 +293,7 @@ export default function ManageDonations() {
   return (
     <div className="container">
       <DonatorNavbar />
-      <div className='contents'>
+      <div className='contents' style={{ backgroundColor: '#f0f8f1' }}>
         <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
           <Box
             display="flex"
@@ -348,11 +362,11 @@ export default function ManageDonations() {
 
 
         <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
-          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px' }}>
+          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px', marginBottom:"30px"}}>
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
-            <Box sx={{ mb: 3, width: '100%' }}>
+            <Box sx={{ mb: 3, width: '100%', bgcolor: '#0000' }}>
               <TextField
                 fullWidth
                 variant="outlined"
@@ -376,9 +390,9 @@ export default function ManageDonations() {
               </Typography>
             ) : (
               <TableContainer>
-                <Table aria-label="donations table">
+                <Table aria-label="donations table" >
                   <TableHead>
-                    <TableRow>
+                    <TableRow style={{ backgroundColor: '#f0f8f1' }}>
                       <TableCell>Image</TableCell>
                       <TableCell>
                         <TableSortLabel
@@ -417,7 +431,7 @@ export default function ManageDonations() {
                   <TableBody>
                     {sortedDonations.flatMap((donation) =>
                       donation.foods.map((food) => (
-                        <TableRow key={`${donation.id}-${food.id}`}>
+                        <TableRow key={`${donation.id}-${food.id}`} >
                           <TableCell>
                             {donation.image && (
                               <Box
@@ -545,6 +559,24 @@ export default function ManageDonations() {
           <DialogContent>
             {editingDonation && (
               <>
+                {editingDonation.foods.map((food, index) => (
+                  <div key={food.id}>
+                    <TextField
+                      margin="dense"
+                      label="Food Name"
+                      type="text"
+                      fullWidth
+                      value={food.name}
+                      onChange={(e) => {
+                        const newFoods = [...editingDonation.foods];
+                        newFoods[index].name = e.target.value;
+                        setEditingDonation({ ...editingDonation, foods: newFoods });
+                      }}
+                      error={!!errors[`foodName${index}`]}
+                      helperText={errors[`foodName${index}`]}
+                    />
+                  </div>
+                ))}
                 <FormControl fullWidth margin="dense" error={!!errors.category}>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -567,24 +599,10 @@ export default function ManageDonations() {
                   onChange={(e) => handleEditChange(e, 'remarks')}
                 />
                 {editingDonation.foods.map((food, index) => (
-                  <div key={food.id}>
+                  <div key={`${food.id}-quantity`}>
                     <TextField
                       margin="dense"
-                      label="Food Name"
-                      type="text"
-                      fullWidth
-                      value={food.name}
-                      onChange={(e) => {
-                        const newFoods = [...editingDonation.foods];
-                        newFoods[index].name = e.target.value;
-                        setEditingDonation({ ...editingDonation, foods: newFoods });
-                      }}
-                      error={!!errors[`foodName${index}`]}
-                      helperText={errors[`foodName${index}`]}
-                    />
-                    <TextField
-                      margin="dense"
-                      label="Quantity"
+                      label="Quantity (g)"
                       type="number"
                       fullWidth
                       value={food.quantity}
@@ -615,6 +633,20 @@ export default function ManageDonations() {
                     />
                   </div>
                 ))}
+                <FormControl fullWidth margin="dense" error={!!errors.location}>
+                  <InputLabel>Location</InputLabel>
+                  <Select
+                    value={editingDonation.location}
+                    onChange={(e) => handleEditChange(e, 'location')}
+                  >
+                    {locationOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.location && <FormHelperText>{errors.location}</FormHelperText>}
+                </FormControl>
               </>
             )}
           </DialogContent>
@@ -622,6 +654,67 @@ export default function ManageDonations() {
             <Button onClick={handleEditCancel}>Cancel</Button>
             <Button onClick={handleEditSave} color="primary">
               Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Success Dialog */}
+        <Dialog
+          open={deleteSuccessDialogOpen}
+          onClose={() => setDeleteSuccessDialogOpen(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Deletion Successful"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              The donation has been successfully deleted.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteSuccessDialogOpen(false)} color="primary">
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Confirm Dialog */}
+        <Dialog
+          open={editConfirmDialogOpen}
+          onClose={() => setEditConfirmDialogOpen(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Confirm Edit"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to edit this donation?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditConfirmDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditConfirm} color="primary">
+              Edit
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Success Dialog */}
+        <Dialog
+          open={editSuccessDialogOpen}
+          onClose={() => setEditSuccessDialogOpen(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Edit Successful"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              The donation has been successfully updated.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditSuccessDialogOpen(false)} color="primary">
+              OK
             </Button>
           </DialogActions>
         </Dialog>

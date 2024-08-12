@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { UserNavbar } from "../components/Navbar";
 import { UserFooter, DonatorFooter } from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -104,55 +105,60 @@ const UserLandingPage = () => {
     { label: 'Monitor Collections', description: 'Check if your donated food has been collected.' },
   ];
 
+  const navigate = useNavigate();
+  const fridgenavigate = () => {
+    navigate('/user/fridge')
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
         <UserNavbar />
         <main>
-          <Paper
-            sx={{
-              position: 'relative',
-              backgroundColor: 'grey.800',
-              color: '#fff',
-              mb: 4,
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              backgroundImage: `url('/api/placeholder/1200/400')`,
-            }}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                right: 0,
-                left: 0,
-                backgroundColor: 'rgba(76, 175, 80, 0.3)',
-              }}
-            />
-            <Grid container>
-              <Grid item md={6}>
-                <Box
-                  sx={{
-                    position: 'relative',
-                    p: { xs: 3, md: 6 },
-                    pr: { md: 0 },
-                  }}
-                >
-                  <Typography component="h1" variant="h3" color="inherit" gutterBottom>
-                    Sustain & Share
-                  </Typography>
-                  <Typography variant="h5" color="inherit" paragraph>
-                    Join our eco-friendly community in reducing food waste and fostering sustainability. Share surplus food and help those in need.
-                  </Typography>
-                  <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />}>
-                    Reserve your food now
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+        <Paper
+                        sx={{
+                            position: 'relative',
+                            backgroundColor: 'grey.800',
+                            color: '#fff',
+                            mb: 4,
+                            backgroundSize: 'cover',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            backgroundImage: `url('/api/placeholder/1200/400')`,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                left: 0,
+                                backgroundColor: 'rgba(76, 175, 80, 0.3)',
+                            }}
+                        />
+                        <Grid container>
+                            <Grid item md={6}>
+                                <Box
+                                    sx={{
+                                        position: 'relative',
+                                        p: { xs: 3, md: 6 },
+                                        pr: { md: 0 },
+                                    }}
+                                >
+                                    <Typography component="h1" variant="h3" color="inherit" gutterBottom>
+                                        Sustain & Share
+                                    </Typography>
+                                    <Typography variant="h5" color="inherit" paragraph>
+                                        Join our eco-friendly community in reducing food waste and fostering sustainability. Share surplus food and help those in need.
+                                    </Typography>
+                                    <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />}>
+                                        Reserve your food now
+                                    </Button>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Paper>
 
           {/* Features Section */}
           <Container sx={{ py: 8 }} maxWidth="md">

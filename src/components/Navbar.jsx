@@ -16,7 +16,7 @@ export default function Navbar() {
   return (
     <div className='navbar'>
       <div>
-        <span className="navbar-logo">🍃 FridgeShare</span>
+        <span className="navbar-logo">🍃 CommuniFridge</span>
         <NavLink to={"/"}>Home</NavLink>
         {!isLoggedIn ? (
           <>
@@ -48,7 +48,7 @@ export function DonatorNavbar() {
   return (
     <div className='navbar'>
       <div>
-        <span className="navbar-logo">🍃 FridgeShare</span>
+        <span className="navbar-logo">🍃 CommuniFridge</span>
         <NavLink to={"/donator"}>Dashboard</NavLink>
         <NavLink to={"/donator/events"}>Manage Events</NavLink>
         <NavLink to={"/listofdonators"}>Donators</NavLink>
@@ -71,7 +71,7 @@ export function UserNavbar() {
     <div className='navbar'>
       <div>
         
-        <NavLink to={"/userlanding"}><span className="navbar-logo">🍃 FridgeShare</span></NavLink>
+        <NavLink to={"/userlanding"}><span className="navbar-logo">🍃 CommuniFridge</span></NavLink>
         <NavLink to={"/user/reservation"}>Reservations</NavLink>
         <NavLink to={"/user/fridge"}>Fridge</NavLink>
         <NavLink to={"/user/events"}>Events</NavLink>
@@ -99,7 +99,7 @@ export function AdminNavbar() {
   return (
     <div className='navbar'>
       <div>
-        <span className="navbar-logo">🍃 FridgeShare</span>
+        <span className="navbar-logo">🍃 CommuniFridge</span>
         <NavLink to={"/admin"}>Admin</NavLink>
         <NavLink to={"/donator"}>Donator</NavLink>
         <NavLink to={"/user"}>User</NavLink>

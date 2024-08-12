@@ -28,12 +28,131 @@ import {
     ListItemText,
     ListItemAvatar,
     Divider,
+    Grid,
+    Chip,
 } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import AddIcon from '@mui/icons-material/Add';
+import EventIcon from '@mui/icons-material/Event';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ScaleIcon from '@mui/icons-material/Scale';
 import parseJwt from '../utils/parseJwt.jsx'
+
+const DonationCard = ({ donation, food, handleImageClick, backendRoute, formatImagePath, formatDate }) => {
+    const isReserved = donation.reservations && donation.reservations.length > 0;
+
+    return (
+        <Card elevation={3} sx={{ mb: 2, borderRadius: 2, overflow: 'visible' }}>
+            <CardContent>
+                <Grid container spacing={2} alignItems="flex-start">
+                    <Grid item>
+                        {donation.image && (
+                            <Box
+                                sx={{
+                                    position: 'relative',
+                                    width: 120,
+                                    height: 120,
+                                    cursor: 'pointer',
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                }}
+                                onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
+                            >
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                    }}
+                                />
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        bottom: 8,
+                                        right: 8,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                        borderRadius: '50%',
+                                        padding: 0.5,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <ZoomInIcon />
+                                </Box>
+                            </Box>
+                        )}
+                    </Grid>
+                    <Grid item xs>
+                        <Box>
+                            <Typography
+                                variant="h5"
+                                gutterBottom
+                                sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1.5rem',
+                                    mb: 2
+                                }}
+                            >
+                                {food.name}
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+                                <Chip icon={<ScaleIcon />} label={`${food.quantity} g`} size="small" color="primary" />
+                                <Chip
+                                    icon={<EventIcon />}
+                                    label={isReserved ? formatDate(donation.reservations[0].collectionDate) : "Unreserved"}
+                                    size="small"
+                                />
+                                <Chip
+                                    icon={<AccessTimeIcon />}
+                                    label={isReserved ? `${donation.reservations[0].collectionTimeStart} - ${donation.reservations[0].collectionTimeEnd}` : "Unreserved"}
+                                    size="small"
+                                />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                                Status: {isReserved ? donation.reservations[0].collectionStatus : "Unreserved"}
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </CardContent>
+        </Card>
+    );
+};
+
+const DonationSection = ({ title, donations, handleImageClick, backendRoute, formatImagePath, formatDate, bgColor }) => (
+    <Box mb={4}>
+        <Typography variant="h5" gutterBottom>
+            {title}
+        </Typography>
+        <Box bgcolor={bgColor} p={2} borderRadius={2} maxHeight={360} overflow="auto">
+            {donations.length === 0 ? (
+                <Alert severity="info">You have no {title.toLowerCase()} donations.</Alert>
+            ) : (
+                donations.flatMap((donation) =>
+                    donation.foods.map((food) => (
+                        <DonationCard
+                            key={`${donation.id}-${food.id}`}
+                            donation={donation}
+                            food={food}
+                            handleImageClick={handleImageClick}
+                            backendRoute={backendRoute}
+                            formatImagePath={formatImagePath}
+                            formatDate={formatDate}
+                        />
+                    ))
+                )
+            )}
+        </Box>
+    </Box>
+);
 
 export default function DonateItem() {
     const [donations, setDonations] = useState([]);
@@ -281,25 +400,19 @@ export default function DonateItem() {
     }, [totalDonations, achievement, determineAchievement, updateAchievement]);
 
     useEffect(() => {
-        if (totalDonations > previousTotalDonations && totalDonations >= donationGoal && !goalAchieved) {
-            setGoalAchieved(true);
-            setGoalAchievedDialogOpen(true);
+        if (totalDonations >= donationGoal) {
+            console.log('Goal achieved!');
+            // We don't need to set any state here anymore
         }
         setPreviousTotalDonations(totalDonations);
-    }, [totalDonations, donationGoal, goalAchieved, previousTotalDonations]);
+    }, [totalDonations, donationGoal, previousTotalDonations]);
 
     const handleOpenGoalModal = () => {
         setOpenGoalModal(true);
-        setGoalAchievedDialogOpen(false); // Close the goal achieved dialog
-        setGoalAchieved(false); // Reset goal achieved state when opening the modal
     };
 
     const handleCloseGoalModal = () => {
         setOpenGoalModal(false);
-    };
-
-    const handleCloseGoalAchievedDialog = () => {
-        setGoalAchievedDialogOpen(false);
     };
 
     const handleGoalChange = (event) => {
@@ -392,7 +505,7 @@ export default function DonateItem() {
     return (
         <div className="container">
             <DonatorNavbar />
-            <div className='contents'>
+            <div className='contents' style={{ backgroundColor: '#f0f8f1' }}>
                 <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
                     <Box
                         display="flex"
@@ -506,31 +619,38 @@ export default function DonateItem() {
                                 <Box
                                     sx={{
                                         position: 'relative',
-                                        height: 15, // Thicker progress bar
-                                        borderRadius: 8, // Thicker border radius
-                                        border: '3x solid white', // Thicker and light grey border
-                                        backgroundColor: 'white', // Light grey background
+                                        height: 15,
+                                        borderRadius: 8,
+                                        border: '3x solid white',
+                                        backgroundColor: 'white',
                                         padding: 0.3
                                     }}
                                 >
                                     <LinearProgress
                                         variant="determinate"
-                                        value={(totalDonations / donationGoal) * 100}
+                                        value={Math.min((totalDonations / donationGoal) * 100, 100)}
                                         sx={{
                                             height: '100%',
-                                            borderRadius: 'inherit', // Inherit the border radius from the container
-                                            backgroundColor: 'transparent', // Make background transparent to show the border
+                                            borderRadius: 'inherit',
+                                            backgroundColor: 'transparent',
                                             '& .MuiLinearProgress-bar': {
-                                                backgroundColor: '#4caf50', // Completed portion color (green)
-                                                borderRadius: 8, // Match the border radius of the container
+                                                backgroundColor: '#4caf50',
+                                                borderRadius: 8,
                                             },
                                         }}
                                     />
                                 </Box>
                             </Box>
-                            <Typography variant="body1" mt={2}>
-                                {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
-                            </Typography>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+                                <Typography variant="body1">
+                                    {`Total Donations: ${totalDonations}g / Goal: ${donationGoal}g`}
+                                </Typography>
+                                {totalDonations >= donationGoal && (
+                                    <Typography variant="body2" color="primary">
+                                        Goal achieved! Set a new goal?
+                                    </Typography>
+                                )}
+                            </Box>
                         </Box>
                         <Box>
                             <Button variant="contained" color="primary" onClick={handleOpenGoalModal}>
@@ -572,315 +692,56 @@ export default function DonateItem() {
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
 
                     <Box width="60%">
-                        <Typography variant="h5" gutterBottom>
-                            Unreserved Donations
-                        </Typography>
-                        <Box bgcolor="error.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
-                            {unreservedDonations.length === 0 ? (
-                                <Alert severity="info">You have no unreserved donations.</Alert>
-                            ) : (
-                                unreservedDonations.flatMap((donation) =>
-                                    donation.foods.map((food) => (
-                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
-                                            <CardContent>
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    {donation.image && (
-                                                        <Box
-                                                            sx={{
-                                                                position: 'relative',
-                                                                width: 80,
-                                                                height: 80,
-                                                                cursor: 'pointer',
-                                                            }}
-                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
-                                                        >
-                                                            <Box
-                                                                sx={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
-                                                                    backgroundSize: 'cover',
-                                                                    backgroundPosition: 'center',
-                                                                    border: '1px solid #ddd',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            />
-                                                            <Box
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    left: 0,
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    background: 'rgba(0, 0, 0, 0.3)',
-                                                                    opacity: 0,
-                                                                    transition: 'opacity 0.2s',
-                                                                    '&:hover': {
-                                                                        opacity: 1,
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <ZoomInIcon sx={{ color: 'white' }} />
-                                                            </Box>
-                                                        </Box>
-                                                    )}
-
-                                                    <Box>
-                                                        <Typography variant="h6">{food.name}</Typography>
-                                                        <Typography variant="body2">
-                                                            Collection date: {donation.reservations && donation.reservations.length > 0
-                                                                ? formatDate(donation.reservations[0].collectionDate)
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeStart
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeEnd
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Status: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionStatus
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                )
-                            )}
-                        </Box>
-                        <Typography variant="h5" gutterBottom style={{ marginTop: '20px' }}>
-                            Reserved Donations
-                        </Typography>
-                        <Box bgcolor="warning.main" p={2} borderRadius={2} maxHeight={330} overflow="auto">
-                            {reservedDonations.length === 0 ? (
-                                <Alert severity="info">You have no reserved donations.</Alert>
-                            ) : (
-                                reservedDonations.flatMap((donation) =>
-                                    donation.foods.map((food) => (
-                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
-                                            <CardContent>
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    {donation.image && (
-                                                        <Box
-                                                            sx={{
-                                                                position: 'relative',
-                                                                width: 80,
-                                                                height: 80,
-                                                                cursor: 'pointer',
-                                                            }}
-                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
-                                                        >
-                                                            <Box
-                                                                sx={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
-                                                                    backgroundSize: 'cover',
-                                                                    backgroundPosition: 'center',
-                                                                    border: '1px solid #ddd',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            />
-                                                            <Box
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    left: 0,
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    background: 'rgba(0, 0, 0, 0.3)',
-                                                                    opacity: 0,
-                                                                    transition: 'opacity 0.2s',
-                                                                    '&:hover': {
-                                                                        opacity: 1,
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <ZoomInIcon sx={{ color: 'white' }} />
-                                                            </Box>
-                                                        </Box>
-                                                    )}
-
-                                                    <Box>
-                                                        <Typography variant="h6">{food.name}</Typography>
-                                                        <Typography variant="body2">
-                                                            Collection date: {donation.reservations && donation.reservations.length > 0
-                                                                ? formatDate(donation.reservations[0].collectionDate)
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeStart
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeEnd
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Status: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionStatus
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                )
-                            )}
-                        </Box>
-
-
-                        <Dialog
-                            open={Boolean(enlargedImage)}
-                            onClose={handleCloseEnlargedImage}
-                            maxWidth="lg"
-                        >
-                            <DialogContent>
-                                <img
-                                    src={enlargedImage}
-                                    alt="Enlarged"
-                                    style={{
-                                        width: '100%',
-                                        border: '2px solid black',
-                                        borderRadius: '4px'
-                                    }}
-                                />
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseEnlargedImage}>Close</Button>
-                            </DialogActions>
-                        </Dialog>
-
-                        <Dialog
-                            open={goalAchievedDialogOpen}
-                            onClose={handleCloseGoalAchievedDialog}
-                        >
-                            <DialogTitle>Congratulations!</DialogTitle>
-                            <DialogContent>
-                                <Typography>
-                                    You have achieved your donation goal of {donationGoal} grams!
-                                </Typography>
-                                <Typography>
-                                    Your current total donations: {totalDonations} grams.
-                                </Typography>
-                                <Typography>
-                                    Would you like to set a new goal?
-                                </Typography>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={handleCloseGoalAchievedDialog} color="primary">
-                                    Close
-                                </Button>
-                                <Button onClick={handleOpenGoalModal} color="primary">
-                                    Set New Goal
-                                </Button>
-                            </DialogActions>
-                        </Dialog>
-
-                        <Typography variant="h6" gutterBottom mt={4}>Collected</Typography>
-                        <Box bgcolor="success.main" p={2} borderRadius={2} maxHeight={330} overflow="auto" mb={10}>
-                            {collectedDonations.length === 0 ? (
-                                <Alert severity="info">You have no collected donations.</Alert>
-                            ) : (
-                                collectedDonations.flatMap((donation) =>
-                                    donation.foods.map((food) => (
-                                        <Card key={`${donation.id}-${food.id}`} sx={{ mb: 2, bgcolor: '' }}>
-                                            <CardContent>
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    {donation.image && (
-                                                        <Box
-                                                            sx={{
-                                                                position: 'relative',
-                                                                width: 80,
-                                                                height: 80,
-                                                                cursor: 'pointer',
-                                                            }}
-                                                            onClick={() => handleImageClick(`${backendRoute}${formatImagePath(donation.image)}`)}
-                                                        >
-                                                            <Box
-                                                                sx={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    backgroundImage: `url(${backendRoute}${formatImagePath(donation.image)})`,
-                                                                    backgroundSize: 'cover',
-                                                                    backgroundPosition: 'center',
-                                                                    border: '1px solid #ddd',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            />
-                                                            <Box
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 0,
-                                                                    left: 0,
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    background: 'rgba(0, 0, 0, 0.3)',
-                                                                    opacity: 0,
-                                                                    transition: 'opacity 0.2s',
-                                                                    '&:hover': {
-                                                                        opacity: 1,
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <ZoomInIcon sx={{ color: 'white' }} />
-                                                            </Box>
-                                                        </Box>
-                                                    )}
-
-                                                    <Box>
-                                                        <Typography variant="h6">{food.name}</Typography>
-                                                        <Typography variant="body2">
-                                                            Collection date: {donation.reservations && donation.reservations.length > 0
-                                                                ? formatDate(donation.reservations[0].collectionDate)
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection Start Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeStart
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Collection End Time: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionTimeEnd
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            Status: {donation.reservations && donation.reservations.length > 0
-                                                                ? donation.reservations[0].collectionStatus
-                                                                : "Unreserved"}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Typography variant="h6">{food.quantity + " g"}</Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                )
-                            )}
-                        </Box>
+                        <DonationSection
+                            title="Unreserved Donations"
+                            donations={unreservedDonations}
+                            handleImageClick={handleImageClick}
+                            backendRoute={backendRoute}
+                            formatImagePath={formatImagePath}
+                            formatDate={formatDate}
+                            bgColor="error.light"
+                        />
+                        <DonationSection
+                            title="Reserved Donations"
+                            donations={reservedDonations}
+                            handleImageClick={handleImageClick}
+                            backendRoute={backendRoute}
+                            formatImagePath={formatImagePath}
+                            formatDate={formatDate}
+                            bgColor="warning.light"
+                        />
+                        <DonationSection
+                            title="Collected Donations"
+                            donations={collectedDonations}
+                            handleImageClick={handleImageClick}
+                            backendRoute={backendRoute}
+                            formatImagePath={formatImagePath}
+                            formatDate={formatDate}
+                            bgColor="success.light"
+                        />
                     </Box>
+
+
+                    <Dialog
+                        open={Boolean(enlargedImage)}
+                        onClose={handleCloseEnlargedImage}
+                        maxWidth="lg"
+                    >
+                        <DialogContent>
+                            <img
+                                src={enlargedImage}
+                                alt="Enlarged"
+                                style={{
+                                    width: '100%',
+                                    border: '2px solid black',
+                                    borderRadius: '4px'
+                                }}
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseEnlargedImage}>Close</Button>
+                        </DialogActions>
+                    </Dialog>
 
                     <Box width="35%">
                         <Typography variant="h6" gutterBottom>Recent Reviews</Typography>
@@ -942,7 +803,7 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
-                <Dialog
+                {/* <Dialog
                     open={goalAchievedDialogOpen}
                     onClose={handleCloseGoalAchievedDialog}
                 >
@@ -966,7 +827,7 @@ export default function DonateItem() {
                             Set New Goal
                         </Button>
                     </DialogActions>
-                </Dialog>
+                </Dialog> */}
             </div>
             <DonatorFooter />
         </div>

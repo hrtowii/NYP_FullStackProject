@@ -768,7 +768,7 @@ export default function ListOfDonators() {
                     </Alert>
                 </Snackbar>
             </div>
-            <UserFooter />
+            {currentUserRole === 'donator' ? <DonatorFooter /> : <UserFooter />}
         </ThemeProvider>
     );
 }

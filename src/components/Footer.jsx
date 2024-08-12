@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Link, Grid, Snackbar } from '@mui/material';
+import { Box, Typography, TextField, Button, Link, Grid, Snackbar, Container } from '@mui/material';
 
 export function UserFooter() {
     const [email, setEmail] = useState('');
@@ -86,15 +86,64 @@ export function UserFooter() {
         </Box>
     );
 };
+
 export function DonatorFooter() {
-    return(
-       <Box component="footer" sx={{ bgcolor: 'primary', py: 0 }}>
-        <Box mt={5}>
-            <Typography variant="body2" color="text.secondary" align="center">
-                © {new Date().getFullYear()} CommuniFridge. All rights reserved.
-            </Typography>
+    const currentYear = new Date().getFullYear();
+
+    return (
+        <Box 
+            component="footer" 
+            sx={{ 
+                bgcolor: '#2ecc71', // Set the background color here
+                color: 'primary.contrastText', 
+                py: 6,
+                mt: 'auto' // This pushes the footer to the bottom if there's not enough content
+            }}
+        >
+            <Container maxWidth="lg">
+                <Grid container spacing={4}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="h6" gutterBottom>
+                            About
+                        </Typography>
+                        <Typography variant="body2">
+                            CommuniFridge is dedicated to reducing food waste and helping those in need through community refrigerators.
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="h6" gutterBottom>
+                            Quick Links
+                        </Typography>
+                        <Link href="/donator" color="inherit" display="block">Donator Dashboard</Link>
+                        <Link href="/donator/ManageDonations" color="inherit" display="block">Manage Donations</Link>
+                        <Link href="/donator/DonateItem" color="inherit" display="block">Donate Item</Link>
+                        <Link href="/donator/events" color="inherit" display="block">Events</Link>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="h6" gutterBottom>
+                            More Info
+                        </Typography>
+                        <Link href="/listofdonators" color="inherit" display="block">Donators</Link>
+                        <Link href="/About" color="inherit" display="block">About Us</Link>
+                        <Link href="/contactus" color="inherit" display="block">Contact Us</Link>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="h6" gutterBottom>
+                            Connect With Us
+                        </Typography>
+                        <Link href="https://www.instagram.com/gocommiteatrock/" color="inherit" display="block">Facebook</Link>
+                        <Link href="https://www.instagram.com/gocommiteatrock/" color="inherit" display="block">Twitter</Link>
+                        <Link href="https://www.instagram.com/gocommiteatrock/" color="inherit" display="block">Instagram</Link>
+                    </Grid>
+                </Grid>
+                <Box mt={5}>
+                    <Typography variant="body2" align="center">
+                        © {currentYear} CommuniFridge. All rights reserved.
+                    </Typography>
+                </Box>
+            </Container>
         </Box>
-    </Box> 
-    )
-};
+    );
+}
+
 
