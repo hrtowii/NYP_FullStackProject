@@ -157,7 +157,7 @@ export function DonatorFooter() {
         <Box 
             component="footer" 
             sx={{ 
-                bgcolor: '#2ecc71',
+                bgcolor: '#4e7240',
                 color: '#fff',
                 py: 6,
                 mt: 'auto',

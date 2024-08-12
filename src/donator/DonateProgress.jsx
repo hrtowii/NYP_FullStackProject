@@ -175,6 +175,7 @@ export default function DonateItem() {
     const [reservedDonations, setReservedDonations] = useState([]);
     const [unreservedDonations, setUnreservedDonations] = useState([]);
     const [openSetInitialGoalModal, setOpenSetInitialGoalModal] = useState(false);
+    const hasDonations = collectedDonations.length > 0 || reservedDonations.length > 0 || unreservedDonations.length > 0;
 
     const fetchDonations = useCallback(async () => {
         const donatorId = parseJwt(token).id
@@ -690,35 +691,57 @@ export default function DonateItem() {
                 </Box>
 
                 <Box display="flex" justifyContent="space-between" mt={2} ml={5} mr={5}>
-
                     <Box width="60%">
-                        <DonationSection
-                            title="Unreserved Donations"
-                            donations={unreservedDonations}
-                            handleImageClick={handleImageClick}
-                            backendRoute={backendRoute}
-                            formatImagePath={formatImagePath}
-                            formatDate={formatDate}
-                            bgColor="error.light"
-                        />
-                        <DonationSection
-                            title="Reserved Donations"
-                            donations={reservedDonations}
-                            handleImageClick={handleImageClick}
-                            backendRoute={backendRoute}
-                            formatImagePath={formatImagePath}
-                            formatDate={formatDate}
-                            bgColor="warning.light"
-                        />
-                        <DonationSection
-                            title="Collected Donations"
-                            donations={collectedDonations}
-                            handleImageClick={handleImageClick}
-                            backendRoute={backendRoute}
-                            formatImagePath={formatImagePath}
-                            formatDate={formatDate}
-                            bgColor="success.light"
-                        />
+                        {hasDonations ? (
+                            <>
+                                <DonationSection
+                                    title="Unreserved Donations"
+                                    donations={unreservedDonations}
+                                    handleImageClick={handleImageClick}
+                                    backendRoute={backendRoute}
+                                    formatImagePath={formatImagePath}
+                                    formatDate={formatDate}
+                                    bgColor="error.light"
+                                />
+                                <DonationSection
+                                    title="Reserved Donations"
+                                    donations={reservedDonations}
+                                    handleImageClick={handleImageClick}
+                                    backendRoute={backendRoute}
+                                    formatImagePath={formatImagePath}
+                                    formatDate={formatDate}
+                                    bgColor="warning.light"
+                                />
+                                <DonationSection
+                                    title="Collected Donations"
+                                    donations={collectedDonations}
+                                    handleImageClick={handleImageClick}
+                                    backendRoute={backendRoute}
+                                    formatImagePath={formatImagePath}
+                                    formatDate={formatDate}
+                                    bgColor="success.light"
+                                />
+                            </>
+                        ) : (
+                            <Box textAlign="center" mt={2} mb={4} p={4} sx={{bgcolor:'#EEEEEE', borderRadius:4}}>
+                                <Typography variant="h6" gutterBottom>
+                                    You don't have any donations yet.
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    Would you like to make your first donation?
+                                </Typography>
+                                <Button
+                                    component={Link}
+                                    to="/donator/DonateItem"
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<AddIcon />}
+                                    sx={{ mt: 2 }}
+                                >
+                                    Make a New Donation
+                                </Button>
+                            </Box>
+                        )}
                     </Box>
 
 
@@ -803,31 +826,6 @@ export default function DonateItem() {
                         </Box>
                     </Box>
                 </Box>
-                {/* <Dialog
-                    open={goalAchievedDialogOpen}
-                    onClose={handleCloseGoalAchievedDialog}
-                >
-                    <DialogTitle>Congratulations!</DialogTitle>
-                    <DialogContent>
-                        <Typography>
-                            You have achieved your donation goal of {donationGoal} grams!
-                        </Typography>
-                        <Typography>
-                            Your current total donations: {totalDonations} grams.
-                        </Typography>
-                        <Typography>
-                            Would you like to set a new goal?
-                        </Typography>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleCloseGoalAchievedDialog} color="primary">
-                            Close
-                        </Button>
-                        <Button onClick={handleOpenGoalModal} color="primary">
-                            Set New Goal
-                        </Button>
-                    </DialogActions>
-                </Dialog> */}
             </div>
             <DonatorFooter />
         </div>

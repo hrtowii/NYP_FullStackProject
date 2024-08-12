@@ -291,9 +291,9 @@ export default function ManageDonations() {
   }
 
   return (
-    <div className="container">
+    <div className="container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <DonatorNavbar />
-      <div className='contents' style={{ backgroundColor: '#f0f8f1' }}>
+      <div className='contents' style={{ backgroundColor: '#f0f8f1', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="centered" style={{ marginTop: '0', marginBottom: '20px' }}>
           <Box
             display="flex"
@@ -303,10 +303,10 @@ export default function ManageDonations() {
             mr={6}
             mb={2}
             sx={{
-              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Shadow for the outer box
-              padding: 2, // Padding inside the outer box
-              borderRadius: 2, // Rounded corners for the outer box
-              backgroundColor: '#f5f5f5' // Optional: Background color for the outer box
+              boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+              padding: 2,
+              borderRadius: 2,
+              backgroundColor: '#f5f5f5'
             }}
           >
             <Box textAlign="center" mt={2}>
@@ -361,8 +361,8 @@ export default function ManageDonations() {
         </div>
 
 
-        <Container maxWidth={false} style={{ width: '90%', marginTop: '20px' }}>
-          <Paper elevation={3} style={{ padding: '20px', marginTop: '20px', marginBottom:"30px"}}>
+        <Container maxWidth={false} style={{ width: '90%', marginTop: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Paper elevation={3} style={{ padding: '20px', marginTop: '5px', marginBottom: "50px", minHeight: "400px", flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h4" gutterBottom>
               My Donations
             </Typography>
@@ -385,12 +385,43 @@ export default function ManageDonations() {
               />
             </Box>
             {donations.length === 0 ? (
-              <Typography align="center" variant="h6" style={{ marginTop: '20px' }}>
-                You have no donations at the moment. Click 'Donate New Item' to make a donation.
-              </Typography>
+              <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" flex={1}>
+                <Typography align="center" variant="h6" gutterBottom>
+                  You have no donations at the moment.
+                </Typography>
+                <Typography align="center" variant="body1" gutterBottom>
+                  Would you like to make your first donation?
+                </Typography>
+                <Button
+                  component={NavLink}
+                  to="/donator/DonateItem"
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  Make a New Donation
+                </Button>
+              </Box>
+            ) : sortedDonations.length === 0 ? (
+              <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" flex={1}>
+                <Typography align="center" variant="h6" gutterBottom>
+                  No donations match your search.
+                </Typography>
+                <Button
+                  onClick={() => setSearchQuery('')}
+                  variant="contained"
+                  color="primary"
+                  startIcon={<CancelIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  Clear Search
+                </Button>
+              </Box>
             ) : (
-              <TableContainer>
-                <Table aria-label="donations table" >
+              <TableContainer style={{ flex: 1 }}>
+                <Table aria-label="donations table">
+
                   <TableHead>
                     <TableRow style={{ backgroundColor: '#f0f8f1' }}>
                       <TableCell>Image</TableCell>

@@ -292,28 +292,27 @@ body {
 
 .sort-container {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
     margin-bottom: 20px;
     padding: 0 20px;
-  }
-  
-  .sort-container label {
+}
+
+.sort-container label {
     margin-right: 10px;
     font-weight: bold;
-  }
-  
-  .sort-container select {
+}
+
+.sort-container select {
     padding: 5px 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
     background-color: white;
     font-size: 16px;
     cursor: pointer;
-  }
-  
-  .sort-container select:focus {
+}
+
+.sort-container select:focus {
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-  }
+}

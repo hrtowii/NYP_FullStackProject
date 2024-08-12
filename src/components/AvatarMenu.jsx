@@ -54,6 +54,7 @@ export default function AvatarMenu({ currentUserName, currentUserRole, currentUs
 
   return (
     <>
+      {currentUserName}
       <Tooltip title="Account settings">
         <IconButton
           onClick={handleClick}
