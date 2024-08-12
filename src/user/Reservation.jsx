@@ -1,6 +1,3 @@
-// TODO:
-//  - make it such that for each reservation section, only 5 reservation boxes can be created.
-
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Rating, Box, Avatar, FormControlLabel, Switch, IconButton, Snackbar, Alert } from '@mui/material';

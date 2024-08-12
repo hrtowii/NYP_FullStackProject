@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { UserNavbar } from "../components/Navbar";
 import { UserFooter, DonatorFooter } from '../components/Footer';
-import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -105,11 +104,6 @@ const UserLandingPage = () => {
     { label: 'Monitor Collections', description: 'Check if your donated food has been collected.' },
   ];
 
-  const navigate = useNavigate();
-  const fridgenavigate = () => {
-    navigate('/user/fridge')
-  }
-
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -152,7 +146,7 @@ const UserLandingPage = () => {
                   <Typography variant="h5" color="inherit" paragraph>
                     Join our eco-friendly community in reducing food waste and fostering sustainability. Share surplus food and help those in need.
                   </Typography>
-                  <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />} onClick={fridgenavigate}>
+                  <Button variant="contained" color="secondary" size="large" startIcon={<Leaf />}>
                     Reserve your food now
                   </Button>
                 </Box>
@@ -218,8 +212,9 @@ const UserLandingPage = () => {
             </Card>
           </Container>
         </main>
+        <UserFooter />
       </Box>
-      <UserFooter />
+      
     </ThemeProvider>
   );
 };

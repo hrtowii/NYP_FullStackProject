@@ -954,7 +954,7 @@ app.delete('/donations/:id', async (req, res) => {
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, category, remarks, image, location} = req.body;
+    const { foods, category, remarks, image, location } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
@@ -1086,6 +1086,8 @@ app.post('/reservation/:id', async (req, res) => {
         if (!user) {
             return res.status(400).json({ error: `User with id ${userId} not found` });
         }
+
+        // Check no. current reservations
 
         const result = await prisma.$transaction(async (prisma) => {
             const newReservations = await Promise.all(formData.cartItems.map(async (item) => {
