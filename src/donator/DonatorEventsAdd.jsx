@@ -104,6 +104,9 @@ const AddEventForm = () => {
       if (formData.phoneNumber.length !== 8) {
         throw new Error('Phone number must be exactly 8 digits');
       }
+      if (!selectedImage) {
+        throw new Error("please upload image")
+      }
 
       const eventData = new FormData();
       eventData.append('title', formData.title);
@@ -293,7 +296,7 @@ const AddEventForm = () => {
                 </div>
 
                 <div className="attire">
-                  <label htmlFor="attire">Attire<span className="titleInfo">(1-40 Characters)</span></label>
+                  <label htmlFor="attire">Attire*<span className="titleInfo">(1-40 Characters)</span></label>
                   <input
                     type="text"
                     id="attire"
@@ -317,10 +320,11 @@ const AddEventForm = () => {
                       id="raised-button-file"
                       type="file"
                       onChange={handleImageSelect}
+                      required
                     />
                     <label htmlFor="raised-button-file">
                       <Button variant="contained" component="span">
-                        Upload Image
+                        Upload Image *
                       </Button>
                     </label>
                   </Box>
@@ -336,7 +340,7 @@ const AddEventForm = () => {
                   )}
 
 
-                  <div className='add-event-button'>
+                  <div className='add-event'>
                     <Button variant="contained" type="submit" disabled={isLoading} className="add-event-button" color="success">
                       {isLoading ? 'Adding event...' : 'Add event'}
                     </Button>
