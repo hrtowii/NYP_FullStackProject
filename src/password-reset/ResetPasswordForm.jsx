@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TextField, Button, Typography, Box, CircularProgress } from '@mui/material';
 import { backendRoute } from '../utils/BackendUrl';
+import { passwordSchema } from '../utils/PasswordValidation';
+import { z } from 'zod';
+import Navbar from '../components/Navbar'
+
 const ResetPasswordForm = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    password: '',
+    confirmPassword: ''
+  });
   const [message, setMessage] = useState('');
   const [isValid, setIsValid] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,19 +39,37 @@ const ResetPasswordForm = () => {
     validateToken();
   }, [token]);
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setMessage('Passwords do not match');
-      return;
+    
+    const schema = z.object({
+      password: passwordSchema,
+      confirmPassword: z.string()
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    });
+
+    try {
+      schema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setMessage(error.errors.map(err => err.message).join(", "));
+        return;
+      }
     }
+
     try {
       const response = await fetch(`${backendRoute}/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password: formData.password }),
       });
       const data = await response.json();
       setMessage(data.message);
@@ -64,16 +88,17 @@ const ResetPasswordForm = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 400, margin: 'auto', mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Reset Your Password
-      </Typography>
+    <>
+    <Navbar/>
+    <Box sx={{ maxWidth: 800, margin: 'auto', mt: 4 }}>
+      <h2 style={{ color: "#4D4D4D" }}>Reset Your Password</h2>
       <form onSubmit={handleSubmit}>
         <TextField
           fullWidth
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
           label="New Password"
           variant="outlined"
           margin="normal"
@@ -82,18 +107,19 @@ const ResetPasswordForm = () => {
         <TextField
           fullWidth
           type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
           label="Confirm New Password"
           variant="outlined"
           margin="normal"
           required
         />
-        <Button 
-          type="submit" 
-          variant="contained" 
-          color="primary" 
-          fullWidth 
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
           sx={{ mt: 2 }}
         >
           Reset Password
@@ -105,6 +131,7 @@ const ResetPasswordForm = () => {
         </Typography>
       )}
     </Box>
+    </>
   );
 };
 
