@@ -39,22 +39,23 @@ model User {
 }
 
 model Review {
-  id           Int            @id @default(autoincrement())
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   rating       Int
   comment      String
-  isAnonymous  Boolean        @default(false)
+  isAnonymous  Boolean       @default(false)
   userId       Int
-  user         User           @relation("UserReviews", fields: [userId], references: [id])
+  user         User          @relation("UserReviews", fields: [userId], references: [id])
   donatorId    Int
-  donator      Donator        @relation("DonatorReviews", fields: [donatorId], references: [id])
+  donator      Donator       @relation("DonatorReviews", fields: [donatorId], references: [id])
   reply        Reply?
   images       Image[]
   likes        Like[]
-  likeCount    Int            @default(0)
+  likeCount    Int           @default(0)
   reviewedItem ReviewedItem?
 }
+
 model ReviewedItem {
   id       Int    @id @default(autoincrement())
   userId   Int

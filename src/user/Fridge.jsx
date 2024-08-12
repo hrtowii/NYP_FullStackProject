@@ -371,6 +371,7 @@ export default function Fridge() {
                                             </TableSortLabel>
                                         </TableCell>
                                         <TableCell>Remarks</TableCell>
+                                        <TableCell>Delivery Date</TableCell>
                                         <TableCell>Location</TableCell>
                                         <TableCell>Donator</TableCell>
                                         <TableCell>Availability</TableCell>
@@ -409,8 +410,9 @@ export default function Fridge() {
                                                         <TableCell>{food.type}</TableCell>
                                                         <TableCell>{food.quantity}</TableCell>
                                                         <TableCell>{donation.category}</TableCell>
-                                                        <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
+                                                        <TableCell>{new Date(food.expiryDate).toLocaleDateString('en-GB')}</TableCell>
                                                         <TableCell>{donation.remarks}</TableCell>
+                                                        <TableCell>{new Date(donation.deliveryDate).toLocaleDateString('en-GB')}</TableCell>
                                                         <TableCell>{donation.location}</TableCell>
                                                         <TableCell>{donation.donator.person.name}</TableCell>
                                                         <TableCell>

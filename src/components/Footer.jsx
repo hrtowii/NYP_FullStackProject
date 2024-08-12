@@ -178,26 +178,26 @@ export function DonatorFooter() {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Quick Links
                         </Typography>
-                        <Link href="/donator" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donator Dashboard</Link>
-                        <Link href="/donator/ManageDonations" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Manage Donations</Link>
-                        <Link href="/donator/DonateItem" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donate Item</Link>
-                        <Link href="/donator/events" color="#00008b" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Events</Link>
+                        <Link href="/donator" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Donator Dashboard</Link>
+                        <Link href="/donator/ManageDonations" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Manage Donations</Link>
+                        <Link href="/donator/DonateItem" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Donate Item</Link>
+                        <Link href="/donator/events" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Events</Link>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             More Info
                         </Typography>
-                        <Link href="/listofdonators" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Donators</Link>
-                        <Link href="/About" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>About Us</Link>
-                        <Link href="/contactus" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Contact Us</Link>
+                        <Link href="/listofdonators" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Donators</Link>
+                        <Link href="/About" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>About Us</Link>
+                        <Link href="/contactus" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Contact Us</Link>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Connect With Us
                         </Typography>
-                        <Link href="https://www.facebook.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Facebook</Link>
-                        <Link href="https://twitter.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Twitter</Link>
-                        <Link href="https://www.instagram.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#1a8c4a' } }}>Instagram</Link>
+                        <Link href="https://www.facebook.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Facebook</Link>
+                        <Link href="https://twitter.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Twitter</Link>
+                        <Link href="https://www.instagram.com/" color="inherit" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Instagram</Link>
                     </Grid>
                 </Grid>
                 <Box mt={5} pt={3} borderTop={1} borderColor="rgba(255,255,255,0.2)">
