@@ -8,11 +8,9 @@ import Button from '@mui/material/Button';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { NavLink, useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CardActions from '@mui/material/CardActions';
 import { TokenContext } from "../utils/TokenContext";
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -28,7 +26,6 @@ import MuiAlert from '@mui/material/Alert';
 //image
 import { Box, Modal } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import CloseIcon from '@mui/icons-material/Close';
 
 //popup
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -228,19 +225,19 @@ export default function DonatorEvents() {
                 },
                 body: JSON.stringify({ userId })
             });
-
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Failed to sign up');
             }
-
+    
             const updatedEvent = await response.json();
             setEvents(prevEvents => prevEvents.map(event =>
-                event.id === eventId ? updatedEvent : event
+                event.id === eventId ? updatedEvent.event : event
             ));
             setSignUpMessage('You have successfully signed up for this event!');
             setSignUpSnackbarOpen(true);
-            setSelectedEvent(updatedEvent); // Update the selected event in the modal
+            setSelectedEvent(updatedEvent.event); // Update the selected event in the modal
         } catch (error) {
             setSignUpMessage(error.message);
             setSignUpSnackbarOpen(true);
@@ -498,7 +495,7 @@ export default function DonatorEvents() {
 
                         <div className="modal-footer">
 
-                            {selectedEvent.donatorId !== userId && (
+                            {selectedEvent && selectedEvent.participants && selectedEvent.donatorId !== userId && (
                                 <Button
                                     className="modal-signup"
                                     onClick={() => selectedEvent.participants.some(p => p.userId === userId)
@@ -558,15 +555,12 @@ export default function DonatorEvents() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Snackbar for successful deletion */}
+            {/* signingup */}
             <Snackbar open={deleteSnackbarOpen} autoHideDuration={6000} onClose={() => setDeleteSnackbarOpen(false)}>
                 <MuiAlert onClose={() => setDeleteSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
                     {successMessage}
                 </MuiAlert>
             </Snackbar>
-
-            {/* signingup */}
             <Snackbar open={deleteSnackbarOpen} autoHideDuration={6000} onClose={() => setDeleteSnackbarOpen(false)}>
                 <MuiAlert onClose={() => setDeleteSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
                     {successMessage}
