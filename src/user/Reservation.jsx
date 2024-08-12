@@ -1,9 +1,3 @@
-// TODO:
-//  - make it such that for each reservation section, only 5 reservation boxes can be created.
-//    then put arrows to navigate to different pages of reservations
-//  - Add confirm button to confirm collected reservation (then will appear under past reservations section)
-//  - Soft delete, to store all those cancelled/completed on the "PAST RESERVATIONS" section
-
 
 import React, { useState, useEffect, useContext } from 'react';
 import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Rating, Box, Avatar, FormControlLabel, Switch, IconButton, Snackbar, Alert } from '@mui/material';
@@ -19,7 +13,11 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import parseJwt from '../utils/parseJwt.jsx'
+import DeleteIcon from '@mui/icons-material/Delete';
 import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+
 // Reservation State Variables
 const Reservation = () => {
     const [currentReservations, setCurrentReservations] = useState([]);
@@ -36,10 +34,15 @@ const Reservation = () => {
     const [openCancelDialog, setOpenCancelDialog] = useState(false);
     const [reservationToCancel, setReservationToCancel] = useState(null);
     const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
+    const [openCancelSuccessDialog, setOpenCancelSuccessDialog] = useState(false);
+    const [openCollectSuccessDialog, setOpenCollectSuccessDialog] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [dateError, setDateError] = useState('');
     const [timeError, setTimeError] = useState('');
     const [selectedDonation, setSelectedDonation] = useState(null);
+    const [visiblePastReservations, setVisiblePastReservations] = useState(5);
+    const [openCollectDialog, setOpenCollectDialog] = useState(false);
+    const [reservationToCollect, setReservationToCollect] = useState(null);
 
     // New state variables for review functionality
     const [openReviewModal, setOpenReviewModal] = useState(false);
@@ -50,6 +53,7 @@ const Reservation = () => {
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [reviewedItems, setReviewedItems] = useState({});
 
     const navigate = useNavigate();
     const currentUserRole = parseJwt(token).role;
@@ -68,8 +72,27 @@ const Reservation = () => {
     useEffect(() => {
         if (userId) {
             fetchReservations();
+            fetchReviewedItems();
         }
     }, [userId]);
+    const fetchReviewedItems = async () => {
+        try {
+            const response = await fetch(`${backendRoute}/reviewed-items/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch reviewed items');
+            }
+            const data = await response.json();
+            setReviewedItems(data);
+        } catch (error) {
+            console.error('Error fetching reviewed items:', error);
+            setError('Failed to load reviewed items. ' + error.message);
+        }
+    };
+
     const fetchReservations = async () => {
         setIsLoading(true);
         setError(null);
@@ -232,7 +255,7 @@ const Reservation = () => {
                     fetchReservations();
                     setOpenCancelDialog(false);
                     setSuccessMessage(data.message || 'Your reservation has been cancelled.');
-                    setOpenSuccessDialog(true);
+                    setOpenCancelSuccessDialog(true);
                 } else {
                     const errorData = await res.json();
                     throw new Error(errorData.error || 'Failed to cancel reservation');
@@ -255,32 +278,48 @@ const Reservation = () => {
         }
     };
 
-    const handleCollectClick = async (reservation) => {
-        try {
-            const res = await fetch(`${backendRoute}/reservation/${reservation.id}/collect`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+    const handleCollectClick = (reservation) => {
+        setReservationToCollect(reservation);
+        setOpenCollectDialog(true);
+    }
 
-            if (res.ok) {
-                fetchReservations();
-                setSuccessMessage('Your reservation has been marked as collected.');
-                setOpenSuccessDialog(true);
-            } else {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Failed to mark reservation as collected');
+    const handleCollectConfirm = async () => {
+        if (reservationToCollect && reservationToCollect.id) {
+            try {
+                const res = await fetch(`${backendRoute}/reservation/${reservationToCollect.id}/collect`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    fetchReservations();
+                    setOpenCollectDialog(false);
+                    setSuccessMessage(data.message || 'Your reservation has been marked as collected.');
+                    setOpenCollectSuccessDialog(true);
+                } else {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Failed to mark reservation as collected');
+                }
+            } catch (error) {
+                console.error('Error marking reservation as collected:', error);
+                setError('Failed to mark reservation as collected. ' + error.message);
             }
-        } catch (error) {
-            console.error('Error marking reservation as collected:', error);
-            setError('Failed to mark reservation as collected. ' + error.message);
+        } else {
+            setError('Failed to mark reservation as collected. Invalid reservation data');
         }
     };
 
     // John add reviews
-    const handleOpenReviewModal = async (donator) => {
+    const handleOpenReviewModal = async (donator, foodItemId) => {
+        if (reviewedItems[foodItemId]) {
+            setSnackbar({ open: true, message: 'You have already reviewed this item', severity: 'info' });
+            return;
+        }
+
         try {
             const response = await fetch(`${backendRoute}/get_donator`, {
                 method: 'POST',
@@ -297,7 +336,7 @@ const Reservation = () => {
 
             const donatorData = await response.json();
 
-            setSelectedDonator({ ...donator, name: donatorData.name });
+            setSelectedDonator({ ...donator, name: donatorData.name, foodItemId });
             setOpenReviewModal(true);
         } catch (error) {
             console.error('Error fetching donator information:', error);
@@ -346,6 +385,7 @@ const Reservation = () => {
             formData.append('comment', comment);
             formData.append('userId', userId);
             formData.append('isAnonymous', isAnonymous);
+            formData.append('foodId', selectedDonator.foodItemId);
             selectedImages.forEach((image, index) => {
                 formData.append('images', image);
             });
@@ -366,15 +406,26 @@ const Reservation = () => {
             const responseData = await response.json();
             console.log('Review submission response:', responseData);
 
+            // Mark the item as reviewed
+            setReviewedItems(prev => ({
+                ...prev,
+                [selectedDonator.foodItemId]: true
+            }));
+
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseReviewModal();
             fetchReservations();
+            fetchReviewedItems(); // Fetch updated reviewed items
         } catch (error) {
             console.error('Error submitting review:', error);
             setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
         }
     };
 
+
+    const loadMorePast = () => {
+        setVisiblePastReservations(prevVisible => prevVisible + 5);
+    }
 
     // INDIVIDUAL RESERVATION CARD
     const ReservationCard = ({ reservation }) => {
@@ -417,35 +468,42 @@ const Reservation = () => {
                             {reservation.collectionStatus === 'Uncollected' && (
                                 <div className="button-group">
                                     <Button
-                                        className="cancel-btn"
+                                        className="cancel-btn reservation-button"
                                         onClick={() => handleCancelClick(reservation, item)}
                                         variant="contained"
                                         color="error"
                                         size="small"
                                     >
+                                        <DeleteIcon fontSize="small" />
                                         Cancel
                                     </Button>
                                     <Button
-                                        className="collect-btn"
+                                        className="collect-btn reservation-button"
                                         onClick={() => handleCollectClick(reservation, item)}
                                         variant="contained"
                                         color="success"
                                         size="small"
                                     >
+                                        <CheckCircleIcon fontSize="small" />
                                         Collected
                                     </Button>
                                 </div>
                             )}
-                            {reservation.collectionStatus === 'Collected' && (
+                            {reservation.collectionStatus === 'Collected' && !reviewedItems[item.food.id] && (
                                 <Button
-                                    className="review-btn"
-                                    onClick={() => handleOpenReviewModal(item.food.donation.donator)}
+                                    className="review-btn reservation-button"
+                                    onClick={() => handleOpenReviewModal(item.food.donation.donator, item.food.id)}
                                     variant="contained"
                                     color="primary"
                                     size="small"
                                 >
                                     Add a review
                                 </Button>
+                            )}
+                            {reservation.collectionStatus === 'Collected' && reviewedItems[item.food.id] && (
+                                <Typography variant="body2" color="textSecondary">
+                                    Review submitted
+                                </Typography>
                             )}
                         </div>
                     </div>
@@ -482,12 +540,24 @@ const Reservation = () => {
                         <div className="reservation-section">
                             <h2>Your Past Reservations:</h2>
                             {pastReservations.length > 0 ? (
-                                pastReservations.map(reservation => (
-                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
-                                ))
+                                <>
+                                    {pastReservations.slice(0, visiblePastReservations).map(reservation => (
+                                        <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
+                                    ))}
+                                    {visiblePastReservations < pastReservations.length && (
+                                        <button className="show-more-button" onClick={loadMorePast}>
+                                            Show More
+                                        </button>
+                                    )}
+                                </>
                             ) : (
                                 <p>No past reservations.</p>
                             )}
+
+                            {/* {pastReservations.length > 0 ? (
+                                pastReservations.map(reservation => (
+                                    <ReservationCard key={reservation.id} reservation={reservation} isPast={true} />
+                                )) */}
                         </div>
                     </div>
                 )}
@@ -549,14 +619,15 @@ const Reservation = () => {
             {/* CANCELLATION DIALOG */}
             <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
                 <DialogTitle>
-                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center', color: '#ff0000' }}>
                         <span style={{ marginRight: '8px', color: '#FFA500' }}>⚠️</span>
                         Removal Confirmation
                     </Typography>
                 </DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to cancel your reservation?
+                        Are you sure you want to cancel your reservation?<br></br>
+                        <span style={{ color: '#ffa500' }}>(this action cannot be reversed)</span>
                     </Typography>
                 </DialogContent>
                 <DialogActions>
@@ -567,7 +638,7 @@ const Reservation = () => {
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={openSuccessDialog} onClose={() => setOpenSuccessDialog(false)}>
+            <Dialog open={openCancelSuccessDialog} onClose={() => setOpenCancelSuccessDialog(false)}>
                 <DialogTitle>
                     <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
                         <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
@@ -578,7 +649,46 @@ const Reservation = () => {
                     <Typography>{successMessage}</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenSuccessDialog(false)} color="primary" variant="contained">
+                    <Button onClick={() => setOpenCancelSuccessDialog(false)} color="primary" variant="contained">
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* COLLECT CONFIRMATION DIALOG */}
+            <Dialog open={openCollectDialog} onClose={() => setOpenCollectDialog(false)}>
+                <DialogTitle>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '8px', color: '#4CAF50' }}>⚠️</span>
+                        Collection Confirmation
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you have collected the item?<br></br>
+                        <span style={{ color: '#ffa500' }}>(this action cannot be reversed)</span>
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenCollectDialog(false)}>No</Button>
+                    <Button onClick={handleCollectConfirm} color="primary" variant="contained">
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openCollectSuccessDialog} onClose={() => setOpenCollectSuccessDialog(false)}>
+                <DialogTitle>
+                    <Typography variant="h6" component="div" style={{ display: 'flex', alignItems: 'center' }}>
+                        <CheckCircleOutlineIcon style={{ color: 'green', marginRight: '8px' }} />
+                        Reservation Collected
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>{successMessage}</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenCollectSuccessDialog(false)} color="primary" variant="contained">
                         OK
                     </Button>
                 </DialogActions>

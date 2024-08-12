@@ -577,6 +577,7 @@ export default function AdminLanding() {
 
   return (
     <>
+      <ThemeProvider theme={theme}>
       <AdminNavbar />
       <Container maxWidth='md'>
       <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
@@ -654,6 +655,7 @@ export default function AdminLanding() {
         message="Saved changes!"
       />
       </Container>
+      </ThemeProvider>
     </>
   );
 }

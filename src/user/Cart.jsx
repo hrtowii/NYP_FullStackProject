@@ -1,6 +1,3 @@
-// TO-DO:
-//  - Add alert/message box to show "Item reserved", upon clicking of "Reserve" button
-
 
 import React, { useState, useEffect, useContext } from 'react';
 import {
@@ -304,7 +301,7 @@ const Cart = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Collection Date"
+              label="Collection Date*"
               type="date"
               value={collectionDate}
               onChange={handleDateChange}
@@ -320,7 +317,7 @@ const Cart = () => {
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
-              label="Collection Time Start"
+              label="Collection Time Start*"
               type="time"
               value={collectionTimeStart}
               onChange={(e) => setCollectionTimeStart(enforceTimeRestrictions(e.target.value))}
@@ -333,7 +330,7 @@ const Cart = () => {
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Collection Time End"
+              label="Collection Time End*"
               type="time"
               value={collectionTimeEnd}
               onChange={(e) => setCollectionTimeEnd(enforceTimeRestrictions(e.target.value))}

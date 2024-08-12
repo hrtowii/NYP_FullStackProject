@@ -1,0 +1,141 @@
+.sustainability-container {
+    font-family: 'Roboto', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+.sustainability-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/sustainabilitypagepic.png');
+    padding: 80px;
+    text-align: center;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.sustainability-header h1 {
+    margin: 0;
+    margin-bottom: 15px;
+    font-size: 35px;
+}
+
+.sustainability-header p {
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.sustainability-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin: 40px 0;
+}
+
+.sustainability-stat-item {
+    text-align: center;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    margin: 0 10px 20px;
+    min-width: 200px;
+}
+
+.sustainability-stat-item h3 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.sustainability-stat-item .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2ecc71;
+    margin-bottom: 10px;
+}
+
+.tab-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.chart-container {
+    height: 400px;
+    margin-top: 30px;
+}
+
+.info-section {
+    margin-top: 50px;
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.info-section h2 {
+    color: #2c3e50;
+}
+
+.cta-section {
+    margin-top: 50px;
+    text-align: center;
+}
+
+
+.cta-button {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.cta-button:hover {
+    background-color: #27ae60;
+}
+
+@media (max-width: 768px) {
+    .sustainability-header {
+        padding: 30px 15px;
+    }
+
+    .sustainability-header h1 {
+        font-size: 2rem;
+    }
+
+    .sustainability-header p {
+        font-size: 1rem;
+    }
+
+    .sustainability-stats {
+        flex-direction: column;
+    }
+
+    .sustainability-stat-item {
+        margin: 0 0 20px;
+    }
+}

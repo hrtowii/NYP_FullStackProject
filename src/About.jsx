@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
 import { UserNavbar, DonatorNavbar } from './components/Navbar'
-import { DonatorFooter } from './components/Footer.jsx';
+import { DonatorFooter, UserFooter } from './components/Footer.jsx';
 import Navbar from "./components/Navbar";
 import "./index.css"
 import './About.css'
@@ -19,9 +19,12 @@ function Box(props) {
 
 export default function About() {
   const { token } = useContext(TokenContext);
-  const currentUserRole = parseJwt(token).role
-
-
+  let currentUserRole;
+  if (token == null) {
+    currentUserRole = "user";
+  } else {
+    currentUserRole = parseJwt(token).role
+  }
   const [value, setValue] = useState(0);
   useEffect(() => {
     const timeoutId = setTimeout(() => setValue(31238), 100);

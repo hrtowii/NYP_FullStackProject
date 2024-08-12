@@ -4,6 +4,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {UserFooter, DonatorFooter} from '../components/Footer';
+
 import './DonatorEventsAdd.css';
 
 
@@ -63,6 +65,7 @@ const AddEventThanks = () => {
                     </div>
                 </div>
             </div>
+            <DonatorFooter/>
         </div>
     );
 };

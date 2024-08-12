@@ -27,6 +27,7 @@ import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
 import ResetPasswordRequest from './password-reset/ResetPasswordRequest.jsx'
 import ResetPasswordForm from './password-reset/ResetPasswordForm.jsx'
 import UserEvents from './user/UserEvents.jsx'
+import Aboutus from './Aboutus.jsx'
 
 import './index.css'
 import {
@@ -35,12 +36,21 @@ import {
 } from "react-router-dom";
 import { TokenProvider } from './utils/TokenContext.jsx'
 import AdminLanding from './admin/AdminLanding.tsx'
+import SustainabilityMetrics from './SustainabilityMetrics.jsx'
 
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Landing />,
+  },
+  {
+    path: "/SustainabilityMetrics",
+    element: <SustainabilityMetrics />,
+  },
+  {
+    path: "/aboutus",
+    element: <Aboutus />,
   },
   {
     path: "/signup",

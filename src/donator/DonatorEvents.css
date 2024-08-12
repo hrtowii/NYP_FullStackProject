@@ -1,3 +1,4 @@
+/* DonatorEvents.css"
 /* Base styles */
 body {
     font-family: Arial, sans-serif;
@@ -6,47 +7,40 @@ body {
 }
 
 /* Image container and overlay */
-.image-container {
+
+.events-header {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/Eventsphoto.png');
+    background-size: cover;
+    background-position: center;
+    padding: 80px;
+    text-align: center;
+    margin-bottom: 20px;
     position: relative;
-    width: 100%;
 }
 
-.full-width-image {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.overlay {
+.events-header::before {
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.5);
-    text-align: center;
+    right: 0;
+    bottom: 0;
+    border-radius: 15px;
 }
 
-.overlay-text {
-    color: white;
-    margin: 0;
+.events-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+    color: #fff;
 }
 
-.title {
-    font-size: clamp(2rem, 5vw, 6rem);
-    font-weight: 700;
-}
-
-.description {
-    font-size: clamp(1rem, 2vw, 2rem);
-    font-weight: 400;
-    margin-top: 0.5rem;
-    max-width: 70%;
-    color: rgba(255, 255, 255, 0.9);
+.events-header p {
+    font-size: 1.1em;
+    position: relative;
+    z-index: 1;
+    color: #fff;
 }
 
 /* Button styles */
@@ -79,7 +73,7 @@ body {
     width: 100%;
     margin: 20px 0;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     transition: transform 0.3s ease;
 }
@@ -185,7 +179,8 @@ body {
     gap: 10px;
 }
 
-.modal-close, .modal-signup {
+.modal-close,
+.modal-signup {
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -286,3 +281,39 @@ body {
         margin-bottom: 20px;
     }
 }
+
+.middle-container .MuiButton-contained {
+    background-color: #2ecc71 !important;
+}
+
+.rightSide-title-summary .event-title {
+    color: #2ecc71;
+}
+
+.sort-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 20px;
+  }
+  
+  .sort-container label {
+    margin-right: 10px;
+    font-weight: bold;
+  }
+  
+  .sort-container select {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .sort-container select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }

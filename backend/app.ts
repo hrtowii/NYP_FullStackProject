@@ -954,7 +954,7 @@ app.delete('/donations/:id', async (req, res) => {
 // Update donations
 app.put('/donations/:id', async (req, res) => {
     const { id } = req.params;
-    const { foods, category, remarks, image, location} = req.body;
+    const { foods, category, remarks, image, location } = req.body;
     try {
         const updatedDonation = await prisma.donation.update({
             where: { id: parseInt(id) },
@@ -1086,6 +1086,8 @@ app.post('/reservation/:id', async (req, res) => {
         if (!user) {
             return res.status(400).json({ error: `User with id ${userId} not found` });
         }
+
+        // Check no. current reservations
 
         const result = await prisma.$transaction(async (prisma) => {
             const newReservations = await Promise.all(formData.cartItems.map(async (item) => {
@@ -1621,13 +1623,58 @@ app.post('/events/:eventId/signup', async (req, res) => {
                 images: true
             }
         });
-        console.log(updatedEvent);
-        res.status(200).json(updatedEvent);
+
+        res.status(200).json({
+            message: 'You have successfully signed up for this event!',
+            event: updatedEvent
+        });
     } catch (error) {
         console.error('Error signing up for event:', error);
         res.status(500).json({ error: 'Failed to sign up for event' });
     }
+});
 
+app.post('/events/:eventId/cancel-signup', async (req, res) => {
+    const { eventId } = req.params;
+    const { userId } = req.body;
+
+    try {
+        const event = await prisma.event.findUnique({
+            where: { id: Number(eventId) },
+            include: { participants: true }
+        });
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const participantIndex = event.participants.findIndex(
+            participant => participant.userId === Number(userId)
+        );
+
+        if (participantIndex === -1) {
+            return res.status(400).json({ error: 'You are not signed up for this event' });
+        }
+
+        const updatedEvent = await prisma.event.update({
+            where: { id: Number(eventId) },
+            data: {
+                takenSlots: { decrement: 1 },
+                participants: {
+                    delete: { id: event.participants[participantIndex].id }
+                }
+            },
+            include: {
+                participants: true,
+                images: true
+            }
+        });
+
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error canceling sign-up for event:', error);
+        res.status(500).json({ error: 'Failed to cancel sign-up for event' });
+    }
 });
 
 
@@ -1712,14 +1759,33 @@ app.post('/reviews/:reviewId/reply', async (req, res) => {
 app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
     try {
         const { id } = req.params;
-        const { rating, comment, userId, isAnonymous } = req.body;
+        const { rating, comment, userId, isAnonymous, foodId } = req.body;
 
         const donatorId = parseInt(id, 10);
         const reviewerId = parseInt(userId, 10);
+        const foodItemId = parseInt(foodId, 10);
 
         // Validate input
         if (!rating || isNaN(parseInt(rating)) || parseInt(rating) < 1 || parseInt(rating) > 5) {
             return res.status(400).json({ error: 'Invalid rating' });
+        }
+
+        if (!foodItemId) {
+            return res.status(400).json({ error: 'Food item ID is required' });
+        }
+
+        // Check if the user has already reviewed this food item
+        const existingReview = await prisma.reviewedItem.findUnique({
+            where: {
+                userId_foodId: {
+                    userId: reviewerId,
+                    foodId: foodItemId
+                }
+            }
+        });
+
+        if (existingReview) {
+            return res.status(400).json({ error: 'You have already reviewed this food item' });
         }
 
         const newReview = await prisma.$transaction(async (prisma) => {
@@ -1751,6 +1817,15 @@ app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
                 }
             });
 
+            // Create a record in ReviewedItem
+            await prisma.reviewedItem.create({
+                data: {
+                    userId: reviewerId,
+                    foodId: foodItemId,
+                    reviewId: review.id
+                }
+            });
+
             const donator = await prisma.donator.findUnique({
                 where: { id: donatorId },
                 include: { reviews: true }
@@ -1776,7 +1851,26 @@ app.post('/review_submit/:id', upload.array('images', 2), async (req, res) => {
         res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
+app.get('/reviewed-items/:userId', async (req, res) => {
+    const userId = parseInt(req.params.userId, 10);
 
+    try {
+        const reviewedItems = await prisma.reviewedItem.findMany({
+            where: { userId: userId },
+            select: { foodId: true }
+        });
+
+        const reviewedItemsMap = reviewedItems.reduce((acc, item) => {
+            acc[item.foodId] = true;
+            return acc;
+        }, {});
+
+        res.json(reviewedItemsMap);
+    } catch (error) {
+        console.error('Error fetching reviewed items:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
 app.post('/donators', async (req, res) => {
     try {
         const donators = await prisma.donator.findMany({
@@ -1857,6 +1951,12 @@ app.get('/reviews/:id', async (req, res) => {
             }
         });
 
+        const reviewedItems = await prisma.reviewedItem.findMany({
+            where: {
+                userId: userId
+            }
+        });
+
         const mappedReviews = reviews.map(review => {
             const reviewData = { ...review };
             if (reviewData.isAnonymous) {
@@ -1869,6 +1969,7 @@ app.get('/reviews/:id', async (req, res) => {
                 (userRole === 'donator' && like.donatorId === userId)
             );
             reviewData.likedByDonator = reviewData.likes.some(like => like.donatorId === donatorId);
+            reviewData.reviewedByUser = reviewedItems.some(item => item.reviewId === review.id);
             delete reviewData.likes;
             return reviewData;
         });
@@ -2040,7 +2141,8 @@ app.delete('/reviews/:id', async (req, res) => {
                 reply: true,
                 donator: true,
                 images: true,
-                likes: true
+                likes: true,
+                reviewedItem: true // Include the associated ReviewedItem
             }
         });
 
@@ -2057,7 +2159,15 @@ app.delete('/reviews/:id', async (req, res) => {
         }
 
         await prisma.$transaction(async (prisma) => {
-            // First, delete associated likes
+            // Delete associated ReviewedItem
+            if (review.reviewedItem) {
+                console.log(`Deleting ReviewedItem for review ${reviewId}`);
+                await prisma.reviewedItem.delete({
+                    where: { id: review.reviewedItem.id }
+                });
+            }
+
+            // Delete associated likes
             if (review.likes.length > 0) {
                 console.log(`Deleting ${review.likes.length} likes for review ${reviewId}`);
                 await prisma.like.deleteMany({
@@ -2107,8 +2217,8 @@ app.delete('/reviews/:id', async (req, res) => {
             });
         });
 
-        console.log(`Review ${reviewId}, associated reply, likes, and images deleted successfully`);
-        res.status(200).json({ message: 'Review, associated reply, likes, and images deleted successfully' });
+        console.log(`Review ${reviewId}, associated reply, likes, images, and ReviewedItem deleted successfully`);
+        res.status(200).json({ message: 'Review and all associated data deleted successfully' });
     } catch (error) {
         console.error('Error deleting review:', error);
         console.error('Error stack:', error.stack);

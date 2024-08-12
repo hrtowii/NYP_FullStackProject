@@ -18,6 +18,8 @@ export default function Navbar() {
       <div>
         <span className="navbar-logo">🍃 CommuniFridge</span>
         <NavLink to={"/"}>Home</NavLink>
+        <NavLink to={"/aboutus"}>About Us</NavLink>
+        <NavLink to={"/sustainabilitymetrics"}>Sustainability</NavLink>
         {!isLoggedIn ? (
           <>
             <NavLink to={"/signup"}>Sign Up</NavLink>

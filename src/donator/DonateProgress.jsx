@@ -810,7 +810,7 @@ export default function DonateItem() {
                                             </React.Fragment>
                                         ))}
                                     </List>
-                                    {reviews.length > 1 && (
+                                    {reviews.length > 0 && (
                                         <Box textAlign="center" mt={2}>
                                             <Button
                                                 component={Link}
