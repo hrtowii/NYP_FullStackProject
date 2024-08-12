@@ -20,6 +20,7 @@ Table User {
   reservations Reservation [not null]
   reviews Review [not null]
   likes Like [not null]
+  reviewedItems ReviewedItem [not null]
 
   indexes {
     (id) [pk]
@@ -41,6 +42,21 @@ Table Review {
   images Image [not null]
   likes Like [not null]
   likeCount Int [not null, default: 0]
+  reviewedItem ReviewedItem
+}
+
+Table ReviewedItem {
+  id Int [pk, increment]
+  userId Int [not null]
+  foodId Int [not null]
+  reviewId Int [unique, not null]
+  user User [not null]
+  food Food [not null]
+  review Review [not null]
+
+  indexes {
+    (userId, foodId) [unique]
+  }
 }
 
 Table Like {
@@ -141,6 +157,7 @@ Table Food {
   donationId Int [not null]
   donation Donation [not null]
   reservationItems ReservationItem [not null]
+  reviewedItems ReviewedItem [not null]
 }
 
 Table Reservation {
@@ -205,6 +222,12 @@ Ref: User.id - Person.id [delete: Cascade]
 Ref: Review.userId > User.id
 
 Ref: Review.donatorId > Donator.id
+
+Ref: ReviewedItem.userId > User.id
+
+Ref: ReviewedItem.foodId > Food.id
+
+Ref: ReviewedItem.reviewId - Review.id
 
 Ref: Like.userId > User.id
 

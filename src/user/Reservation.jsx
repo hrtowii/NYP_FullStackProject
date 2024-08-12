@@ -53,6 +53,7 @@ const Reservation = () => {
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [reviewedItems, setReviewedItems] = useState({});
 
     const navigate = useNavigate();
     const currentUserRole = parseJwt(token).role;
@@ -71,8 +72,27 @@ const Reservation = () => {
     useEffect(() => {
         if (userId) {
             fetchReservations();
+            fetchReviewedItems();
         }
     }, [userId]);
+    const fetchReviewedItems = async () => {
+        try {
+            const response = await fetch(`${backendRoute}/reviewed-items/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch reviewed items');
+            }
+            const data = await response.json();
+            setReviewedItems(data);
+        } catch (error) {
+            console.error('Error fetching reviewed items:', error);
+            setError('Failed to load reviewed items. ' + error.message);
+        }
+    };
+
     const fetchReservations = async () => {
         setIsLoading(true);
         setError(null);
@@ -294,7 +314,12 @@ const Reservation = () => {
     };
 
     // John add reviews
-    const handleOpenReviewModal = async (donator) => {
+    const handleOpenReviewModal = async (donator, foodItemId) => {
+        if (reviewedItems[foodItemId]) {
+            setSnackbar({ open: true, message: 'You have already reviewed this item', severity: 'info' });
+            return;
+        }
+
         try {
             const response = await fetch(`${backendRoute}/get_donator`, {
                 method: 'POST',
@@ -311,7 +336,7 @@ const Reservation = () => {
 
             const donatorData = await response.json();
 
-            setSelectedDonator({ ...donator, name: donatorData.name });
+            setSelectedDonator({ ...donator, name: donatorData.name, foodItemId });
             setOpenReviewModal(true);
         } catch (error) {
             console.error('Error fetching donator information:', error);
@@ -360,6 +385,7 @@ const Reservation = () => {
             formData.append('comment', comment);
             formData.append('userId', userId);
             formData.append('isAnonymous', isAnonymous);
+            formData.append('foodId', selectedDonator.foodItemId);
             selectedImages.forEach((image, index) => {
                 formData.append('images', image);
             });
@@ -380,14 +406,22 @@ const Reservation = () => {
             const responseData = await response.json();
             console.log('Review submission response:', responseData);
 
+            // Mark the item as reviewed
+            setReviewedItems(prev => ({
+                ...prev,
+                [selectedDonator.foodItemId]: true
+            }));
+
             setSnackbar({ open: true, message: 'Review submitted successfully', severity: 'success' });
             handleCloseReviewModal();
             fetchReservations();
+            fetchReviewedItems(); // Fetch updated reviewed items
         } catch (error) {
             console.error('Error submitting review:', error);
             setSnackbar({ open: true, message: `Failed to submit review: ${error.message}`, severity: 'error' });
         }
     };
+
 
     const loadMorePast = () => {
         setVisiblePastReservations(prevVisible => prevVisible + 5);
@@ -455,16 +489,21 @@ const Reservation = () => {
                                     </Button>
                                 </div>
                             )}
-                            {reservation.collectionStatus === 'Collected' && (
+                            {reservation.collectionStatus === 'Collected' && !reviewedItems[item.food.id] && (
                                 <Button
                                     className="review-btn reservation-button"
-                                    onClick={() => handleOpenReviewModal(item.food.donation.donator)}
+                                    onClick={() => handleOpenReviewModal(item.food.donation.donator, item.food.id)}
                                     variant="contained"
                                     color="primary"
                                     size="small"
                                 >
                                     Add a review
                                 </Button>
+                            )}
+                            {reservation.collectionStatus === 'Collected' && reviewedItems[item.food.id] && (
+                                <Typography variant="body2" color="textSecondary">
+                                    Review submitted
+                                </Typography>
                             )}
                         </div>
                     </div>
