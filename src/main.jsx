@@ -27,6 +27,7 @@ import DonatorEventsAddThanks from './donator/DonatorEventsAddThanks.jsx'
 import ResetPasswordRequest from './password-reset/ResetPasswordRequest.jsx'
 import ResetPasswordForm from './password-reset/ResetPasswordForm.jsx'
 import UserEvents from './user/UserEvents.jsx'
+import Aboutus from './Aboutus.jsx'
 
 import './index.css'
 import {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
   {
     path: "/SustainabilityMetrics",
     element: <SustainabilityMetrics />,
+  },
+  {
+    path: "/aboutus",
+    element: <Aboutus />,
   },
   {
     path: "/signup",

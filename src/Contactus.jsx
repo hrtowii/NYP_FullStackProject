@@ -16,7 +16,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { UserNavbar, DonatorNavbar } from './components/Navbar';
 import { TokenContext } from './utils/TokenContext';
 import parseJwt from './utils/parseJwt.jsx';
-import { DonatorFooter } from './components/Footer.jsx';
+import { UserFooter } from './components/Footer.jsx';
 import { backendRoute } from './utils/BackendUrl.jsx';
 import ChatBot from './components/ChatBot.jsx';
 
@@ -175,7 +175,7 @@ export default function ContactUs() {
                     message={snackbar.message}
                 />
             </Container>
-            <DonatorFooter/>
+            <UserFooter/>
         </>
     );
 }

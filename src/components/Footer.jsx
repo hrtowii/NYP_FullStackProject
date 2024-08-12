@@ -18,7 +18,7 @@ export function UserFooter() {
         <Box 
             component="footer" 
             sx={{ 
-                bgcolor: '#2ecc71', // Same as DonatorFooter
+                bgcolor: '#4e7240', // Same as DonatorFooter
                 color: '#fff',
                 py: 6,
                 mt: 'auto',
@@ -105,10 +105,10 @@ export function UserFooter() {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Quick Links
                         </Typography>
-                        <Link href="/user/reservation" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Reservations</Link>
-                        <Link href="/user/fridge" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Fridge</Link>
-                        <Link href="/listofdonators" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Donators</Link>
-                        <Link href="/About" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>About Us</Link>
+                        <Link href="/user/reservation" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Reservations</Link>
+                        <Link href="/user/fridge" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Fridge</Link>
+                        <Link href="/listofdonators" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Donators</Link>
+                        <Link href="/About" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>About Us</Link>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Typography variant="h6" gutterBottom fontWeight="bold">
@@ -127,9 +127,9 @@ export function UserFooter() {
                         <Typography variant="h6" gutterBottom fontWeight="bold">
                             Connect With Us
                         </Typography>
-                        <Link href="https://www.facebook.com/" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Facebook</Link>
-                        <Link href="https://twitter.com/" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Twitter</Link>
-                        <Link href="https://www.instagram.com/" color="#3498db" display="block" sx={{ mb: 1, '&:hover': { color: '#2980b9' } }}>Instagram</Link>
+                        <Link href="https://www.facebook.com/" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Facebook</Link>
+                        <Link href="https://twitter.com/" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Twitter</Link>
+                        <Link href="https://www.instagram.com/" color="#f1f8e9" display="block" sx={{ mb: 1, '&:hover': { color: '#f1f8e9' } }}>Instagram</Link>
                     </Grid>
                 </Grid>
                 <Box mt={5} pt={3} borderTop={1} borderColor="rgba(255,255,255,0.2)">
