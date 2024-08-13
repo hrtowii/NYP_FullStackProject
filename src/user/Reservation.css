@@ -8,11 +8,10 @@ body {
 }
 
 .reservation-header {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/reservationpagepic.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/public/reservationpagepic.png');
     padding: 80px;
     text-align: center; 
     margin-bottom: 20px;
-    
 }
 
 .reservation-header::before {

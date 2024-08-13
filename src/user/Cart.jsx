@@ -10,7 +10,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
 import { useLocation, useNavigate } from 'react-router-dom';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 
 
 
@@ -117,7 +117,20 @@ const Cart = () => {
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setCollectionDate(newDate);
-    validateDate(newDate);
+
+    const selectedDate = new Date(newDate);
+    const earliestDeliveryDate = new Date(Math.min(...cartItems.map(item => new Date(item.deliveryDate))));
+    const earliestExpiryDate = new Date(Math.min(...cartItems.flatMap(item => item.foods.map(food => new Date(food.expiryDate)))));
+
+    if (selectedDate < earliestDeliveryDate) {
+      setDateError(`Collection date cannot be earlier than the earliest delivery date (${earliestDeliveryDate.toLocaleDateString('en-GB')})`);
+    } else if (selectedDate > earliestExpiryDate) {
+      setDateError(`Collection date cannot be later than the earliest expiry date (${earliestExpiryDate.toLocaleDateString('en-GB')})`);
+    } else if (!validateDate(newDate)) {
+      setDateError('Please select a date from today onwards');
+    } else {
+      setDateError('');
+    }
   };
 
   const enforceTimeRestrictions = (time) => {
@@ -259,6 +272,7 @@ const Cart = () => {
                 <TableCell>Category</TableCell>
                 <TableCell>Expiry Date</TableCell>
                 <TableCell>Remarks</TableCell>
+                <TableCell>Delivery Date</TableCell>
                 <TableCell>Location</TableCell>
                 <TableCell>Donator</TableCell>
               </TableRow>
@@ -286,8 +300,9 @@ const Cart = () => {
                     <TableCell>{food.type}</TableCell>
                     <TableCell>{food.quantity}</TableCell>
                     <TableCell>{donation.category}</TableCell>
-                    <TableCell>{new Date(food.expiryDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(food.expiryDate).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{donation.remarks}</TableCell>
+                    <TableCell>{new Date(donation.deliveryDate).toLocaleDateString('en-GB')}</TableCell>
                     <TableCell>{donation.location}</TableCell>
                     <TableCell>{donation.donator.person.name}</TableCell>
                   </TableRow>
@@ -354,7 +369,7 @@ const Cart = () => {
             />
           </Grid>
         </Grid>
-        
+
         <Button
           variant="contained"
           onClick={handleReserve}
@@ -365,7 +380,7 @@ const Cart = () => {
           RESERVE
         </Button>
       </Box>
-      <UserFooter/>
+      <UserFooter />
     </>
   );
 };
