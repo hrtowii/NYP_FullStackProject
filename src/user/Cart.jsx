@@ -10,7 +10,7 @@ import { backendRoute } from '../utils/BackendUrl';
 import { TokenContext } from '../utils/TokenContext';
 import parseJwt from '../utils/parseJwt.jsx'
 import { useLocation, useNavigate } from 'react-router-dom';
-import {UserFooter, DonatorFooter} from '../components/Footer';
+import { UserFooter, DonatorFooter } from '../components/Footer';
 
 
 
@@ -117,11 +117,11 @@ const Cart = () => {
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setCollectionDate(newDate);
-  
+
     const selectedDate = new Date(newDate);
     const earliestDeliveryDate = new Date(Math.min(...cartItems.map(item => new Date(item.deliveryDate))));
     const earliestExpiryDate = new Date(Math.min(...cartItems.flatMap(item => item.foods.map(food => new Date(food.expiryDate)))));
-  
+
     if (selectedDate < earliestDeliveryDate) {
       setDateError(`Collection date cannot be earlier than the earliest delivery date (${earliestDeliveryDate.toLocaleDateString('en-GB')})`);
     } else if (selectedDate > earliestExpiryDate) {
@@ -359,7 +359,7 @@ const Cart = () => {
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Remarks" 
+              label="Remarks"
               multiline
               rows={4}
               value={remarks}
@@ -369,7 +369,7 @@ const Cart = () => {
             />
           </Grid>
         </Grid>
-        
+
         <Button
           variant="contained"
           onClick={handleReserve}
@@ -380,7 +380,7 @@ const Cart = () => {
           RESERVE
         </Button>
       </Box>
-      <UserFooter/>
+      <UserFooter />
     </>
   );
 };
