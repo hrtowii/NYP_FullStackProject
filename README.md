@@ -6,7 +6,8 @@
 * KeyDB (Redis Fork) used for OTP email verification (temporary storage of codes)
 
 ## Running
-0. Create a .env file with JWT_SECRET, RESEND_URL, and DATABASE_URL
+npm i
+0. Create a .env file with JWT_SECRET, RESEND_URL, and DATABASE_URL, and ANTHROPIC_API_KEY
 1. Download Docker Desktop
 2. docker compose up --build express # only runs backend
 3. npm run dev # frontend
