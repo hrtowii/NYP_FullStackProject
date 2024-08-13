@@ -79,13 +79,13 @@ const teamMembers = [
     name: 'Lucas Leong',
     role: 'Account Security Manager',
     image: 'public/lucasimagefsdp.jpg',
-    bio: 'Contributions: \n- Sign up, Login, Reset Password, Authentication, Navbar',
+    bio: 'Contributions: \n- Sign up, Login, Reset Password, Authentication, Navbar, Admin Panel Dashboard, Claude Chatbot',
   },
   {
     name: 'Andric Lim',
     role: 'Donations Operations Manager',
     image: 'public/andricimagefsdp.jpg',
-    bio: "Contributions: \n- Dashboard page, Donate new item, Manage Donations, Manage Donations\n- Calculation for Donator's Rank and Personal Goal",
+    bio: "Contributions: \n- Dashboard Page, Donate new item, Manage Donations, Manage Donations\n- Calculation for Donator's Rank and Personal Goal",
   },
   {
     name: 'Johnavon Tan',
@@ -430,9 +430,11 @@ export default function About() {
               <Typography paragraph>
                 Every donation and collection makes a difference. Start your journey towards a more sustainable future today!
               </Typography>
+              {/* {currentUserRole != 'user' || currentUserRole != "donator" ? 
               <Button variant="contained" color="primary" size="large" onClick={signupnavigate}>
                 Get Started Now
-              </Button>
+              </Button> : <div></div>} */}
+
             </Box>
           </Container>
         </Box>
